@@ -906,7 +906,7 @@ bot.command('rules', async (ctx) => {
   await ctx.reply(t(ctx, 'rules'), { parse_mode: 'Markdown' });
 });
 
-bot.command('help', async (ctx) => {
+bot.help(async (ctx) => {
   await ctx.reply(t(ctx, 'help'), { parse_mode: 'Markdown' });
 });
 
@@ -927,8 +927,10 @@ bot.action(/lang_(.+)/, async (ctx) => {
   if (TEXTS[newLang]) {
     await updateLanguage(ctx.from.id, newLang);
     ctx.session.lang = newLang;
-    await ctx.answerCbQuery();
-    await ctx.editMessageText(t(ctx, 'lang_changed'));
+    await ctx.answerCbQuery('✅');
+    
+    const langChangedText = TEXTS[newLang]?.lang_changed || TEXTS.en.lang_changed;
+    await ctx.editMessageText(langChangedText);
   }
 });
 
