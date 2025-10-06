@@ -1,7 +1,7 @@
 {
   "name": "mai-telegram-bot",
-  "version": "1.0.0",
-  "description": "MAI Project Telegram Bot - Moderation & Airdrop Management",
+  "version": "2.0.0",
+  "description": "MAI Project Telegram Bot - Multilingual Moderation & Airdrop",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
@@ -11,7 +11,10 @@
     "bot",
     "mai",
     "crypto",
-    "airdrop"
+    "airdrop",
+    "presale",
+    "nft",
+    "multilingual"
   ],
   "author": "MAI Project",
   "license": "MIT",
