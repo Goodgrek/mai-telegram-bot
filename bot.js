@@ -1199,7 +1199,15 @@ cron.schedule('0 0 * * *', async () => {
   } catch {}
 });
 
-bot.launch();
+bot.launch({
+  dropPendingUpdates: true
+}).then(() => {
+  if (config.ADMIN_IDS[0]) {
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.0 started successfully!').catch(() => {});
+  }
+}).catch(() => {
+  process.exit(1);
+});
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
