@@ -1,0 +1,26 @@
+{
+  "name": "mai-telegram-bot",
+  "version": "1.0.0",
+  "description": "MAI Project Telegram Bot - Moderation & Airdrop Management",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "mai",
+    "crypto",
+    "airdrop"
+  ],
+  "author": "MAI Project",
+  "license": "MIT",
+  "dependencies": {
+    "telegraf": "^4.15.0",
+    "pg": "^8.11.3",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
