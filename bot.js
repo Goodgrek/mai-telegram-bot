@@ -192,17 +192,19 @@ async function muteUser(userId, hours = 24) {
 
 async function setAwaitingWallet(userId, awaiting) {
   try {
-    // СОЗДАЕМ ПОЛЬЗОВАТЕЛЯ ЕСЛИ ЕГО НЕТ
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO telegram_users (telegram_id, awaiting_wallet) 
        VALUES ($1, $2) 
        ON CONFLICT (telegram_id) 
-       DO UPDATE SET awaiting_wallet = $2`,
+       DO UPDATE SET awaiting_wallet = $2
+       RETURNING *`,
       [userId, awaiting]
     );
-    console.log('✅ setAwaitingWallet выполнен для:', userId, 'значение:', awaiting);
+    console.log('✅ setAwaitingWallet результат:', result.rows[0]);
+    return result.rows[0];
   } catch (error) {
     console.error('❌ Ошибка setAwaitingWallet:', error.message);
+    throw error;
   }
 }
 
@@ -221,75 +223,72 @@ bot.catch((err, ctx) => {
 initDatabase().catch(() => {});
 
 bot.start(async (ctx) => {
-  console.log('✅ /start получен от:', ctx.from.id, ctx.from.username);
+  console.log('✅ /start получен от:', ctx.from.id, ctx.from.username, 'тип чата:', ctx.chat.type);
   
-  const welcomeMsg = `
-🚀 *WELCOME TO MAI PROJECT\\!*
+  // ОДИНАКОВОЕ СООБЩЕНИЕ ВЕЗДЕ - БЕЗ ФОРМАТИРОВАНИЯ
+  const welcomeMsg = `🚀 WELCOME TO MAI PROJECT!
 
-*The Future of Decentralized AI is Here*
+The Future of Decentralized AI is Here
 
-MAI is revolutionizing the intersection of artificial intelligence and blockchain technology\\. We're building a decentralized AI platform that belongs to the community \\- powered by you, governed by you, owned by you\\.
-
-━━━━━━━━━━━━━━━━━━━━
-
-💰 *PRESALE IS LIVE\\!*
-View all stages: /presale
+MAI is revolutionizing the intersection of artificial intelligence and blockchain technology. We're building a decentralized AI platform that belongs to the community - powered by you, governed by you, owned by you.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🎁 *MEGA REWARDS PROGRAM*
+💰 PRESALE IS LIVE!
+View all 14 stages: /presale
 
-*Community Airdrop:* 5,000 MAI
-- First 20,000 members only\\!
+━━━━━━━━━━━━━━━━━━━━
+
+🎁 MEGA REWARDS PROGRAM
+
+Community Airdrop: 5,000 MAI
+- First 20,000 members only!
 - Command: /airdrop
 
-*Presale Airdrop:* Up to 1,000,000 MAI
+Presale Airdrop: Up to 1,000,000 MAI
 - Complete tasks during presale
 - Command: /tasks
 
-*Referral Program:* Earn USDT
-- \\$500,000 reward pool
+Referral Program: Earn USDT
+- $500,000 reward pool
 - Command: /referral
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📋 *ESSENTIAL COMMANDS*
+📋 ESSENTIAL COMMANDS
 
-/presale \\- View all presale stages
-/nft \\- NFT reward levels
-/tasks \\- Presale airdrop program
-/referral \\- Earn USDT rewards
-/airdrop \\- Register for community airdrop
-/status \\- Check your status
-/faq \\- FAQ
-/rules \\- Community rules
-/help \\- Full command list
+/presale - View all presale stages
+/nft - NFT reward levels
+/tasks - Presale airdrop program
+/referral - Earn USDT rewards
+/airdrop - Register for community airdrop
+/status - Check your status
+/faq - FAQ
+/rules - Community rules
+/help - Full command list
 
 ━━━━━━━━━━━━━━━━━━━━
 
-⚠️ *CRITICAL REQUIREMENTS*
+⚠️ CRITICAL REQUIREMENTS
 To qualify for ANY rewards, you MUST:
-✅ Subscribe to our news channel: @mai\\_news
-✅ Stay in community chat until MAI listing
+✅ Subscribe to @mai_news
+✅ Stay in community chat until listing
 ✅ Follow all community rules
 
-*Unsubscribing \\= Automatic disqualification*
+Unsubscribing = Automatic disqualification
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🌐 Website: https://miningmai\\.com
-📱 Join the revolution\\. Build the future\\.
+🌐 Website: https://miningmai.com
+📱 Join the revolution. Build the future.
 
-*Let's decentralize AI together\\! 🤖⚡*
-`;
+Let's decentralize AI together! 🤖⚡`;
   
   try {
-    await ctx.reply(welcomeMsg, { parse_mode: 'MarkdownV2' });
+    await ctx.reply(welcomeMsg);
     console.log('✅ /start отправлен успешно');
   } catch (error) {
     console.error('❌ Ошибка /start:', error.message);
-    // Отправляем без форматирования если ошибка
-    await ctx.reply('🚀 WELCOME TO MAI PROJECT!\n\nThe Future of Decentralized AI is Here\n\nMAI is revolutionizing AI and blockchain technology.\n\n📋 Commands:\n/presale - View presale stages\n/airdrop - Register for airdrop\n/faq - Frequently asked questions\n/help - Full command list\n\n🌐 Website: https://miningmai.com');
   }
 });
 
@@ -356,23 +355,22 @@ bot.command('airdrop', async (ctx) => {
     console.log('✅ Установлен awaiting_wallet для:', userId);
     
     await ctx.reply(
-      `🎁 *COMMUNITY AIRDROP REGISTRATION*\n\n` +
-      `Great! You're eligible to register.\n\n` +
-      `*Reward:* ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
-      `*Available spots:* ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📝 *Next Step: Provide Your Solana Wallet*\n\n` +
-      `Please send your *Solana wallet address* in the next message.\n\n` +
-      `*Example:*\n` +
-      `\`7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\`\n\n` +
-      `⚠️ *Supported Wallets:*\n` +
-      `• Phantom, Solflare, Trust Wallet\n` +
-      `• Binance Web3, MetaMask \\(Solana\\)\n` +
-      `• Backpack or any Solana wallet\n` +
-      `• Double-check your address\n` +
-      `• This is where you'll receive your tokens`,
-      { parse_mode: 'Markdown' }
-    );
+  `🎁 COMMUNITY AIRDROP REGISTRATION\n\n` +
+  `Great! You're eligible to register.\n\n` +
+  `Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
+  `Available spots: ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `📝 Next Step: Provide Your Solana Wallet\n\n` +
+  `Please send your Solana wallet address in the next message.\n\n` +
+  `Example:\n` +
+  `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\n\n` +
+  `⚠️ Supported Wallets:\n` +
+  `• Phantom, Solflare, Trust Wallet\n` +
+  `• Binance Web3, MetaMask (Solana)\n` +
+  `• Backpack or any Solana wallet\n` +
+  `• Double-check your address\n` +
+  `• This is where you'll receive your tokens`
+);
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
     console.error('❌ Ошибка /airdrop:', error.message);
@@ -835,70 +833,68 @@ function getReferralText() {
 }
 
 function getFaqText() {
-  return `
-❓ *FREQUENTLY ASKED QUESTIONS*
+  return `❓ FREQUENTLY ASKED QUESTIONS
 
 ━━━━━━━━━━━━━━━━━━━━
 
-*1\\. What is MAI Project?*
-MAI is a decentralized AI platform combining artificial intelligence with blockchain technology\\. We're building AI that belongs to the community \\- powered by you, governed by you, owned by you\\.
+1. What is MAI Project?
+MAI is a decentralized AI platform combining artificial intelligence with blockchain technology. We're building AI that belongs to the community - powered by you, governed by you, owned by you.
 
-*2\\. How to buy MAI tokens?*
-Visit https://miningmai\\.com, connect your Solana wallet, and purchase during presale\\. Accepted payments: SOL, USDT, USDC\\.
+2. How to buy MAI tokens?
+Visit https://miningmai.com, connect your Solana wallet, and purchase during presale. Accepted payments: SOL, USDT, USDC.
 
-*3\\. Which wallets are supported?*
-Any Solana\\-compatible wallet:
-- Phantom \\(recommended\\)
+3. Which wallets are supported?
+Any Solana-compatible wallet:
+- Phantom (recommended)
 - Solflare
 - Trust Wallet
 - Binance Web3 Wallet
-- MetaMask \\(with Solana network\\)
+- MetaMask (with Solana network)
 - Backpack
 
-*4\\. When is the listing?*
-Q4 2025 on major DEX platforms \\(Raydium, Jupiter\\) and CEX exchanges\\. Exact date will be announced in @mai\\_news\\.
+4. When is the listing?
+Q4 2025 on major DEX platforms (Raydium, Jupiter) and CEX exchanges. Exact date will be announced in @mai_news.
 
-*5\\. How do airdrops work?*
-*Community Airdrop:* 5,000 MAI for first 20,000 members \\(/airdrop\\)
-*Presale Airdrop:* Up to 1,000,000 MAI for completing tasks \\(/tasks\\)
-Requirements: Stay subscribed to @mai\\_news and in community chat until listing\\.
+5. How do airdrops work?
+Community Airdrop: 5,000 MAI for first 20,000 members (/airdrop)
+Presale Airdrop: Up to 1,000,000 MAI for completing tasks (/tasks)
+Requirements: Stay subscribed to @mai_news and in community chat until listing.
 
-*6\\. What are presale stages?*
-14 stages total with prices from \\$0\\.0005 to \\$0\\.0020\\.
-Each stage offers different discounts \\(80%\\-20% OFF\\)\\.
-Use /presale to view all stages\\.
+6. What are presale stages?
+14 stages total with prices from $0.0005 to $0.0020.
+Each stage offers different discounts (80%-20% OFF).
+Use /presale to view all stages.
 
-*7\\. What are NFT rewards?*
+7. What are NFT rewards?
 Presale participants receive exclusive NFTs based on purchase amount:
-- Bronze \\(\\$50\\-99\\): \\+5% mining forever
-- Silver \\(\\$100\\-199\\): \\+10% mining forever
-- Gold \\(\\$200\\-299\\): \\+15% mining forever
-- Platinum \\(\\$300\\+\\): \\+20% mining forever
+- Bronze ($50-99): +5% mining forever
+- Silver ($100-199): +10% mining forever
+- Gold ($200-299): +15% mining forever
+- Platinum ($300+): +20% mining forever
 
-*8\\. How does referral program work?*
-Earn up to 7% in USDT from referral purchases\\.
-Total pool: \\$500,000 USDT\\.
-Use /referral for details\\.
+8. How does referral program work?
+Earn up to 7% in USDT from referral purchases.
+Total pool: $500,000 USDT.
+Use /referral for details.
 
-*9\\. When will I receive airdrop tokens?*
-Within 10 days after official MAI listing on exchanges\\.
+9. When will I receive airdrop tokens?
+Within 10 days after official MAI listing on exchanges.
 
-*10\\. What is MAI mining?*
-AI\\-powered mining system where you earn MAI tokens by contributing computational power to decentralized AI tasks\\. NFT holders get permanent mining bonuses\\.
+10. What is MAI mining?
+AI-powered mining system where you earn MAI tokens by contributing computational power to decentralized AI tasks. NFT holders get permanent mining bonuses.
 
-*11\\. Is KYC required?*
-No KYC required for airdrop\\.
-Presale purchases may require basic verification depending on amount\\.
+11. Is KYC required?
+No KYC required for airdrop.
+Presale purchases may require basic verification depending on amount.
 
-*12\\. How to track my airdrop status?*
-Use /status command anytime to check your registration, subscriptions, and reward eligibility\\.
+12. How to track my airdrop status?
+Use /status command anytime to check your registration, subscriptions, and reward eligibility.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🌐 More info: https://miningmai\\.com
-📱 News: @mai\\_news
-💬 Support: Contact admins in community chat
-`;
+🌐 More: https://miningmai.com
+📱 News: @mai_news
+💬 Support: Contact admins in chat`;
 }
 
 function getRulesText() {
@@ -937,27 +933,20 @@ bot.on(message('text'), async (ctx) => {
   const userId = ctx.from.id;
   const text = ctx.message.text;
   
-  console.log('📨 Сообщение от:', userId, 'Текст:', text);
+  console.log('📨 Сообщение от:', userId, 'Текст:', text.substring(0, 50));
   
   if (text.startsWith('/')) return;
   
   try {
     const userStatus = await getUserStatus(userId);
-    console.log('👤 Статус:', userStatus);
-    // ВАЖНО: Если нет записи в БД и awaiting_wallet не установлен - выход
-if (!userStatus) {
-  console.log('⚠️ Пользователь не найден в БД');
-  return;
-}
-
-console.log('🔍 awaiting_wallet:', userStatus.awaiting_wallet);
+    console.log('👤 Статус пользователя:', JSON.stringify(userStatus));
     
-    // ОБРАБОТКА КОШЕЛЬКА
-    if (userStatus?.awaiting_wallet) {
-      console.log('💼 Обработка кошелька:', text);
+    // ОБРАБОТКА КОШЕЛЬКА - ГЛАВНОЕ!
+    if (userStatus && userStatus.awaiting_wallet === true) {
+      console.log('💼 НАЧАЛО ОБРАБОТКИ КОШЕЛЬКА:', text);
       
       if (!isValidSolanaAddress(text)) {
-        console.log('❌ Невалидный адрес');
+        console.log('❌ Невалидный адрес Solana');
         return ctx.reply(
           `❌ *Invalid Solana Address!*\n\n` +
           `Solana addresses must be 32-44 characters (base58 format).\n\n` +
@@ -969,9 +958,9 @@ console.log('🔍 awaiting_wallet:', userStatus.awaiting_wallet);
       const username = ctx.from.username || 'no_username';
       const firstName = ctx.from.first_name;
       
-      console.log('📝 Регистрация пользователя...');
+      console.log('📝 Вызов registerUser для:', userId);
       const registration = await registerUser(userId, username, firstName, text);
-      console.log('📊 Результат регистрации:', registration);
+      console.log('📊 Результат регистрации:', JSON.stringify(registration));
       
       if (!registration.success) {
         if (registration.reason === 'limit_reached') {
@@ -986,7 +975,7 @@ console.log('🔍 awaiting_wallet:', userStatus.awaiting_wallet);
         return ctx.reply('❌ Registration error. Please try /airdrop again.');
       }
       
-      console.log('✅ Регистрация успешна!');
+      console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
       return ctx.reply(
         `🎉 *REGISTRATION SUCCESSFUL!*\n\n` +
         `Welcome to the MAI Community Airdrop!\n\n` +
@@ -1002,21 +991,27 @@ console.log('🔍 awaiting_wallet:', userStatus.awaiting_wallet);
         `✅ Follow all community rules\n\n` +
         `*Unsubscribing = Automatic disqualification!*\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `📊 Daily Subscription Check: 00:00 UTC\n` +
-        `💰 Token Distribution: Within 10 days after listing\n\n` +
-        `Use /status anytime to check your participation status.\n\n` +
+        `📊 Daily Check: 00:00 UTC\n` +
+        `💰 Distribution: Within 10 days after listing\n\n` +
+        `Use /status anytime to check your status.\n\n` +
         `*Thank you for joining MAI! 🚀*`,
         { parse_mode: 'Markdown' }
       );
     }
     
-    // Остальной код модерации...
-    if (userStatus?.banned) {
+    // Если нет статуса или не ждет кошелек - выход
+    if (!userStatus) {
+      console.log('⚠️ Пользователь не найден в БД, игнорируем сообщение');
+      return;
+    }
+    
+    // МОДЕРАЦИЯ
+    if (userStatus.banned) {
       await ctx.deleteMessage();
       return;
     }
     
-    if (userStatus?.muted_until && new Date() < new Date(userStatus.muted_until)) {
+    if (userStatus.muted_until && new Date() < new Date(userStatus.muted_until)) {
       await ctx.deleteMessage();
       return;
     }
@@ -1047,7 +1042,8 @@ console.log('🔍 awaiting_wallet:', userStatus.awaiting_wallet);
       return ctx.reply(`⚠️ Unauthorized links forbidden! Warning ${warnings}/${config.WARN_LIMIT}. Next violation = BAN.`);
     }
   } catch (error) {
-    console.error('❌ Ошибка обработки текста:', error.message);
+    console.error('❌ КРИТИЧЕСКАЯ ОШИБКА обработки текста:', error.message);
+    console.error('Stack:', error.stack);
   }
 });
 
