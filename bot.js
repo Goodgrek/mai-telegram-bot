@@ -205,8 +205,6 @@ bot.catch((err, ctx) => {
 initDatabase().catch(() => {});
 
 bot.start(async (ctx) => {
-  if (ctx.chat.type !== 'private') return;
-  
   const welcomeMsg = `
 🚀 *WELCOME TO MAI PROJECT!*
 
@@ -276,7 +274,16 @@ To qualify for ANY rewards, you MUST:
 
 bot.command('airdrop', async (ctx) => {
   if (ctx.chat.type !== 'private') {
-    return ctx.reply('⚠️ Please use /airdrop in private messages with the bot, not in the group chat.');
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.url('🎁 Register for Airdrop', `https://t.me/${ctx.botInfo.username}?start=airdrop`)]
+    ]);
+    
+    return ctx.reply(
+      `🎁 *COMMUNITY AIRDROP - 5,000 MAI*\n\n` +
+      `First ${config.AIRDROP_LIMIT.toLocaleString()} members get free tokens!\n\n` +
+      `Click the button below to register:`,
+      { parse_mode: 'Markdown', ...keyboard }
+    );
   }
   
   const userId = ctx.from.id;
@@ -343,6 +350,16 @@ bot.command('airdrop', async (ctx) => {
 });
 
 bot.command('status', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.url('📊 Check Status', `https://t.me/${ctx.botInfo.username}?start=status`)]
+    ]);
+    return ctx.reply(
+      '📊 Check your airdrop status in private messages:',
+      { ...keyboard }
+    );
+  }
+  
   const userId = ctx.from.id;
   
   try {
@@ -398,350 +415,27 @@ bot.command('status', async (ctx) => {
 });
 
 bot.command('presale', async (ctx) => {
-  let stagesText = '💰 *MAI PRESALE - ALL 14 STAGES*\n\n';
-  stagesText += `📊 *Current Stage: ${config.CURRENT_PRESALE_STAGE}*\n`;
-  stagesText += `💵 Price: $${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}\n`;
-  stagesText += `📈 Discount: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}%\n\n`;
-  stagesText += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-  
-  PRESALE_STAGES.forEach(s => {
-    const current = s.stage === config.CURRENT_PRESALE_STAGE ? '👉 ' : '   ';
-    stagesText += `${current}*Stage ${s.stage}:* $${s.price} | ${s.discount}% OFF | ${s.tokens} MAI\n`;
-  });
-  
-  stagesText += `\n━━━━━━━━━━━━━━━━━━━━\n\n`;
-  stagesText += `🎨 *NFT REWARD BONUSES:*\n\n`;
-  stagesText += `🥉 Bronze ($50-99): +5% mining FOREVER\n`;
-  stagesText += `🥈 Silver ($100-199): +10% mining FOREVER\n`;
-  stagesText += `🥇 Gold ($200-299): +15% mining FOREVER\n`;
-  stagesText += `💎 Platinum ($300+): +20% mining FOREVER\n\n`;
-  stagesText += `🌐 Buy now: https://miningmai.com`;
-  
-  await ctx.reply(stagesText, { parse_mode: 'Markdown' });
-});
-
-bot.command('tasks', async (ctx) => {
-  const tasksMsg = `
-🎁 *PRESALE AIRDROP PROGRAM*
-*EARN UP TO 1,000,000 MAI!*
-
-━━━━━━━━━━━━━━━━━━━━
-
-Complete tasks during presale to participate in our massive *800,000,000 MAI* airdrop program!
-
-*Available Tasks (5 Total):*
-
-1️⃣ *Stages 1-3 Purchase*
-Buy 10,000+ MAI tokens during stages 1-3
-
-2️⃣ *Stages 5-7 Purchase*
-Buy 10,000+ MAI tokens during stages 5-7
-
-3️⃣ *Stages 10-14 Purchase*
-Buy 10,000+ MAI tokens during stages 10-14
-
-4️⃣ *Earn Reward NFT*
-Obtain any presale reward NFT (Bronze/Silver/Gold/Platinum)
-*Note: Airdrop Silver NFT does NOT count*
-
-5️⃣ *Invite 2+ Friends*
-Refer 2 active users who each make at least one purchase
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ *IMPORTANT:* Minimum 3/5 tasks required to qualify!
-
-━━━━━━━━━━━━━━━━━━━━
-
-💰 *REWARD STRUCTURE:*
-
-🥇 *5/5 tasks:* 1,000,000 MAI
-└ 500 spots available
-
-🥈 *4/5 tasks:* 500,000 MAI
-└ 500 spots available
-
-🥉 *3/5 tasks:* 100,000 MAI
-└ 500 spots available
-
-━━━━━━━━━━━━━━━━━━━━
-
-🎲 *LOTTERY SYSTEM:*
-If more than 500 users qualify for any tier, winners selected by random lottery. If 500 or fewer qualify, everyone wins!
-
-━━━━━━━━━━━━━━━━━━━━
-
-📅 *TIMELINE:*
-
-• *Airdrop Period:* From presale launch to completion
-• *Task Completion:* During corresponding presale stages
-• *Lottery:* Within 10 days after presale ends (if needed)
-• *Winners Announced:* Telegram & Twitter
-• *Distribution Starts:* Within 10 days after MAI listing
-
-━━━━━━━━━━━━━━━━━━━━
-
-💳 *VESTING SCHEDULE:*
-
-• *First Payment:* 10% within 10 days after listing
-• *Monthly Payments:* 9 payments of 10% each
-• *Schedule:* Every 30 days from listing date
-• *Total Duration:* 10 months
-
-━━━━━━━━━━━━━━━━━━━━
-
-📊 *HOW TO PARTICIPATE:*
-
-Simply complete the tasks above during presale. Your progress is automatically tracked via your wallet address.
-
-Check https://miningmai.com dashboard regularly to monitor your progress!
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ *ANTI-FRAUD PROTECTION:*
-
-We reserve the right to exclude any participant suspected of fraudulent activity, including fake referrals, multiple accounts, bot activity, or rule violations.
-
-All eligibility decisions are final.
-
-━━━━━━━━━━━━━━━━━━━━
-
-*Total Airdrop Fund: 800,000,000 MAI*
-
-One of the largest presale community rewards in crypto history! 🚀
-`;
-  
-  await ctx.reply(tasksMsg, { parse_mode: 'Markdown' });
-});
-
-bot.command('referral', async (ctx) => {
-  const referralMsg = `
-💰 *REFERRAL PROGRAM*
-*EARN $500,000 USDT!*
-
-━━━━━━━━━━━━━━━━━━━━
-
-Invite friends and earn *$USDT* for their MAI token purchases!
-
-━━━━━━━━━━━━━━━━━━━━
-
-📊 *REWARD LEVELS:*
-
-*Level 1:* 1-9 referrals → *1% bonus*
-*Level 2:* 10-19 referrals → *3% bonus*
-*Level 3:* 20-29 referrals → *5% bonus*
-*Level 4:* 30+ referrals → *7% bonus*
-
-━━━━━━━━━━━━━━━━━━━━
-
-💡 *EXAMPLE (Level 4):*
-
-Your referral buys MAI for $200
-You earn: $14 USDT (7% bonus)
-
-━━━━━━━━━━━━━━━━━━━━
-
-🔥 *HOW IT WORKS:*
-
-1️⃣ Get your unique referral link from your account at https://miningmai.com
-
-2️⃣ Share the link with friends and invite them to MAI Project
-
-3️⃣ Earn rewards for EVERY MAI token purchase by your referrals
-
-4️⃣ Rewards distributed every *Friday at 12:00 UTC* for the previous week
-
-5️⃣ Rewards paid in *USDT*
-
-━━━━━━━━━━━━━━━━━━━━
-
-💸 *PAYMENT DETAILS:*
-
-• *Currency:* USDT (Tether)
-• *Minimum Withdrawal:* $10 USDT
-• *Distribution:* Weekly (Fridays 12:00 UTC)
-• *Payment Method:* Direct to your wallet
-
-━━━━━━━━━━━━━━━━━━━━
-
-🎯 *GET STARTED:*
-
-Visit https://miningmai.com and access your personal dashboard to get your unique referral link!
-
-━━━━━━━━━━━━━━━━━━━━
-
-*Total Referral Pool: $500,000 USDT* 💵
-
-Start earning passive income today! 🚀
-`;
-  
-  await ctx.reply(referralMsg, { parse_mode: 'Markdown' });
+  await ctx.reply(getPresaleText(), { parse_mode: 'Markdown' });
 });
 
 bot.command('nft', async (ctx) => {
-  const nftMsg = `
-🎨 *MAI NFT REWARD LEVELS*
+  await ctx.reply(getNftText(), { parse_mode: 'Markdown' });
+});
 
-Exclusive NFTs for Presale participants with permanent benefits!
+bot.command('tasks', async (ctx) => {
+  await ctx.reply(getTasksText(), { parse_mode: 'Markdown' });
+});
 
-━━━━━━━━━━━━━━━━━━━━
-
-🥉 *BRONZE NFT*
-Purchase: $50-99 in Presale
-
-*Benefits:*
-• Early mining access: +1 month
-• Early DAO voting: 3 months
-• Mining bonus: *+5% FOREVER*
-
-━━━━━━━━━━━━━━━━━━━━
-
-🥈 *SILVER NFT*
-Purchase: $100-199 in Presale
-
-*Benefits:*
-• Early mining access: +2 months
-• Early DAO voting: 6 months
-• Mining bonus: *+10% FOREVER*
-
-━━━━━━━━━━━━━━━━━━━━
-
-🥇 *GOLD NFT*
-Purchase: $200-299 in Presale
-
-*Benefits:*
-• Early mining access: +3 months
-• Early DAO voting: 12 months
-• Mining bonus: *+15% FOREVER*
-
-━━━━━━━━━━━━━━━━━━━━
-
-💎 *PLATINUM NFT*
-Purchase: $300+ in Presale
-
-*Benefits:*
-• Early mining access: +3 months
-• Early DAO voting: 12 months
-• Mining bonus: *+20% FOREVER*
-
-━━━━━━━━━━━━━━━━━━━━
-
-📈 *ADDITIONAL BENEFITS:*
-
-• All NFTs are tradeable on marketplaces
-• Permanent mining boost (FOREVER!)
-• Exclusive community access
-• Priority support
-
-━━━━━━━━━━━━━━━━━━━━
-
-🌐 Learn more: https://miningmai.com
-`;
-  
-  await ctx.reply(nftMsg, { parse_mode: 'Markdown' });
+bot.command('referral', async (ctx) => {
+  await ctx.reply(getReferralText(), { parse_mode: 'Markdown' });
 });
 
 bot.command('faq', async (ctx) => {
-  const faqMsg = `
-❓ *FREQUENTLY ASKED QUESTIONS*
-
-━━━━━━━━━━━━━━━━━━━━
-
-*1. What is MAI?*
-MAI is a decentralized AI platform combining blockchain and artificial intelligence. We create AI that belongs to the community.
-
-*2. How to buy MAI tokens?*
-Visit https://miningmai.com, connect your wallet (Solana/ETH/BSC), and choose your purchase amount.
-
-*3. What are NFT reward levels?*
-Exclusive NFTs for Presale participants giving permanent mining bonuses (+5% to +20%) and early access to features.
-
-*4. How does mining work?*
-Use your computational power to mine MAI tokens and earn stable income. Launch scheduled for Q4 2026.
-
-*5. When is the listing?*
-TGE (Token Generation Event) planned for Q4 2025 on major DEX/CEX platforms.
-
-*6. What is staking?*
-Stake MAI tokens and earn passive income with high APY. Available after mainnet launch.
-
-*7. How do airdrops work?*
-Two programs: Community Airdrop (5,000 MAI, /airdrop) and Presale Airdrop (up to 1M MAI, /tasks).
-
-*8. Which wallet should I use?*
-Solana wallets: Phantom, Solflare, or any SPL-compatible wallet.
-
-*9. How does the referral program work?*
-Earn up to 7% USDT on referral purchases. See /referral for details.
-
-*10. Are there vesting periods?*
-Yes, different schedules for presale purchases and airdrop rewards. Check website for specifics.
-
-━━━━━━━━━━━━━━━━━━━━
-
-🌐 More info: https://miningmai.com
-📱 Support: @mai_news
-`;
-  
-  await ctx.reply(faqMsg, { parse_mode: 'Markdown' });
+  await ctx.reply(getFaqText(), { parse_mode: 'Markdown' });
 });
 
 bot.command('rules', async (ctx) => {
-  const rulesMsg = `
-📋 *MAI COMMUNITY RULES*
-
-━━━━━━━━━━━━━━━━━━━━
-
-✅ *ALLOWED:*
-
-• Discussing MAI project
-• Questions about presale, tokens, airdrops
-• Constructive feedback and suggestions
-• Crypto memes and humor
-• Helping other community members
-
-━━━━━━━━━━━━━━━━━━━━
-
-❌ *STRICTLY FORBIDDEN:*
-
-• Spam and flooding
-• Advertising other projects
-• 18+ content
-• Insulting or harassing members
-• Scam links and phishing attempts
-• Sharing seed phrases/private keys
-• "DM me" or soliciting private messages
-• FUD (Fear, Uncertainty, Doubt)
-• Price manipulation discussion
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ *PENALTIES:*
-
-• *1st violation:* Warning
-• *2nd violation:* Warning
-• *3rd violation:* Permanent BAN
-
-━━━━━━━━━━━━━━━━━━━━
-
-📊 *COMMUNITY REPORT SYSTEM:*
-
-• *10 reports* from users = 24-hour mute
-• *20 reports* from users = Permanent ban
-• To report: Reply to message and use /report
-
-━━━━━━━━━━━━━━━━━━━━
-
-🎁 *AIRDROP ELIGIBILITY:*
-
-Breaking rules = Automatic disqualification from ALL reward programs (Community Airdrop, Presale Airdrop, Referrals)
-
-━━━━━━━━━━━━━━━━━━━━
-
-*Be respectful. Build together. Grow together.* 🚀
-`;
-  
-  await ctx.reply(rulesMsg, { parse_mode: 'Markdown' });
+  await ctx.reply(getRulesText(), { parse_mode: 'Markdown' });
 });
 
 bot.command('help', async (ctx) => {
@@ -889,6 +583,287 @@ bot.command('winners', async (ctx) => {
   }
 });
 
+bot.command('pin', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  const keyboard = Markup.inlineKeyboard([
+    [
+      Markup.button.url('🎁 Airdrop (5K MAI)', `https://t.me/${ctx.botInfo.username}?start=airdrop`),
+      Markup.button.url('💰 Buy Presale', 'https://miningmai.com')
+    ],
+    [
+      Markup.button.callback('📋 Presale Stages', 'cmd_presale'),
+      Markup.button.callback('🎨 NFT Levels', 'cmd_nft')
+    ],
+    [
+      Markup.button.callback('🎁 Presale Airdrop', 'cmd_tasks'),
+      Markup.button.callback('💵 Referral Program', 'cmd_referral')
+    ],
+    [
+      Markup.button.callback('❓ FAQ', 'cmd_faq'),
+      Markup.button.callback('📋 Rules', 'cmd_rules')
+    ],
+    [Markup.button.url('📱 News Channel', 'https://t.me/mai_news')]
+  ]);
+  
+  const pinMsg = await ctx.reply(
+    `🚀 *WELCOME TO MAI PROJECT!*\n\n` +
+    `*The Future of Decentralized AI*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💰 *ACTIVE PRESALE - STAGE ${config.CURRENT_PRESALE_STAGE}/14*\n` +
+    `Current Price: *${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}*\n` +
+    `Discount: *${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}% OFF*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🎁 *REWARDS:*\n` +
+    `• Community Airdrop: 5,000 MAI\n` +
+    `• Presale Airdrop: Up to 1M MAI\n` +
+    `• Referral Program: Earn USDT\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `⚠️ *STAY SUBSCRIBED:*\n` +
+    `Subscribe to @mai_news and stay in this chat until MAI listing to qualify for rewards!\n\n` +
+    `*Click buttons below to learn more:*`,
+    { parse_mode: 'Markdown', ...keyboard }
+  );
+  
+  try {
+    await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
+  } catch {}
+  
+  await ctx.deleteMessage().catch(() => {});
+});
+
+bot.action(/cmd_(.+)/, async (ctx) => {
+  const command = ctx.match[1];
+  await ctx.answerCbQuery();
+  
+  const commands = {
+    presale: () => ctx.reply(getPresaleText(), { parse_mode: 'Markdown' }),
+    nft: () => ctx.reply(getNftText(), { parse_mode: 'Markdown' }),
+    tasks: () => ctx.reply(getTasksText(), { parse_mode: 'Markdown' }),
+    referral: () => ctx.reply(getReferralText(), { parse_mode: 'Markdown' }),
+    faq: () => ctx.reply(getFaqText(), { parse_mode: 'Markdown' }),
+    rules: () => ctx.reply(getRulesText(), { parse_mode: 'Markdown' })
+  };
+  
+  if (commands[command]) {
+    await commands[command]();
+  }
+});
+
+bot.on('new_chat_members', async (ctx) => {
+  const newMembers = ctx.message.new_chat_members.filter(m => !m.is_bot);
+  
+  if (newMembers.length === 0) return;
+  
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.url('🎁 Register for Airdrop', `https://t.me/${ctx.botInfo.username}?start=airdrop`)],
+    [Markup.button.url('📱 Join News Channel', 'https://t.me/mai_news')]
+  ]);
+  
+  const names = newMembers.map(m => m.first_name).join(', ');
+  
+  await ctx.reply(
+    `👋 *Welcome to MAI Project, ${names}!*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🎁 *Get 5,000 MAI Tokens FREE*\n` +
+    `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
+    `⚠️ *Requirements:*\n` +
+    `✅ Subscribe to @mai_news\n` +
+    `✅ Stay in this chat until listing\n` +
+    `✅ Register your Solana wallet\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `📋 Read /rules\n` +
+    `❓ Check /faq\n` +
+    `💰 View /presale\n\n` +
+    `*Click the button below to register:*`,
+    { parse_mode: 'Markdown', ...keyboard }
+  );
+});
+
+function getPresaleText() {
+  let text = '💰 *MAI PRESALE - ALL 14 STAGES*\n\n';
+  text += `📊 *Current Stage: ${config.CURRENT_PRESALE_STAGE}*\n`;
+  text += `💵 Price: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}\n`;
+  text += `📈 Discount: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}%\n\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  
+  PRESALE_STAGES.forEach(s => {
+    const current = s.stage === config.CURRENT_PRESALE_STAGE ? '👉 ' : '   ';
+    text += `${current}*Stage ${s.stage}:* ${s.price} | ${s.discount}% OFF | ${s.tokens} MAI\n`;
+  });
+  
+  text += `\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+  text += `🎨 *NFT REWARD BONUSES:*\n\n`;
+  text += `🥉 Bronze ($50-99): +5% mining FOREVER\n`;
+  text += `🥈 Silver ($100-199): +10% mining FOREVER\n`;
+  text += `🥇 Gold ($200-299): +15% mining FOREVER\n`;
+  text += `💎 Platinum ($300+): +20% mining FOREVER\n\n`;
+  text += `🌐 Buy now: https://miningmai.com`;
+  return text;
+}
+
+function getNftText() {
+  return `
+🎨 *MAI NFT REWARD LEVELS*
+
+Exclusive NFTs for Presale participants with permanent benefits!
+
+━━━━━━━━━━━━━━━━━━━━
+
+🥉 *BRONZE NFT*
+Purchase: $50-99 in Presale
+
+*Benefits:*
+• Early mining access: +1 month
+• Early DAO voting: 3 months
+• Mining bonus: *+5% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🥈 *SILVER NFT*
+Purchase: $100-199 in Presale
+
+*Benefits:*
+• Early mining access: +2 months
+• Early DAO voting: 6 months
+• Mining bonus: *+10% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🥇 *GOLD NFT*
+Purchase: $200-299 in Presale
+
+*Benefits:*
+• Early mining access: +3 months
+• Early DAO voting: 12 months
+• Mining bonus: *+15% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+💎 *PLATINUM NFT*
+Purchase: $300+ in Presale
+
+*Benefits:*
+• Early mining access: +3 months
+• Early DAO voting: 12 months
+• Mining bonus: *+20% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 Learn more: https://miningmai.com`;
+}
+
+function getTasksText() {
+  return `
+🎁 *PRESALE AIRDROP PROGRAM*
+*EARN UP TO 1,000,000 MAI!*
+
+━━━━━━━━━━━━━━━━━━━━
+
+Complete tasks during presale to participate in our massive *800,000,000 MAI* airdrop!
+
+*Available Tasks (5 Total):*
+
+1️⃣ Stages 1-3: Buy 10,000+ MAI
+2️⃣ Stages 5-7: Buy 10,000+ MAI
+3️⃣ Stages 10-14: Buy 10,000+ MAI
+4️⃣ Earn Reward NFT
+5️⃣ Invite 2+ Friends
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Minimum 3/5 tasks required!
+
+━━━━━━━━━━━━━━━━━━━━
+
+💰 *REWARDS:*
+🥇 5/5 tasks: 1,000,000 MAI
+🥈 4/5 tasks: 500,000 MAI
+🥉 3/5 tasks: 100,000 MAI
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 Track progress: https://miningmai.com`;
+}
+
+function getReferralText() {
+  return `
+💰 *REFERRAL PROGRAM*
+*EARN $500,000 USDT!*
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 *REWARD LEVELS:*
+
+*Level 1:* 1-9 referrals → *1% bonus*
+*Level 2:* 10-19 referrals → *3% bonus*
+*Level 3:* 20-29 referrals → *5% bonus*
+*Level 4:* 30+ referrals → *7% bonus*
+
+━━━━━━━━━━━━━━━━━━━━
+
+💸 Paid in USDT every Friday!
+
+🌐 Get your link: https://miningmai.com`;
+}
+
+function getFaqText() {
+  return `
+❓ *FREQUENTLY ASKED QUESTIONS*
+
+━━━━━━━━━━━━━━━━━━━━
+
+*1. What is MAI?*
+Decentralized AI platform combining blockchain and artificial intelligence.
+
+*2. How to buy MAI?*
+Visit https://miningmai.com and connect your wallet.
+
+*3. When is listing?*
+Q4 2025 on major DEX/CEX platforms.
+
+*4. How do airdrops work?*
+Community Airdrop: 5K MAI (/airdrop)
+Presale Airdrop: up to 1M MAI
+
+*5. Which wallet?*
+Solana wallets: Phantom, Solflare
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 More: https://miningmai.com`;
+}
+
+function getRulesText() {
+  return `
+📋 *COMMUNITY RULES*
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *ALLOWED:*
+• Discussing MAI project
+• Questions and help
+• Crypto memes
+
+❌ *FORBIDDEN:*
+• Spam and flooding
+• Other project ads
+• Scam links
+• Harassment
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ *PENALTIES:*
+1st: Warning
+2nd: Warning
+3rd: BAN
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 10 reports = 24h mute
+📊 20 reports = Permanent ban`;
+}
+
 bot.on(message('text'), async (ctx) => {
   if (config.ADMIN_IDS.includes(ctx.from.id)) return;
   
@@ -1011,7 +986,7 @@ bot.launch({
   dropPendingUpdates: true
 }).then(() => {
   if (config.ADMIN_IDS[0]) {
-    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.1 Professional - Fully operational!').catch(() => {});
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
   }
 }).catch(() => {
   process.exit(1);

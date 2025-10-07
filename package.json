@@ -1,6 +1,6 @@
 {
   "name": "mai-telegram-bot",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "MAI Project Telegram Bot - Multilingual Moderation & Airdrop",
   "main": "bot.js",
   "scripts": {
