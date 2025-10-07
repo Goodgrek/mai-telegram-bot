@@ -192,9 +192,21 @@ async function setAwaitingWallet(userId, awaiting) {
 
 const bot = new Telegraf(config.BOT_TOKEN);
 
+bot.use(async (ctx, next) => {
+  if (ctx.from?.is_bot) return;
+  if (ctx.from?.id === 1087968824) return;
+  return next();
+});
+
+bot.catch((err, ctx) => {
+  return;
+});
+
 initDatabase().catch(() => {});
 
 bot.start(async (ctx) => {
+  if (ctx.chat.type !== 'private') return;
+  
   const welcomeMsg = `
 🚀 *WELCOME TO MAI PROJECT!*
 
@@ -263,6 +275,10 @@ To qualify for ANY rewards, you MUST:
 });
 
 bot.command('airdrop', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    return ctx.reply('⚠️ Please use /airdrop in private messages with the bot, not in the group chat.');
+  }
+  
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
   const firstName = ctx.from.first_name;
