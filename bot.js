@@ -1,4 +1,4 @@
-const { Telegraf, Markup, session } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
@@ -23,548 +23,21 @@ const pool = new Pool({
 });
 
 const PRESALE_STAGES = [
-  { stage: 1, price: 0.0005, discount: 80, allocation: 1.8, tokens: 126000000, tge_unlock: 3, cliff: 4, vesting: 10 },
-  { stage: 2, price: 0.0006, discount: 76, allocation: 3.2, tokens: 224000000, tge_unlock: 3, cliff: 3, vesting: 10 },
-  { stage: 3, price: 0.0007, discount: 72, allocation: 7.4, tokens: 518000000, tge_unlock: 4, cliff: 3, vesting: 10 },
-  { stage: 4, price: 0.0008, discount: 68, allocation: 9.2, tokens: 644000000, tge_unlock: 4, cliff: 2, vesting: 9 },
-  { stage: 5, price: 0.0011, discount: 56, allocation: 13.2, tokens: 924000000, tge_unlock: 5, cliff: 2, vesting: 9 },
-  { stage: 6, price: 0.0012, discount: 52, allocation: 16.2, tokens: 1134000000, tge_unlock: 5, cliff: 1, vesting: 9 },
-  { stage: 7, price: 0.0013, discount: 48, allocation: 14.4, tokens: 1008000000, tge_unlock: 6, cliff: 1, vesting: 8 },
-  { stage: 8, price: 0.0014, discount: 44, allocation: 11.8, tokens: 826000000, tge_unlock: 6, cliff: 1, vesting: 8 },
-  { stage: 9, price: 0.0015, discount: 40, allocation: 8.8, tokens: 616000000, tge_unlock: 7, cliff: 1, vesting: 8 },
-  { stage: 10, price: 0.0016, discount: 36, allocation: 6.5, tokens: 455000000, tge_unlock: 7, cliff: 0, vesting: 8 },
-  { stage: 11, price: 0.0017, discount: 32, allocation: 3.5, tokens: 245000000, tge_unlock: 7, cliff: 0, vesting: 7 },
-  { stage: 12, price: 0.0018, discount: 28, allocation: 2.5, tokens: 175000000, tge_unlock: 8, cliff: 0, vesting: 7 },
-  { stage: 13, price: 0.0019, discount: 24, allocation: 1.0, tokens: 70000000, tge_unlock: 8, cliff: 0, vesting: 6 },
-  { stage: 14, price: 0.0020, discount: 20, allocation: 0.5, tokens: 35000000, tge_unlock: 8, cliff: 0, vesting: 5 },
+  { stage: 1, price: 0.0005, discount: 80, allocation: 1.8, tokens: '126M' },
+  { stage: 2, price: 0.0006, discount: 76, allocation: 3.2, tokens: '224M' },
+  { stage: 3, price: 0.0007, discount: 72, allocation: 7.4, tokens: '518M' },
+  { stage: 4, price: 0.0008, discount: 68, allocation: 9.2, tokens: '644M' },
+  { stage: 5, price: 0.0011, discount: 56, allocation: 13.2, tokens: '924M' },
+  { stage: 6, price: 0.0012, discount: 52, allocation: 16.2, tokens: '1.13B' },
+  { stage: 7, price: 0.0013, discount: 48, allocation: 14.4, tokens: '1.01B' },
+  { stage: 8, price: 0.0014, discount: 44, allocation: 11.8, tokens: '826M' },
+  { stage: 9, price: 0.0015, discount: 40, allocation: 8.8, tokens: '616M' },
+  { stage: 10, price: 0.0016, discount: 36, allocation: 6.5, tokens: '455M' },
+  { stage: 11, price: 0.0017, discord: 32, allocation: 3.5, tokens: '245M' },
+  { stage: 12, price: 0.0018, discount: 28, allocation: 2.5, tokens: '175M' },
+  { stage: 13, price: 0.0019, discount: 24, allocation: 1.0, tokens: '70M' },
+  { stage: 14, price: 0.0020, discount: 20, allocation: 0.5, tokens: '35M' },
 ];
-
-const LANGUAGES = {
-  en: { name: 'English', flag: '🇬🇧' },
-  ru: { name: 'Русский', flag: '🇷🇺' },
-};
-
-const TEXTS = {
-  en: {
-    welcome: `🤖 *Welcome to MAI Project!*
-
-I'm the MAI bot-moderator and assistant.
-
-*🎁 Airdrop: 5,000 MAI tokens!*
-First ${config.AIRDROP_LIMIT.toLocaleString()} participants get rewards!
-
-*📝 How to participate:*
-1️⃣ Subscribe to news channel and chat
-2️⃣ /airdrop - Register with wallet
-3️⃣ Stay subscribed until listing
-
-*💬 Commands:*
-/airdrop - Register for airdrop
-/status - Check your status
-/presale - Presale stages info
-/nft - NFT levels info
-/faq - Frequently asked questions
-/rules - Chat rules
-/lang - Change language
-/help - Help
-
-⚠️ *Important:* Subscribe to news channel and stay in chat!`,
-
-    airdrop_start: `📝 *Airdrop Registration*
-
-To participate you need:
-✅ Subscribe to news channel: @mai_news
-✅ Join our chat
-✅ Provide Solana wallet address
-
-Please send your *Solana wallet address* in the next message.
-
-Example: 7xK3N9kZXxY2pQwM5vH8...`,
-
-    airdrop_already: `✅ You are already registered!
-
-🎫 Your position: *{position}* of ${config.AIRDROP_LIMIT.toLocaleString()}
-🎁 Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI
-💼 Wallet: {wallet}
-
-Use /status for details`,
-
-    airdrop_no_news: `❌ Please subscribe to the news channel first!
-👉 @mai_news`,
-
-    airdrop_no_chat: `❌ You must be a chat member!`,
-
-    airdrop_limit: `❌ Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots are taken!
-
-Follow the news for future airdrops!`,
-
-    airdrop_success: `✅ *Registration successful!*
-
-🎫 Your position: *{position}* of ${config.AIRDROP_LIMIT.toLocaleString()}
-🎁 Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*
-💼 Wallet: \`{wallet}\`
-
-⚠️ *Important conditions:*
-• Stay subscribed to channel and chat
-• Don't violate chat rules
-• Unsubscribe = airdrop exclusion
-
-📊 Subscription check: daily at 00:00 UTC
-💰 Token distribution: within 10 days after listing`,
-
-    wallet_invalid: `❌ Invalid Solana address format!
-
-Solana address must be 32-44 characters (base58).
-Please try again.`,
-
-    status_not_registered: `❌ You are not registered for airdrop!
-
-Use /airdrop to register`,
-
-    status_info: `📊 *Your Airdrop Status*
-
-👤 Username: @{username}
-🎫 Position: *{position}* of ${config.AIRDROP_LIMIT.toLocaleString()}
-📅 Registration: {date}
-
-📺 Subscriptions:
-{news_status} News channel
-{chat_status} Project chat
-
-💼 Wallet: {wallet_status}
-
-⚠️ Warnings: {warnings}/${config.WARN_LIMIT}
-📊 Reports: {reports}
-🚫 Status: {status}
-
-🎁 *Reward: {reward} MAI*
-
-{warnings_text}`,
-
-    presale_info: `💰 *MAI PRESALE - ALL STAGES*
-
-*📊 Current Stage: {current_stage}*
-💵 Price: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}
-📈 Discount: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}% from listing
-🎯 Allocation: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].allocation}%
-
-*🎨 NFT BONUSES (based on purchase amount):*
-🥉 Bronze ($50-99): +5% mining forever
-🥈 Silver ($100-199): +10% mining forever
-🥇 Gold ($200-299): +15% mining forever
-💎 Platinum ($300+): +20% mining forever
-
-*📋 ALL PRESALE STAGES:*
-
-Stage 1: $0.0005 | 80% discount | 126M MAI
-Stage 2: $0.0006 | 76% discount | 224M MAI
-Stage 3: $0.0007 | 72% discount | 518M MAI
-Stage 4: $0.0008 | 68% discount | 644M MAI
-Stage 5: $0.0011 | 56% discount | 924M MAI
-Stage 6: $0.0012 | 52% discount | 1.13B MAI
-Stage 7: $0.0013 | 48% discount | 1.01B MAI
-Stage 8: $0.0014 | 44% discount | 826M MAI
-Stage 9: $0.0015 | 40% discount | 616M MAI
-Stage 10: $0.0016 | 36% discount | 455M MAI
-Stage 11: $0.0017 | 32% discount | 245M MAI
-Stage 12: $0.0018 | 28% discount | 175M MAI
-Stage 13: $0.0019 | 24% discount | 70M MAI
-Stage 14: $0.0020 | 20% discount | 35M MAI
-
-*🔓 Vesting Schedule:*
-TGE Unlock: 3-8%
-Cliff Period: 0-4 months
-Vesting: 5-10 months
-
-🌐 Buy now: https://miningmai.com`,
-
-    rules: `📋 *MAI CHAT RULES*
-
-✅ *Allowed:*
-• Discussing MAI project
-• Questions about presale, tokens, airdrop
-• Constructive criticism
-• Crypto memes
-
-❌ *FORBIDDEN:*
-• Spam and flood (> 1 msg/10 sec)
-• Advertising other projects
-• 18+ content
-• Insulting participants
-• Scam links
-• Publishing seed phrases/private keys
-• "DM me", "Write me in private"
-
-⚠️ *Penalties:*
-• 1st violation: Warning
-• 2nd violation: Warning
-• 3rd violation: BAN
-
-📊 *Report system:*
-• 10 reports = 24h mute
-• 20 reports = Permanent ban
-• Report: reply to message and /report
-
-🎁 *Airdrop 5,000 MAI:*
-/airdrop - Registration (first ${config.AIRDROP_LIMIT.toLocaleString()})`,
-
-    nft: `🎨 *MAI NFT LEVELS*
-
-*🥉 BRONZE NFT*
-Purchase: $50-99 in Presale
-Benefits:
-• Early mining access: +1 month
-• Early voting: 3 months
-• Mining bonus: +5% FOREVER
-
-*🥈 SILVER NFT*
-Purchase: $100-199 in Presale
-Benefits:
-• Early mining access: +2 months
-• Early voting: 6 months
-• Mining bonus: +10% FOREVER
-
-*🥇 GOLD NFT*
-Purchase: $200-299 in Presale
-Benefits:
-• Early mining access: +3 months
-• Early voting: 12 months
-• Mining bonus: +15% FOREVER
-
-*💎 PLATINUM NFT*
-Purchase: $300+ in Presale
-Benefits:
-• Early mining access: +3 months
-• Early voting: 12 months
-• Mining bonus: +20% FOREVER
-
-📈 NFTs are tradeable on marketplaces!
-🌐 More info: https://miningmai.com`,
-
-    faq: `❓ *FREQUENTLY ASKED QUESTIONS*
-
-*1. What is MAI?*
-MAI is a decentralized AI platform combining blockchain and artificial intelligence. We create AI that belongs to the community.
-
-*2. How to buy MAI tokens?*
-Visit https://miningmai.com and participate in Presale. Connect your wallet and choose amount.
-
-*3. What are NFT levels?*
-Exclusive NFTs for Presale participants. Give permanent bonuses to mining (+5% to +20%) and early access.
-
-*4. How does mining work?*
-Use your computational power to mine MAI tokens and earn stable income. Launch: Q4 2026.
-
-*5. When is listing?*
-TGE (Token Generation Event) planned for Q4 2025 on DEX/CEX.
-
-*6. What is staking?*
-Stake MAI tokens and earn passive income with high APY. Available after launch.
-
-*7. How to get airdrop?*
-Use /airdrop, subscribe to channels, provide wallet. First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI!
-
-*8. Which wallet to use?*
-Solana wallets: Phantom, Solflare, or any SPL-compatible wallet.
-
-🌐 More info: https://miningmai.com`,
-
-    help: `🆘 *MAI BOT HELP*
-
-*Airdrop:*
-/airdrop - Registration with wallet
-/status - Check your status
-
-*Information:*
-/presale - Presale stages (1-14)
-/nft - NFT levels and bonuses
-/faq - Frequently asked questions
-/rules - Chat rules
-/lang - Change language
-/start - Welcome message
-
-*Moderation:*
-/report - Report user (reply to message)
-
-🌐 Website: https://miningmai.com
-📱 Telegram: @mai_news`,
-
-    lang_select: `🌍 *Select Language*
-
-Choose your language:`,
-    lang_changed: `✅ Language changed to English!`,
-    report_self: `❌ You can't report yourself!`,
-    report_admin: `❌ You can't report an administrator!`,
-    report_success: `✅ Report accepted. User has {reports} reports.`,
-    report_no_reply: `⚠️ Reply to violator's message and type /report`,
-    banned: `❌ You are banned and cannot participate.`,
-    error: `❌ Error. Try again later.`,
-    waiting_wallet: `⏳ Waiting for your Solana wallet address...`,
-  },
-  ru: {
-    welcome: `🤖 *Добро пожаловать в MAI Project!*
-
-Я бот-модератор и помощник проекта MAI.
-
-*🎁 Airdrop: 5,000 MAI токенов!*
-Первые ${config.AIRDROP_LIMIT.toLocaleString()} участников получают награду!
-
-*📝 Как участвовать:*
-1️⃣ Подписаться на канал новостей и чат
-2️⃣ /airdrop - Зарегистрироваться с кошельком
-3️⃣ Оставаться подписанным до листинга
-
-*💬 Команды:*
-/airdrop - Регистрация на airdrop
-/status - Проверить статус
-/presale - Информация о пресейле
-/nft - Информация о NFT
-/faq - Частые вопросы
-/rules - Правила чата
-/lang - Сменить язык
-/help - Помощь
-
-⚠️ *Важно:* Подпишитесь на канал новостей и оставайтесь в чате!`,
-
-    airdrop_start: `📝 *Регистрация на Airdrop*
-
-Для участия нужно:
-✅ Подписаться на канал новостей: @mai_news
-✅ Вступить в чат
-✅ Указать Solana кошелёк
-
-Пожалуйста, отправьте *адрес вашего Solana кошелька* следующим сообщением.
-
-Пример: 7xK3N9kZXxY2pQwM5vH8...`,
-
-    airdrop_already: `✅ Вы уже зарегистрированы!
-
-🎫 Ваша позиция: *{position}* из ${config.AIRDROP_LIMIT.toLocaleString()}
-🎁 Награда: ${config.AIRDROP_REWARD.toLocaleString()} MAI
-💼 Кошелёк: {wallet}
-
-Используйте /status для подробностей`,
-
-    airdrop_no_news: `❌ Сначала подпишитесь на канал новостей!
-👉 @mai_news`,
-
-    airdrop_no_chat: `❌ Вы должны быть участником чата!`,
-
-    airdrop_limit: `❌ К сожалению, все ${config.AIRDROP_LIMIT.toLocaleString()} мест заняты!
-
-Следите за новостями о следующих airdrop'ах!`,
-
-    airdrop_success: `✅ *Регистрация успешна!*
-
-🎫 Ваша позиция: *{position}* из ${config.AIRDROP_LIMIT.toLocaleString()}
-🎁 Награда: *${config.AIRDROP_REWARD.toLocaleString()} MAI*
-💼 Кошелёк: \`{wallet}\`
-
-⚠️ *Важные условия:*
-• Оставайтесь подписанными на канал и в чате
-• Не нарушайте правила чата
-• Отписка = исключение из airdrop
-
-📊 Проверка подписки: каждый день в 00:00 UTC
-💰 Выдача токенов: в течение 10 дней после листинга`,
-
-    wallet_invalid: `❌ Неверный формат Solana адреса!
-
-Solana адрес должен быть 32-44 символа (base58).
-Попробуйте ещё раз.`,
-
-    status_not_registered: `❌ Вы не зарегистрированы на airdrop!
-
-Используйте /airdrop для регистрации`,
-
-    status_info: `📊 *Ваш статус Airdrop*
-
-👤 Username: @{username}
-🎫 Позиция: *{position}* из ${config.AIRDROP_LIMIT.toLocaleString()}
-📅 Регистрация: {date}
-
-📺 Подписки:
-{news_status} Канал новостей
-{chat_status} Чат проекта
-
-💼 Кошелёк: {wallet_status}
-
-⚠️ Предупреждения: {warnings}/${config.WARN_LIMIT}
-📊 Жалобы: {reports}
-🚫 Статус: {status}
-
-🎁 *Награда: {reward} MAI*
-
-{warnings_text}`,
-
-    presale_info: `💰 *MAI PRESALE - ВСЕ ЭТАПЫ*
-
-*📊 Текущий этап: {current_stage}*
-💵 Цена: $${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}
-📈 Скидка: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}% от листинга
-🎯 Аллокация: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].allocation}%
-
-*🎨 NFT БОНУСЫ (на основе суммы покупки):*
-🥉 Bronze ($50-99): +5% майнинг навсегда
-🥈 Silver ($100-199): +10% майнинг навсегда
-🥇 Gold ($200-299): +15% майнинг навсегда
-💎 Platinum ($300+): +20% майнинг навсегда
-
-*📋 ВСЕ ЭТАПЫ PRESALE:*
-
-Этап 1: $0.0005 | 80% скидка | 126M MAI
-Этап 2: $0.0006 | 76% скидка | 224M MAI
-Этап 3: $0.0007 | 72% скидка | 518M MAI
-Этап 4: $0.0008 | 68% скидка | 644M MAI
-Этап 5: $0.0011 | 56% скидка | 924M MAI
-Этап 6: $0.0012 | 52% скидка | 1.13B MAI
-Этап 7: $0.0013 | 48% скидка | 1.01B MAI
-Этап 8: $0.0014 | 44% скидка | 826M MAI
-Этап 9: $0.0015 | 40% скидка | 616M MAI
-Этап 10: $0.0016 | 36% скидка | 455M MAI
-Этап 11: $0.0017 | 32% скидка | 245M MAI
-Этап 12: $0.0018 | 28% скидка | 175M MAI
-Этап 13: $0.0019 | 24% скидка | 70M MAI
-Этап 14: $0.0020 | 20% скидка | 35M MAI
-
-*🔓 График разблокировки:*
-TGE Unlock: 3-8%
-Cliff Period: 0-4 месяца
-Vesting: 5-10 месяцев
-
-🌐 Купить: https://miningmai.com`,
-
-    rules: `📋 *ПРАВИЛА ЧАТА MAI*
-
-✅ *Разрешено:*
-• Обсуждение проекта MAI
-• Вопросы о пресейле, токенах, airdrop
-• Конструктивная критика
-• Мемы про крипту
-
-❌ *ЗАПРЕЩЕНО:*
-• Спам и флуд (> 1 сообщение/10 сек)
-• Реклама других проектов
-• 18+ контент
-• Оскорбления участников
-• Скам-ссылки
-• Публикация seed фраз/приватных ключей
-• "DM me", "Write me in private"
-
-⚠️ *Наказания:*
-• 1-е нарушение: Предупреждение
-• 2-е нарушение: Предупреждение
-• 3-е нарушение: БАН
-
-📊 *Система жалоб:*
-• 10 жалоб = Мут 24 часа
-• 20 жалоб = Перманентный бан
-• Жалоба: ответьте на сообщение и /report
-
-🎁 *Airdrop 5,000 MAI:*
-/airdrop - Регистрация (первые ${config.AIRDROP_LIMIT.toLocaleString()})`,
-
-    nft: `🎨 *MAI NFT УРОВНИ*
-
-*🥉 BRONZE NFT*
-Покупка: $50-99 в Presale
-Преимущества:
-• Ранний доступ к майнингу: +1 месяц
-• Раннее голосование: 3 месяца
-• Бонус майнинга: +5% НАВСЕГДА
-
-*🥈 SILVER NFT*
-Покупка: $100-199 в Presale
-Преимущества:
-• Ранний доступ к майнингу: +2 месяца
-• Раннее голосование: 6 месяцев
-• Бонус майнинга: +10% НАВСЕГДА
-
-*🥇 GOLD NFT*
-Покупка: $200-299 в Presale
-Преимущества:
-• Ранний доступ к майнингу: +3 месяца
-• Раннее голосование: 12 месяцев
-• Бонус майнинга: +15% НАВСЕГДА
-
-*💎 PLATINUM NFT*
-Покупка: $300+ в Presale
-Преимущества:
-• Ранний доступ к майнингу: +3 месяца
-• Раннее голосование: 12 месяцев
-• Бонус майнинга: +20% НАВСЕГДА
-
-📈 NFT можно продавать на маркетплейсах!
-🌐 Подробнее: https://miningmai.com`,
-
-    faq: `❓ *ЧАСТЫЕ ВОПРОСЫ*
-
-*1. Что такое MAI?*
-MAI — децентрализованная AI платформа, объединяющая блокчейн и искусственный интеллект. Мы создаем ИИ, который принадлежит сообществу.
-
-*2. Как купить MAI токены?*
-Зайдите на https://miningmai.com и участвуйте в Presale. Подключите кошелёк и выберите сумму.
-
-*3. Что такое NFT уровни?*
-Эксклюзивные NFT для участников Presale. Дают постоянные бонусы к майнингу (+5% до +20%) и ранний доступ.
-
-*4. Как работает майнинг?*
-Используйте вычислительные мощности для майнинга MAI токенов и получайте стабильный доход. Запуск: Q4 2026.
-
-*5. Когда листинг?*
-TGE (Token Generation Event) запланирован на Q4 2025 на DEX/CEX.
-
-*6. Что такое стейкинг?*
-Застейкайте MAI токены и получайте пассивный доход с высоким APY. Доступен после запуска.
-
-*7. Как получить airdrop?*
-Используйте /airdrop, подпишитесь на каналы, укажите кошелёк. Первые ${config.AIRDROP_LIMIT.toLocaleString()} участников получат 5,000 MAI!
-
-*8. Какой кошелёк использовать?*
-Solana кошельки: Phantom, Solflare или любой SPL-совместимый кошелёк.
-
-🌐 Больше информации: https://miningmai.com`,
-
-    help: `🆘 *ПОМОЩЬ MAI BOT*
-
-*Airdrop:*
-/airdrop - Регистрация с кошельком
-/status - Проверить статус
-
-*Информация:*
-/presale - Этапы пресейла (1-14)
-/nft - NFT уровни и бонусы
-/faq - Частые вопросы
-/rules - Правила чата
-/lang - Сменить язык
-/start - Приветствие
-
-*Модерация:*
-/report - Пожаловаться (reply на сообщение)
-
-🌐 Сайт: https://miningmai.com
-📱 Telegram: @mai_news`,
-
-    lang_select: `🌍 *Выберите язык*
-
-Выберите ваш язык:`,
-    lang_changed: `✅ Язык изменён на Русский!`,
-    report_self: `❌ Нельзя жаловаться на самого себя!`,
-    report_admin: `❌ Нельзя жаловаться на администратора!`,
-    report_success: `✅ Жалоба принята. У пользователя {reports} жалоб.`,
-    report_no_reply: `⚠️ Ответьте на сообщение нарушителя и напишите /report`,
-    banned: `❌ Вы заблокированы и не можете участвовать.`,
-    error: `❌ Ошибка. Попробуйте позже.`,
-    waiting_wallet: `⏳ Ожидаю адрес вашего Solana кошелька...`,
-  },
-};
-
-TEXTS.uk = { ...TEXTS.ru, lang_changed: `✅ Мову змінено на Українську!`, lang_select: `🌍 *Оберіть мову*\n\nОберіть вашу мову:` };
-TEXTS.de = { ...TEXTS.en, lang_changed: `✅ Sprache auf Deutsch geändert!`, lang_select: `🌍 *Sprache wählen*\n\nWählen Sie Ihre Sprache:` };
-TEXTS.pl = { ...TEXTS.en, lang_changed: `✅ Język zmieniony na Polski!`, lang_select: `🌍 *Wybierz język*\n\nWybierz swój język:` };
-TEXTS.fr = { ...TEXTS.en, lang_changed: `✅ Langue changée en Français!`, lang_select: `🌍 *Sélectionner la langue*\n\nChoisissez votre langue:` };
-TEXTS.tr = { ...TEXTS.en, lang_changed: `✅ Dil Türkçe olarak değiştirildi!`, lang_select: `🌍 *Dil Seçin*\n\nDilinizi seçin:` };
-TEXTS.es = { ...TEXTS.en, lang_changed: `✅ Idioma cambiado a Español!`, lang_select: `🌍 *Seleccionar idioma*\n\nSelecciona tu idioma:` };
 
 async function initDatabase() {
   try {
@@ -574,7 +47,6 @@ async function initDatabase() {
         telegram_id BIGINT UNIQUE NOT NULL,
         username VARCHAR(255),
         first_name VARCHAR(255),
-        language_code VARCHAR(10) DEFAULT 'en',
         wallet_address VARCHAR(44),
         registered_at TIMESTAMP DEFAULT NOW(),
         is_subscribed_news BOOLEAN DEFAULT true,
@@ -599,23 +71,6 @@ async function initDatabase() {
   }
 }
 
-function getLang(ctx) {
-  if (ctx.session?.lang && TEXTS[ctx.session.lang]) {
-    return ctx.session.lang;
-  }
-  const userLang = ctx.from?.language_code?.substring(0, 2);
-  return (userLang === 'ru') ? 'ru' : 'en';
-}
-
-function t(ctx, key, replacements = {}) {
-  const lang = getLang(ctx);
-  let text = TEXTS[lang]?.[key] || TEXTS.en[key] || key;
-  Object.entries(replacements).forEach(([k, v]) => {
-    text = text.replace(new RegExp(`{${k}}`, 'g'), v);
-  });
-  return text;
-}
-
 async function checkSubscription(bot, channelId, userId) {
   try {
     const member = await bot.telegram.getChatMember(channelId, userId);
@@ -635,7 +90,6 @@ function containsBadContent(text) {
     /buy.*get.*free/i, /send.*receive/i,
     /seed\s*phrase/i, /private\s*key/i, /recovery\s*phrase/i,
     /dm\s*me/i, /write\s*me/i, /contact\s*admin/i,
-    /pump/i, /dump/i, /rug/i, /scam/i
   ];
   return patterns.some(p => p.test(text));
 }
@@ -649,37 +103,27 @@ function containsSpamLinks(text) {
   return false;
 }
 
-
-
-async function registerUser(userId, username, firstName, langCode, walletAddress) {
-  const client = await pool.connect();
+async function registerUser(userId, username, firstName, walletAddress) {
   try {
-    await client.query('BEGIN');
-    
-    const countResult = await client.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
+    const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const currentCount = parseInt(countResult.rows[0].count);
     
     if (currentCount >= config.AIRDROP_LIMIT) {
-      await client.query('ROLLBACK');
       return { success: false, reason: 'limit_reached' };
     }
     
-    const result = await client.query(
-      `INSERT INTO telegram_users (telegram_id, username, first_name, language_code, wallet_address, position)
-       VALUES ($1, $2, $3, $4, $5, $6)
+    const result = await pool.query(
+      `INSERT INTO telegram_users (telegram_id, username, first_name, wallet_address, position, awaiting_wallet)
+       VALUES ($1, $2, $3, $4, $5, false)
        ON CONFLICT (telegram_id) 
-       DO UPDATE SET username = $2, first_name = $3, language_code = $4, wallet_address = $5
+       DO UPDATE SET username = $2, first_name = $3, wallet_address = $4, position = $5, awaiting_wallet = false
        RETURNING *`,
-      [userId, username, firstName, langCode, walletAddress, currentCount + 1]
+      [userId, username, firstName, walletAddress, currentCount + 1]
     );
     
-    await client.query('COMMIT');
     return { success: true, user: result.rows[0] };
   } catch (error) {
-    await client.query('ROLLBACK');
     return { success: false, reason: 'database_error' };
-  } finally {
-    client.release();
   }
 }
 
@@ -740,12 +184,6 @@ async function muteUser(userId, hours = 24) {
   } catch {}
 }
 
-async function updateLanguage(userId, langCode) {
-  try {
-    await pool.query('UPDATE telegram_users SET language_code = $1 WHERE telegram_id = $2', [langCode, userId]);
-  } catch {}
-}
-
 async function setAwaitingWallet(userId, awaiting) {
   try {
     await pool.query('UPDATE telegram_users SET awaiting_wallet = $1 WHERE telegram_id = $2', [awaiting, userId]);
@@ -754,50 +192,95 @@ async function setAwaitingWallet(userId, awaiting) {
 
 const bot = new Telegraf(config.BOT_TOKEN);
 
-bot.use(session());
-
-bot.use(async (ctx, next) => {
-  if (!ctx.session) {
-    ctx.session = {};
-  }
-  
-  if (ctx.from?.id) {
-    const user = await getUserStatus(ctx.from.id);
-    if (user?.language_code) {
-      ctx.session.lang = user.language_code;
-    } else if (!ctx.session.lang) {
-      ctx.session.lang = (ctx.from?.language_code?.substring(0, 2) === 'ru') ? 'ru' : 'en';
-    }
-  }
-  
-  return next();
-});
-
 initDatabase().catch(() => {});
 
 bot.start(async (ctx) => {
-  await ctx.reply(t(ctx, 'welcome'), { parse_mode: 'Markdown' });
+  const welcomeMsg = `
+🚀 *WELCOME TO MAI PROJECT!*
+
+*The Future of Decentralized AI is Here*
+
+MAI is revolutionizing the intersection of artificial intelligence and blockchain technology. We're building a decentralized AI platform that belongs to the community - powered by you, governed by you, owned by you.
+
+━━━━━━━━━━━━━━━━━━━━
+
+💰 *ACTIVE PRESALE - STAGE ${config.CURRENT_PRESALE_STAGE}/14*
+Current Price: *$${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}*
+Discount: *${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}% OFF*
+🔥 Limited Time Offer!
+
+━━━━━━━━━━━━━━━━━━━━
+
+🎁 *MEGA REWARDS PROGRAM*
+
+*Community Airdrop:* 5,000 MAI
+• First ${config.AIRDROP_LIMIT.toLocaleString()} members only!
+• Command: /airdrop
+
+*Presale Airdrop:* Up to 1,000,000 MAI
+• Complete tasks during presale
+• Total pool: 800,000,000 MAI
+• Command: /tasks
+
+*Referral Program:* Earn USDT
+• $500,000 reward pool
+• Up to 7% per referral purchase
+• Command: /referral
+
+━━━━━━━━━━━━━━━━━━━━
+
+📋 *ESSENTIAL COMMANDS*
+
+/presale - View all 14 presale stages
+/nft - NFT reward levels & bonuses
+/tasks - Presale airdrop program
+/referral - Earn USDT rewards
+/airdrop - Register for community airdrop
+/status - Check your airdrop status
+/faq - Frequently asked questions
+/rules - Community guidelines
+/help - Full command list
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ *CRITICAL REQUIREMENTS*
+To qualify for ANY rewards, you MUST:
+✅ Subscribe to our news channel: @mai_news
+✅ Stay in our community chat until MAI listing
+✅ Follow all community rules
+
+*Unsubscribing = Automatic disqualification*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 Website: https://miningmai.com
+📱 Join the revolution. Build the future.
+
+*Let's decentralize AI together! 🤖⚡*
+`;
+  
+  await ctx.reply(welcomeMsg, { parse_mode: 'Markdown' });
 });
 
 bot.command('airdrop', async (ctx) => {
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
   const firstName = ctx.from.first_name;
-  const langCode = getLang(ctx);
   
   try {
     const userStatus = await getUserStatus(userId);
     
     if (userStatus?.banned) {
-      return ctx.reply(t(ctx, 'banned'));
+      return ctx.reply('❌ You are banned and cannot participate in the airdrop.');
     }
     
     if (userStatus?.position && userStatus?.wallet_address) {
       return ctx.reply(
-        t(ctx, 'airdrop_already', { 
-          position: userStatus.position,
-          wallet: userStatus.wallet_address ? `\`${userStatus.wallet_address}\`` : '❌'
-        }),
+        `✅ *You're Already Registered!*\n\n` +
+        `🎫 Position: *#${userStatus.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        `🎁 Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
+        `💼 Wallet: \`${userStatus.wallet_address}\`\n\n` +
+        `Use /status to check your participation details.`,
         { parse_mode: 'Markdown' }
       );
     }
@@ -805,23 +288,41 @@ bot.command('airdrop', async (ctx) => {
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
     
     if (!newsSubscribed) {
-      return ctx.reply(t(ctx, 'airdrop_no_news'), { parse_mode: 'Markdown' });
+      return ctx.reply(
+        `❌ *Subscription Required!*\n\n` +
+        `You must subscribe to our news channel first:\n` +
+        `👉 @mai_news\n\n` +
+        `After subscribing, run /airdrop again.`,
+        { parse_mode: 'Markdown' }
+      );
     }
     
     const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
     
     if (!chatSubscribed) {
-      return ctx.reply(t(ctx, 'airdrop_no_chat'));
+      return ctx.reply('❌ You must be a member of our community chat to participate!');
     }
     
-    await pool.query(
-      'INSERT INTO telegram_users (telegram_id, username, first_name, language_code, awaiting_wallet) VALUES ($1, $2, $3, $4, true) ON CONFLICT (telegram_id) DO UPDATE SET awaiting_wallet = true',
-      [userId, username, firstName, langCode]
-    );
+    await setAwaitingWallet(userId, true);
     
-    await ctx.reply(t(ctx, 'airdrop_start'), { parse_mode: 'Markdown' });
+    await ctx.reply(
+      `🎁 *COMMUNITY AIRDROP REGISTRATION*\n\n` +
+      `Great! You're eligible to register.\n\n` +
+      `*Reward:* ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
+      `*Available spots:* ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📝 *Next Step: Provide Your Solana Wallet*\n\n` +
+      `Please send your *Solana wallet address* in the next message.\n\n` +
+      `*Example:*\n` +
+      `\`7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\`\n\n` +
+      `⚠️ *Important:*\n` +
+      `• Use SPL-compatible wallet (Phantom, Solflare)\n` +
+      `• Double-check your address\n` +
+      `• This is where you'll receive your tokens`,
+      { parse_mode: 'Markdown' }
+    );
   } catch (error) {
-    await ctx.reply(t(ctx, 'error'));
+    await ctx.reply('❌ An error occurred. Please try again later.');
   }
 });
 
@@ -832,7 +333,12 @@ bot.command('status', async (ctx) => {
     const userStatus = await getUserStatus(userId);
     
     if (!userStatus?.position) {
-      return ctx.reply(t(ctx, 'status_not_registered'));
+      return ctx.reply(
+        `❌ *Not Registered*\n\n` +
+        `You haven't registered for the community airdrop yet.\n\n` +
+        `Use /airdrop to register and claim your ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens!`,
+        { parse_mode: 'Markdown' }
+      );
     }
     
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
@@ -842,108 +348,465 @@ bot.command('status', async (ctx) => {
       await updateSubscription(userId, newsSubscribed, chatSubscribed);
     }
     
-    const rewardAmount = (newsSubscribed && chatSubscribed && !userStatus.banned)
-      ? config.AIRDROP_REWARD.toLocaleString()
-      : '0';
+    const isActive = newsSubscribed && chatSubscribed && !userStatus.banned;
+    const rewardAmount = isActive ? config.AIRDROP_REWARD.toLocaleString() : '0';
+    const statusEmoji = isActive ? '✅' : '❌';
+    const statusText = isActive ? 'ACTIVE' : 'INACTIVE';
     
-    const statusText = (newsSubscribed && chatSubscribed && !userStatus.banned) ? '✅ Active' : '❌ Inactive';
-    const walletStatus = userStatus.wallet_address ? `\`${userStatus.wallet_address}\`` : '❌ Not linked';
-    const warningsText = (!newsSubscribed || !chatSubscribed) ? '\n⚠️ Subscribe to all channels!' : (!userStatus.wallet_address ? '\n💼 Link wallet: /airdrop' : '');
+    let warnings = '';
+    if (!newsSubscribed) warnings += '\n⚠️ Subscribe to @mai_news';
+    if (!chatSubscribed) warnings += '\n⚠️ Join community chat';
+    if (!userStatus.wallet_address) warnings += '\n⚠️ Wallet not linked';
     
     await ctx.reply(
-      t(ctx, 'status_info', {
-        username: userStatus.username,
-        position: userStatus.position,
-        date: new Date(userStatus.registered_at).toLocaleDateString(),
-        news_status: newsSubscribed ? '✅' : '❌',
-        chat_status: chatSubscribed ? '✅' : '❌',
-        wallet_status: walletStatus,
-        warnings: userStatus.warnings,
-        reports: userStatus.reports_received,
-        status: statusText,
-        reward: rewardAmount,
-        warnings_text: warningsText
-      }),
+      `📊 *YOUR AIRDROP STATUS*\n\n` +
+      `👤 Username: @${userStatus.username}\n` +
+      `🎫 Position: *#${userStatus.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+      `📅 Registered: ${new Date(userStatus.registered_at).toLocaleDateString()}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📺 *Subscriptions:*\n` +
+      `${newsSubscribed ? '✅' : '❌'} News Channel (@mai_news)\n` +
+      `${chatSubscribed ? '✅' : '❌'} Community Chat\n\n` +
+      `💼 *Wallet:* ${userStatus.wallet_address ? `\`${userStatus.wallet_address}\`` : '❌ Not linked'}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `⚠️ Warnings: ${userStatus.warnings}/${config.WARN_LIMIT}\n` +
+      `📊 Reports: ${userStatus.reports_received}\n` +
+      `🚫 Status: ${statusEmoji} *${statusText}*\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎁 *Reward: ${rewardAmount} MAI*${warnings ? `\n\n*Action Required:*${warnings}` : ''}`,
       { parse_mode: 'Markdown' }
     );
   } catch {
-    ctx.reply(t(ctx, 'error'));
+    ctx.reply('❌ Error checking status. Try again later.');
   }
 });
 
 bot.command('presale', async (ctx) => {
-  await ctx.reply(t(ctx, 'presale_info', { current_stage: config.CURRENT_PRESALE_STAGE }), { parse_mode: 'Markdown' });
+  let stagesText = '💰 *MAI PRESALE - ALL 14 STAGES*\n\n';
+  stagesText += `📊 *Current Stage: ${config.CURRENT_PRESALE_STAGE}*\n`;
+  stagesText += `💵 Price: $${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}\n`;
+  stagesText += `📈 Discount: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}%\n\n`;
+  stagesText += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  
+  PRESALE_STAGES.forEach(s => {
+    const current = s.stage === config.CURRENT_PRESALE_STAGE ? '👉 ' : '   ';
+    stagesText += `${current}*Stage ${s.stage}:* $${s.price} | ${s.discount}% OFF | ${s.tokens} MAI\n`;
+  });
+  
+  stagesText += `\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+  stagesText += `🎨 *NFT REWARD BONUSES:*\n\n`;
+  stagesText += `🥉 Bronze ($50-99): +5% mining FOREVER\n`;
+  stagesText += `🥈 Silver ($100-199): +10% mining FOREVER\n`;
+  stagesText += `🥇 Gold ($200-299): +15% mining FOREVER\n`;
+  stagesText += `💎 Platinum ($300+): +20% mining FOREVER\n\n`;
+  stagesText += `🌐 Buy now: https://miningmai.com`;
+  
+  await ctx.reply(stagesText, { parse_mode: 'Markdown' });
+});
+
+bot.command('tasks', async (ctx) => {
+  const tasksMsg = `
+🎁 *PRESALE AIRDROP PROGRAM*
+*EARN UP TO 1,000,000 MAI!*
+
+━━━━━━━━━━━━━━━━━━━━
+
+Complete tasks during presale to participate in our massive *800,000,000 MAI* airdrop program!
+
+*Available Tasks (5 Total):*
+
+1️⃣ *Stages 1-3 Purchase*
+Buy 10,000+ MAI tokens during stages 1-3
+
+2️⃣ *Stages 5-7 Purchase*
+Buy 10,000+ MAI tokens during stages 5-7
+
+3️⃣ *Stages 10-14 Purchase*
+Buy 10,000+ MAI tokens during stages 10-14
+
+4️⃣ *Earn Reward NFT*
+Obtain any presale reward NFT (Bronze/Silver/Gold/Platinum)
+*Note: Airdrop Silver NFT does NOT count*
+
+5️⃣ *Invite 2+ Friends*
+Refer 2 active users who each make at least one purchase
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ *IMPORTANT:* Minimum 3/5 tasks required to qualify!
+
+━━━━━━━━━━━━━━━━━━━━
+
+💰 *REWARD STRUCTURE:*
+
+🥇 *5/5 tasks:* 1,000,000 MAI
+└ 500 spots available
+
+🥈 *4/5 tasks:* 500,000 MAI
+└ 500 spots available
+
+🥉 *3/5 tasks:* 100,000 MAI
+└ 500 spots available
+
+━━━━━━━━━━━━━━━━━━━━
+
+🎲 *LOTTERY SYSTEM:*
+If more than 500 users qualify for any tier, winners selected by random lottery. If 500 or fewer qualify, everyone wins!
+
+━━━━━━━━━━━━━━━━━━━━
+
+📅 *TIMELINE:*
+
+• *Airdrop Period:* From presale launch to completion
+• *Task Completion:* During corresponding presale stages
+• *Lottery:* Within 10 days after presale ends (if needed)
+• *Winners Announced:* Telegram & Twitter
+• *Distribution Starts:* Within 10 days after MAI listing
+
+━━━━━━━━━━━━━━━━━━━━
+
+💳 *VESTING SCHEDULE:*
+
+• *First Payment:* 10% within 10 days after listing
+• *Monthly Payments:* 9 payments of 10% each
+• *Schedule:* Every 30 days from listing date
+• *Total Duration:* 10 months
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 *HOW TO PARTICIPATE:*
+
+Simply complete the tasks above during presale. Your progress is automatically tracked via your wallet address.
+
+Check https://miningmai.com dashboard regularly to monitor your progress!
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ *ANTI-FRAUD PROTECTION:*
+
+We reserve the right to exclude any participant suspected of fraudulent activity, including fake referrals, multiple accounts, bot activity, or rule violations.
+
+All eligibility decisions are final.
+
+━━━━━━━━━━━━━━━━━━━━
+
+*Total Airdrop Fund: 800,000,000 MAI*
+
+One of the largest presale community rewards in crypto history! 🚀
+`;
+  
+  await ctx.reply(tasksMsg, { parse_mode: 'Markdown' });
+});
+
+bot.command('referral', async (ctx) => {
+  const referralMsg = `
+💰 *REFERRAL PROGRAM*
+*EARN $500,000 USDT!*
+
+━━━━━━━━━━━━━━━━━━━━
+
+Invite friends and earn *$USDT* for their MAI token purchases!
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 *REWARD LEVELS:*
+
+*Level 1:* 1-9 referrals → *1% bonus*
+*Level 2:* 10-19 referrals → *3% bonus*
+*Level 3:* 20-29 referrals → *5% bonus*
+*Level 4:* 30+ referrals → *7% bonus*
+
+━━━━━━━━━━━━━━━━━━━━
+
+💡 *EXAMPLE (Level 4):*
+
+Your referral buys MAI for $200
+You earn: $14 USDT (7% bonus)
+
+━━━━━━━━━━━━━━━━━━━━
+
+🔥 *HOW IT WORKS:*
+
+1️⃣ Get your unique referral link from your account at https://miningmai.com
+
+2️⃣ Share the link with friends and invite them to MAI Project
+
+3️⃣ Earn rewards for EVERY MAI token purchase by your referrals
+
+4️⃣ Rewards distributed every *Friday at 12:00 UTC* for the previous week
+
+5️⃣ Rewards paid in *USDT*
+
+━━━━━━━━━━━━━━━━━━━━
+
+💸 *PAYMENT DETAILS:*
+
+• *Currency:* USDT (Tether)
+• *Minimum Withdrawal:* $10 USDT
+• *Distribution:* Weekly (Fridays 12:00 UTC)
+• *Payment Method:* Direct to your wallet
+
+━━━━━━━━━━━━━━━━━━━━
+
+🎯 *GET STARTED:*
+
+Visit https://miningmai.com and access your personal dashboard to get your unique referral link!
+
+━━━━━━━━━━━━━━━━━━━━
+
+*Total Referral Pool: $500,000 USDT* 💵
+
+Start earning passive income today! 🚀
+`;
+  
+  await ctx.reply(referralMsg, { parse_mode: 'Markdown' });
 });
 
 bot.command('nft', async (ctx) => {
-  await ctx.reply(t(ctx, 'nft'), { parse_mode: 'Markdown' });
+  const nftMsg = `
+🎨 *MAI NFT REWARD LEVELS*
+
+Exclusive NFTs for Presale participants with permanent benefits!
+
+━━━━━━━━━━━━━━━━━━━━
+
+🥉 *BRONZE NFT*
+Purchase: $50-99 in Presale
+
+*Benefits:*
+• Early mining access: +1 month
+• Early DAO voting: 3 months
+• Mining bonus: *+5% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🥈 *SILVER NFT*
+Purchase: $100-199 in Presale
+
+*Benefits:*
+• Early mining access: +2 months
+• Early DAO voting: 6 months
+• Mining bonus: *+10% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🥇 *GOLD NFT*
+Purchase: $200-299 in Presale
+
+*Benefits:*
+• Early mining access: +3 months
+• Early DAO voting: 12 months
+• Mining bonus: *+15% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+💎 *PLATINUM NFT*
+Purchase: $300+ in Presale
+
+*Benefits:*
+• Early mining access: +3 months
+• Early DAO voting: 12 months
+• Mining bonus: *+20% FOREVER*
+
+━━━━━━━━━━━━━━━━━━━━
+
+📈 *ADDITIONAL BENEFITS:*
+
+• All NFTs are tradeable on marketplaces
+• Permanent mining boost (FOREVER!)
+• Exclusive community access
+• Priority support
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 Learn more: https://miningmai.com
+`;
+  
+  await ctx.reply(nftMsg, { parse_mode: 'Markdown' });
 });
 
 bot.command('faq', async (ctx) => {
-  await ctx.reply(t(ctx, 'faq'), { parse_mode: 'Markdown' });
+  const faqMsg = `
+❓ *FREQUENTLY ASKED QUESTIONS*
+
+━━━━━━━━━━━━━━━━━━━━
+
+*1. What is MAI?*
+MAI is a decentralized AI platform combining blockchain and artificial intelligence. We create AI that belongs to the community.
+
+*2. How to buy MAI tokens?*
+Visit https://miningmai.com, connect your wallet (Solana/ETH/BSC), and choose your purchase amount.
+
+*3. What are NFT reward levels?*
+Exclusive NFTs for Presale participants giving permanent mining bonuses (+5% to +20%) and early access to features.
+
+*4. How does mining work?*
+Use your computational power to mine MAI tokens and earn stable income. Launch scheduled for Q4 2026.
+
+*5. When is the listing?*
+TGE (Token Generation Event) planned for Q4 2025 on major DEX/CEX platforms.
+
+*6. What is staking?*
+Stake MAI tokens and earn passive income with high APY. Available after mainnet launch.
+
+*7. How do airdrops work?*
+Two programs: Community Airdrop (5,000 MAI, /airdrop) and Presale Airdrop (up to 1M MAI, /tasks).
+
+*8. Which wallet should I use?*
+Solana wallets: Phantom, Solflare, or any SPL-compatible wallet.
+
+*9. How does the referral program work?*
+Earn up to 7% USDT on referral purchases. See /referral for details.
+
+*10. Are there vesting periods?*
+Yes, different schedules for presale purchases and airdrop rewards. Check website for specifics.
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 More info: https://miningmai.com
+📱 Support: @mai_news
+`;
+  
+  await ctx.reply(faqMsg, { parse_mode: 'Markdown' });
 });
 
 bot.command('rules', async (ctx) => {
-  await ctx.reply(t(ctx, 'rules'), { parse_mode: 'Markdown' });
+  const rulesMsg = `
+📋 *MAI COMMUNITY RULES*
+
+━━━━━━━━━━━━━━━━━━━━
+
+✅ *ALLOWED:*
+
+• Discussing MAI project
+• Questions about presale, tokens, airdrops
+• Constructive feedback and suggestions
+• Crypto memes and humor
+• Helping other community members
+
+━━━━━━━━━━━━━━━━━━━━
+
+❌ *STRICTLY FORBIDDEN:*
+
+• Spam and flooding
+• Advertising other projects
+• 18+ content
+• Insulting or harassing members
+• Scam links and phishing attempts
+• Sharing seed phrases/private keys
+• "DM me" or soliciting private messages
+• FUD (Fear, Uncertainty, Doubt)
+• Price manipulation discussion
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ *PENALTIES:*
+
+• *1st violation:* Warning
+• *2nd violation:* Warning
+• *3rd violation:* Permanent BAN
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 *COMMUNITY REPORT SYSTEM:*
+
+• *10 reports* from users = 24-hour mute
+• *20 reports* from users = Permanent ban
+• To report: Reply to message and use /report
+
+━━━━━━━━━━━━━━━━━━━━
+
+🎁 *AIRDROP ELIGIBILITY:*
+
+Breaking rules = Automatic disqualification from ALL reward programs (Community Airdrop, Presale Airdrop, Referrals)
+
+━━━━━━━━━━━━━━━━━━━━
+
+*Be respectful. Build together. Grow together.* 🚀
+`;
+  
+  await ctx.reply(rulesMsg, { parse_mode: 'Markdown' });
 });
 
 bot.command('help', async (ctx) => {
-  await ctx.reply(t(ctx, 'help'), { parse_mode: 'Markdown' });
-});
+  const helpMsg = `
+🆘 *MAI BOT COMMAND LIST*
 
-bot.command(['lang', 'language'], async (ctx) => {
-  const keyboard = Markup.inlineKeyboard([
-    [
-      Markup.button.callback(`${LANGUAGES.en.flag} ${LANGUAGES.en.name}`, 'lang_en'),
-      Markup.button.callback(`${LANGUAGES.ru.flag} ${LANGUAGES.ru.name}`, 'lang_ru')
-    ]
-  ]);
-  
-  await ctx.reply(t(ctx, 'lang_select'), { parse_mode: 'Markdown', ...keyboard });
-});
+━━━━━━━━━━━━━━━━━━━━
 
-bot.action(/lang_(.+)/, async (ctx) => {
-  const newLang = ctx.match[1];
+💰 *REWARDS & AIRDROPS:*
+
+/airdrop - Register for community airdrop (5,000 MAI)
+/tasks - Presale airdrop program (up to 1M MAI)
+/referral - Referral program ($500K USDT pool)
+/status - Check your airdrop registration status
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 *INFORMATION:*
+
+/presale - All 14 presale stages with prices
+/nft - NFT reward levels and bonuses
+/faq - Frequently asked questions
+/rules - Community guidelines
+
+━━━━━━━━━━━━━━━━━━━━
+
+🛠️ *UTILITIES:*
+
+/start - Welcome message & overview
+/help - This command list
+/report - Report rule violations (reply to message)
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 *LINKS:*
+
+Website: https://miningmai.com
+News Channel: @mai_news
+Community Chat: Join via website
+
+━━━━━━━━━━━━━━━━━━━━
+
+💡 *QUICK TIP:*
+Make sure to stay subscribed to @mai_news and remain in the community chat to maintain eligibility for ALL rewards!
+
+*Questions? Check /faq first!* 📚
+`;
   
-  if (TEXTS[newLang]) {
-    await updateLanguage(ctx.from.id, newLang);
-    ctx.session.lang = newLang;
-    
-    await ctx.answerCbQuery('✅');
-    await ctx.editMessageText(TEXTS[newLang].lang_changed);
-  } else {
-    await ctx.answerCbQuery('❌ Language not available');
-  }
+  await ctx.reply(helpMsg, { parse_mode: 'Markdown' });
 });
 
 bot.command('report', async (ctx) => {
   if (!ctx.message.reply_to_message) {
-    return ctx.reply(t(ctx, 'report_no_reply'));
+    return ctx.reply('⚠️ Reply to a violator\'s message and type /report');
   }
   
   const reportedUserId = ctx.message.reply_to_message.from.id;
   const reporterId = ctx.from.id;
   
   if (reportedUserId === reporterId) {
-    return ctx.reply(t(ctx, 'report_self'));
+    return ctx.reply('❌ You cannot report yourself!');
   }
   
   if (config.ADMIN_IDS.includes(reportedUserId)) {
-    return ctx.reply(t(ctx, 'report_admin'));
+    return ctx.reply('❌ You cannot report an administrator!');
   }
   
   const reports = await addReport(reportedUserId);
-  await ctx.reply(t(ctx, 'report_success', { reports }));
+  await ctx.reply(`✅ Report accepted. User has ${reports} total reports.`);
   
   if (reports >= config.REPORT_BAN_LIMIT) {
     await banUser(reportedUserId);
     await ctx.telegram.banChatMember(ctx.chat.id, reportedUserId);
+    await ctx.reply(`🚫 User permanently banned after ${reports} reports from community.`);
   } else if (reports >= config.REPORT_MUTE_LIMIT) {
     await muteUser(reportedUserId, 24);
     await ctx.telegram.restrictChatMember(ctx.chat.id, reportedUserId, {
       until_date: Math.floor(Date.now() / 1000) + 86400,
       permissions: { can_send_messages: false }
     });
+    await ctx.reply(`⚠️ User muted for 24 hours after ${reports} reports.`);
   }
 });
 
@@ -963,16 +826,16 @@ bot.command('stats', async (ctx) => {
     const s = stats.rows[0];
     
     await ctx.reply(
-      `📊 *Airdrop Statistics*\n\n` +
-      `👥 Total registered: ${s.total}/${config.AIRDROP_LIMIT}\n` +
-      `✅ Active participants: ${s.active}\n` +
-      `💼 With wallets: ${s.with_wallet}\n` +
+      `📊 *AIRDROP STATISTICS*\n\n` +
+      `👥 Total Registered: ${s.total}/${config.AIRDROP_LIMIT}\n` +
+      `✅ Active Participants: ${s.active}\n` +
+      `💼 With Wallets: ${s.with_wallet}\n` +
       `🚫 Banned: ${s.banned}\n\n` +
-      `💰 Total to distribute: ${(s.active * config.AIRDROP_REWARD).toLocaleString()} MAI`,
+      `💰 Total Distribution: ${(s.active * config.AIRDROP_REWARD).toLocaleString()} MAI`,
       { parse_mode: 'Markdown' }
     );
   } catch {
-    ctx.reply('❌ Error getting statistics');
+    ctx.reply('❌ Error retrieving statistics');
   }
 });
 
@@ -1002,8 +865,8 @@ bot.command('winners', async (ctx) => {
     });
     
     await ctx.reply(
-      `✅ Exported ${winners.rows.length} winners\n` +
-      `💰 Total to distribute: ${(winners.rows.length * config.AIRDROP_REWARD).toLocaleString()} MAI`
+      `✅ Exported ${winners.rows.length} eligible winners\n` +
+      `💰 Total Distribution: ${(winners.rows.length * config.AIRDROP_REWARD).toLocaleString()} MAI`
     );
   } catch {
     ctx.reply('❌ Export error');
@@ -1023,29 +886,50 @@ bot.on(message('text'), async (ctx) => {
     
     if (userStatus?.awaiting_wallet) {
       if (!isValidSolanaAddress(text)) {
-        return ctx.reply(t(ctx, 'wallet_invalid'));
+        return ctx.reply(
+          `❌ *Invalid Solana Address!*\n\n` +
+          `Solana addresses must be 32-44 characters (base58 format).\n\n` +
+          `Please send a valid address or use /airdrop to start over.`,
+          { parse_mode: 'Markdown' }
+        );
       }
       
       const username = ctx.from.username || 'no_username';
       const firstName = ctx.from.first_name;
-      const langCode = getLang(ctx);
       
-      const registration = await registerUser(userId, username, firstName, langCode, text);
+      const registration = await registerUser(userId, username, firstName, text);
       
       if (!registration.success) {
         if (registration.reason === 'limit_reached') {
-          return ctx.reply(t(ctx, 'airdrop_limit'));
+          return ctx.reply(
+            `❌ *Airdrop Full!*\n\n` +
+            `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
+            `Follow @mai_news for future airdrop opportunities!`,
+            { parse_mode: 'Markdown' }
+          );
         }
-        return ctx.reply(t(ctx, 'error'));
+        return ctx.reply('❌ Registration error. Please try /airdrop again.');
       }
       
-      await setAwaitingWallet(userId, false);
-      
       return ctx.reply(
-        t(ctx, 'airdrop_success', { 
-          position: registration.user.position,
-          wallet: text
-        }),
+        `🎉 *REGISTRATION SUCCESSFUL!*\n\n` +
+        `Welcome to the MAI Community Airdrop!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎫 Your Position: *#${registration.user.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        `🎁 Your Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
+        `💼 Wallet: \`${text}\`\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `⚠️ *CRITICAL REQUIREMENTS:*\n\n` +
+        `To receive your tokens, you MUST:\n` +
+        `✅ Stay subscribed to @mai_news until listing\n` +
+        `✅ Remain in community chat until listing\n` +
+        `✅ Follow all community rules\n\n` +
+        `*Unsubscribing = Automatic disqualification!*\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `📊 Daily Subscription Check: 00:00 UTC\n` +
+        `💰 Token Distribution: Within 10 days after listing\n\n` +
+        `Use /status anytime to check your participation status.\n\n` +
+        `*Thank you for joining MAI! 🚀*`,
         { parse_mode: 'Markdown' }
       );
     }
@@ -1070,7 +954,7 @@ bot.on(message('text'), async (ctx) => {
         return;
       }
       
-      return ctx.reply(`⚠️ Forbidden content! Warning ${warnings}/${config.WARN_LIMIT}`);
+      return ctx.reply(`⚠️ Forbidden content detected! Warning ${warnings}/${config.WARN_LIMIT}. Next violation = BAN.`);
     }
     
     if (containsSpamLinks(text)) {
@@ -1083,7 +967,7 @@ bot.on(message('text'), async (ctx) => {
         return;
       }
       
-      return ctx.reply(`⚠️ External links forbidden! Warning ${warnings}/${config.WARN_LIMIT}`);
+      return ctx.reply(`⚠️ Unauthorized links forbidden! Warning ${warnings}/${config.WARN_LIMIT}. Next violation = BAN.`);
     }
   } catch {}
 });
@@ -1111,7 +995,7 @@ bot.launch({
   dropPendingUpdates: true
 }).then(() => {
   if (config.ADMIN_IDS[0]) {
-    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.1 started: 8 languages + Full presale info').catch(() => {});
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.1 Professional - Fully operational!').catch(() => {});
   }
 }).catch(() => {
   process.exit(1);
