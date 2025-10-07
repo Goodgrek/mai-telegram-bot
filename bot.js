@@ -225,7 +225,6 @@ initDatabase().catch(() => {});
 bot.start(async (ctx) => {
   console.log('✅ /start получен от:', ctx.from.id, ctx.from.username, 'тип чата:', ctx.chat.type);
   
-  // ОДИНАКОВОЕ СООБЩЕНИЕ ВЕЗДЕ - БЕЗ ФОРМАТИРОВАНИЯ
   const welcomeMsg = `🚀 WELCOME TO MAI PROJECT!
 
 The Future of Decentralized AI is Here
@@ -234,8 +233,9 @@ MAI is revolutionizing the intersection of artificial intelligence and blockchai
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💰 PRESALE IS LIVE!
-View all 14 stages: /presale
+💰 PRESALE INFORMATION
+14 stages with up to 80% discount
+View details: /presale
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -263,7 +263,7 @@ Referral Program: Earn USDT
 /referral - Earn USDT rewards
 /airdrop - Register for community airdrop
 /status - Check your status
-/faq - FAQ
+/faq - Frequently asked questions
 /rules - Community rules
 /help - Full command list
 
@@ -460,7 +460,14 @@ bot.command('referral', async (ctx) => {
 });
 
 bot.command('faq', async (ctx) => {
-  await ctx.reply(getFaqText(), { parse_mode: 'Markdown' });
+  console.log('✅ /faq получен от:', ctx.from.id);
+  try {
+    await ctx.reply(getFaqText());
+    console.log('✅ /faq отправлен');
+  } catch (error) {
+    console.error('❌ Ошибка /faq:', error.message);
+    await ctx.reply('❌ Error loading FAQ. Please try again.');
+  }
 });
 
 bot.command('rules', async (ctx) => {
@@ -639,9 +646,9 @@ bot.command('pin', async (ctx) => {
     `🚀 *WELCOME TO MAI PROJECT!*\n\n` +
     `*The Future of Decentralized AI*\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `💰 *ACTIVE PRESALE - STAGE ${config.CURRENT_PRESALE_STAGE}/14*\n` +
-    `Current Price: *${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}*\n` +
-    `Discount: *${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}% OFF*\n\n` +
+    `💰 PRESALE: 14 STAGES\n` +
+    `Up to 80% discount available\n` +
+    `View details: /presale\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `🎁 *REWARDS:*\n` +
     `• Community Airdrop: 5,000 MAI\n` +
@@ -684,6 +691,8 @@ bot.on('new_chat_members', async (ctx) => {
   
   if (newMembers.length === 0) return;
   
+  console.log('👋 Новые участники:', newMembers.map(m => m.first_name).join(', '));
+  
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.url('🎁 Register for Airdrop', `https://t.me/${ctx.botInfo.username}?start=airdrop`)],
     [Markup.button.url('📱 Join News Channel', 'https://t.me/mai_news')]
@@ -691,22 +700,29 @@ bot.on('new_chat_members', async (ctx) => {
   
   const names = newMembers.map(m => m.first_name).join(', ');
   
-  await ctx.reply(
-    `👋 *Welcome to MAI Project, ${names}!*\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `🎁 *Get 5,000 MAI Tokens FREE*\n` +
-    `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
-    `⚠️ *Requirements:*\n` +
-    `✅ Subscribe to @mai_news\n` +
-    `✅ Stay in this chat until listing\n` +
-    `✅ Register your Solana wallet\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `📋 Read /rules\n` +
-    `❓ Check /faq\n` +
-    `💰 View /presale\n\n` +
-    `*Click the button below to register:*`,
-    { parse_mode: 'Markdown', ...keyboard }
-  );
+  try {
+    await ctx.reply(
+      `👋 Welcome to MAI Project, ${names}!\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎁 Get 5,000 MAI Tokens FREE\n` +
+      `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
+      `⚠️ Requirements:\n` +
+      `✅ Subscribe to @mai_news\n` +
+      `✅ Stay in this chat until listing\n` +
+      `✅ Register your Solana wallet\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📋 Quick Start:\n` +
+      `• Click button below to register\n` +
+      `• Read /rules for community guidelines\n` +
+      `• Check /faq for answers\n` +
+      `• View /presale for token sale info\n\n` +
+      `Click the button below to register:`,
+      { ...keyboard }
+    );
+    console.log('✅ Приветствие отправлено');
+  } catch (error) {
+    console.error('❌ Ошибка приветствия:', error.message);
+  }
 });
 
 function getPresaleText() {
