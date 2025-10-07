@@ -192,8 +192,18 @@ async function muteUser(userId, hours = 24) {
 
 async function setAwaitingWallet(userId, awaiting) {
   try {
-    await pool.query('UPDATE telegram_users SET awaiting_wallet = $1 WHERE telegram_id = $2', [awaiting, userId]);
-  } catch {}
+    // СОЗДАЕМ ПОЛЬЗОВАТЕЛЯ ЕСЛИ ЕГО НЕТ
+    await pool.query(
+      `INSERT INTO telegram_users (telegram_id, awaiting_wallet) 
+       VALUES ($1, $2) 
+       ON CONFLICT (telegram_id) 
+       DO UPDATE SET awaiting_wallet = $2`,
+      [userId, awaiting]
+    );
+    console.log('✅ setAwaitingWallet выполнен для:', userId, 'значение:', awaiting);
+  } catch (error) {
+    console.error('❌ Ошибка setAwaitingWallet:', error.message);
+  }
 }
 
 const bot = new Telegraf(config.BOT_TOKEN);
@@ -214,15 +224,15 @@ bot.start(async (ctx) => {
   console.log('✅ /start получен от:', ctx.from.id, ctx.from.username);
   
   const welcomeMsg = `
-🚀 *WELCOME TO MAI PROJECT!*
+🚀 *WELCOME TO MAI PROJECT\\!*
 
 *The Future of Decentralized AI is Here*
 
-MAI is revolutionizing the intersection of artificial intelligence and blockchain technology.
+MAI is revolutionizing the intersection of artificial intelligence and blockchain technology\\. We're building a decentralized AI platform that belongs to the community \\- powered by you, governed by you, owned by you\\.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💰 *PRESALE IS LIVE!*
+💰 *PRESALE IS LIVE\\!*
 View all stages: /presale
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -230,7 +240,7 @@ View all stages: /presale
 🎁 *MEGA REWARDS PROGRAM*
 
 *Community Airdrop:* 5,000 MAI
-- First 20,000 members only!
+- First 20,000 members only\\!
 - Command: /airdrop
 
 *Presale Airdrop:* Up to 1,000,000 MAI
@@ -238,42 +248,48 @@ View all stages: /presale
 - Command: /tasks
 
 *Referral Program:* Earn USDT
-- $500,000 reward pool
+- \\$500,000 reward pool
 - Command: /referral
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📋 *COMMANDS*
+📋 *ESSENTIAL COMMANDS*
 
-/presale - View all presale stages
-/nft - NFT reward levels
-/tasks - Presale airdrop program
-/referral - Earn USDT rewards
-/airdrop - Register for community airdrop
-/status - Check your status
-/faq - FAQ
-/rules - Community rules
-/help - Full command list
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ *REQUIREMENTS*
-✅ Subscribe: @mai_news
-✅ Stay until MAI listing
-✅ Follow rules
-
-*Unsubscribing = Disqualification*
+/presale \\- View all presale stages
+/nft \\- NFT reward levels
+/tasks \\- Presale airdrop program
+/referral \\- Earn USDT rewards
+/airdrop \\- Register for community airdrop
+/status \\- Check your status
+/faq \\- FAQ
+/rules \\- Community rules
+/help \\- Full command list
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🌐 Website: https://miningmai.com
+⚠️ *CRITICAL REQUIREMENTS*
+To qualify for ANY rewards, you MUST:
+✅ Subscribe to our news channel: @mai\\_news
+✅ Stay in community chat until MAI listing
+✅ Follow all community rules
+
+*Unsubscribing \\= Automatic disqualification*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 Website: https://miningmai\\.com
+📱 Join the revolution\\. Build the future\\.
+
+*Let's decentralize AI together\\! 🤖⚡*
 `;
   
   try {
-    await ctx.reply(welcomeMsg, { parse_mode: 'Markdown' });
+    await ctx.reply(welcomeMsg, { parse_mode: 'MarkdownV2' });
     console.log('✅ /start отправлен успешно');
   } catch (error) {
     console.error('❌ Ошибка /start:', error.message);
+    // Отправляем без форматирования если ошибка
+    await ctx.reply('🚀 WELCOME TO MAI PROJECT!\n\nThe Future of Decentralized AI is Here\n\nMAI is revolutionizing AI and blockchain technology.\n\n📋 Commands:\n/presale - View presale stages\n/airdrop - Register for airdrop\n/faq - Frequently asked questions\n/help - Full command list\n\n🌐 Website: https://miningmai.com');
   }
 });
 
@@ -349,8 +365,10 @@ bot.command('airdrop', async (ctx) => {
       `Please send your *Solana wallet address* in the next message.\n\n` +
       `*Example:*\n` +
       `\`7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\`\n\n` +
-      `⚠️ *Important:*\n` +
-      `• Use SPL-compatible wallet (Phantom, Solflare)\n` +
+      `⚠️ *Supported Wallets:*\n` +
+      `• Phantom, Solflare, Trust Wallet\n` +
+      `• Binance Web3, MetaMask \\(Solana\\)\n` +
+      `• Backpack or any Solana wallet\n` +
       `• Double-check your address\n` +
       `• This is where you'll receive your tokens`,
       { parse_mode: 'Markdown' }
@@ -822,25 +840,65 @@ function getFaqText() {
 
 ━━━━━━━━━━━━━━━━━━━━
 
-*1. What is MAI?*
-Decentralized AI platform combining blockchain and artificial intelligence.
+*1\\. What is MAI Project?*
+MAI is a decentralized AI platform combining artificial intelligence with blockchain technology\\. We're building AI that belongs to the community \\- powered by you, governed by you, owned by you\\.
 
-*2. How to buy MAI?*
-Visit https://miningmai.com and connect your wallet.
+*2\\. How to buy MAI tokens?*
+Visit https://miningmai\\.com, connect your Solana wallet, and purchase during presale\\. Accepted payments: SOL, USDT, USDC\\.
 
-*3. When is listing?*
-Q4 2025 on major DEX/CEX platforms.
+*3\\. Which wallets are supported?*
+Any Solana\\-compatible wallet:
+- Phantom \\(recommended\\)
+- Solflare
+- Trust Wallet
+- Binance Web3 Wallet
+- MetaMask \\(with Solana network\\)
+- Backpack
 
-*4. How do airdrops work?*
-Community Airdrop: 5K MAI (/airdrop)
-Presale Airdrop: up to 1M MAI
+*4\\. When is the listing?*
+Q4 2025 on major DEX platforms \\(Raydium, Jupiter\\) and CEX exchanges\\. Exact date will be announced in @mai\\_news\\.
 
-*5. Which wallet?*
-Solana wallets: Phantom, Solflare
+*5\\. How do airdrops work?*
+*Community Airdrop:* 5,000 MAI for first 20,000 members \\(/airdrop\\)
+*Presale Airdrop:* Up to 1,000,000 MAI for completing tasks \\(/tasks\\)
+Requirements: Stay subscribed to @mai\\_news and in community chat until listing\\.
+
+*6\\. What are presale stages?*
+14 stages total with prices from \\$0\\.0005 to \\$0\\.0020\\.
+Each stage offers different discounts \\(80%\\-20% OFF\\)\\.
+Use /presale to view all stages\\.
+
+*7\\. What are NFT rewards?*
+Presale participants receive exclusive NFTs based on purchase amount:
+- Bronze \\(\\$50\\-99\\): \\+5% mining forever
+- Silver \\(\\$100\\-199\\): \\+10% mining forever
+- Gold \\(\\$200\\-299\\): \\+15% mining forever
+- Platinum \\(\\$300\\+\\): \\+20% mining forever
+
+*8\\. How does referral program work?*
+Earn up to 7% in USDT from referral purchases\\.
+Total pool: \\$500,000 USDT\\.
+Use /referral for details\\.
+
+*9\\. When will I receive airdrop tokens?*
+Within 10 days after official MAI listing on exchanges\\.
+
+*10\\. What is MAI mining?*
+AI\\-powered mining system where you earn MAI tokens by contributing computational power to decentralized AI tasks\\. NFT holders get permanent mining bonuses\\.
+
+*11\\. Is KYC required?*
+No KYC required for airdrop\\.
+Presale purchases may require basic verification depending on amount\\.
+
+*12\\. How to track my airdrop status?*
+Use /status command anytime to check your registration, subscriptions, and reward eligibility\\.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🌐 More: https://miningmai.com`;
+🌐 More info: https://miningmai\\.com
+📱 News: @mai\\_news
+💬 Support: Contact admins in community chat
+`;
 }
 
 function getRulesText() {
@@ -886,6 +944,13 @@ bot.on(message('text'), async (ctx) => {
   try {
     const userStatus = await getUserStatus(userId);
     console.log('👤 Статус:', userStatus);
+    // ВАЖНО: Если нет записи в БД и awaiting_wallet не установлен - выход
+if (!userStatus) {
+  console.log('⚠️ Пользователь не найден в БД');
+  return;
+}
+
+console.log('🔍 awaiting_wallet:', userStatus.awaiting_wallet);
     
     // ОБРАБОТКА КОШЕЛЬКА
     if (userStatus?.awaiting_wallet) {
