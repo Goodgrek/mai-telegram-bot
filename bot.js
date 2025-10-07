@@ -111,24 +111,39 @@ function containsSpamLinks(text) {
 
 async function registerUser(userId, username, firstName, walletAddress) {
   try {
+    console.log('🔍 registerUser вызван:', { userId, username, firstName, walletAddress: walletAddress.substring(0, 20) });
+    
     const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const currentCount = parseInt(countResult.rows[0].count);
+    
+    console.log('📊 Текущее количество:', currentCount, 'Лимит:', config.AIRDROP_LIMIT);
     
     if (currentCount >= config.AIRDROP_LIMIT) {
       return { success: false, reason: 'limit_reached' };
     }
     
+    // ОБНОВЛЯЕМ ИЛИ СОЗДАЕМ
     const result = await pool.query(
-      `INSERT INTO telegram_users (telegram_id, username, first_name, wallet_address, position, awaiting_wallet)
-       VALUES ($1, $2, $3, $4, $5, false)
+      `INSERT INTO telegram_users (telegram_id, username, first_name, wallet_address, position, awaiting_wallet, registered_at)
+       VALUES ($1, $2, $3, $4, $5, false, NOW())
        ON CONFLICT (telegram_id) 
-       DO UPDATE SET username = $2, first_name = $3, wallet_address = $4, position = $5, awaiting_wallet = false
+       DO UPDATE SET 
+         username = $2, 
+         first_name = $3, 
+         wallet_address = $4, 
+         position = $5, 
+         awaiting_wallet = false,
+         registered_at = COALESCE(telegram_users.registered_at, NOW())
        RETURNING *`,
       [userId, username, firstName, walletAddress, currentCount + 1]
     );
     
+    console.log('✅ registerUser результат:', result.rows[0]);
+    
     return { success: true, user: result.rows[0] };
   } catch (error) {
+    console.error('❌ registerUser ОШИБКА:', error.message);
+    console.error('Stack:', error.stack);
     return { success: false, reason: 'database_error' };
   }
 }
@@ -262,6 +277,7 @@ Referral Program: Earn USDT
 /tasks - Presale airdrop program
 /referral - Earn USDT rewards
 /airdrop - Register for community airdrop
+/nftairdrop - Airdrop NFT program (1,400 NFTs)
 /status - Check your status
 /faq - Frequently asked questions
 /rules - Community rules
@@ -378,6 +394,74 @@ bot.command('airdrop', async (ctx) => {
   }
 });
 
+bot.command('nftairdrop', async (ctx) => {
+  console.log('✅ /nftairdrop получен от:', ctx.from.id);
+  
+  const text = `🎨 AIRDROP NFT PROGRAM
+
+━━━━━━━━━━━━━━━━━━━━
+
+What is Airdrop NFT?
+
+Airdrop NFTs are identical to Silver NFTs in value and utility, but can only be earned through special task completion. This is your unique opportunity to obtain this premium collectible by simply completing straightforward community challenges!
+
+━━━━━━━━━━━━━━━━━━━━
+
+How to Earn Airdrop NFT:
+
+- Stage Competition: Each presale stage (1-14) awards 100 Airdrop NFTs
+- Qualifying Purchase: Make minimum 10,000 MAI token purchase during any active stage
+- First Come Basis: First 100 unique users per stage who meet purchase requirement win NFT
+- One Per Wallet: Each wallet can win only one Airdrop NFT during entire presale period
+- Automatic Allocation: NFTs are assigned immediately after stage's 100 winners determined
+- Total Supply: 1,400 Airdrop NFTs distributed across all 14 stages
+
+━━━━━━━━━━━━━━━━━━━━
+
+Claiming Your NFT:
+
+- Claim Availability: After official MAI token listing announcement
+- Claim Cost: Approximately 0.03 SOL for network fees
+- Claim Process: Access through your dashboard after listing goes live
+
+━━━━━━━━━━━━━━━━━━━━
+
+Airdrop NFT Benefits:
+
+✅ Early Mining Access: +2 months
+✅ Governance Voting: 6 months
+✅ Forever Mining Bonus: +10%
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Important Disclaimer:
+
+Anti-Fraud Protection: We reserve the right to exclude any participant from the Airdrop NFT giveaway if we suspect fraudulent activity, manipulation, or violation of program terms.
+
+This includes but is not limited to:
+- Multiple wallet addresses
+- Coordinated timing manipulation
+- Bot activity or wash trading
+- Fake transactions
+- Any attempt to artificially secure a position among first 100 winners
+
+Eligibility Verification: All winning purchases will be verified for authenticity and compliance with minimum requirements. Invalid or suspicious transactions will be disqualified.
+
+All decisions regarding winner eligibility and NFT allocation are final and at our sole discretion.
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 More info: https://miningmai.com
+📱 Stay connected: @mai_news`;
+
+  try {
+    await ctx.reply(text);
+    console.log('✅ /nftairdrop отправлен');
+  } catch (error) {
+    console.error('❌ Ошибка /nftairdrop:', error.message);
+  }
+});
+
 bot.command('status', async (ctx) => {
   if (ctx.chat.type !== 'private') {
     const keyboard = Markup.inlineKeyboard([
@@ -484,6 +568,7 @@ bot.command('help', async (ctx) => {
 
 /airdrop - Register for community airdrop (5,000 MAI)
 /tasks - Presale airdrop program (up to 1M MAI)
+/nftairdrop - Airdrop NFT program (1,400 NFTs)
 /referral - Referral program ($500K USDT pool)
 /status - Check your airdrop registration status
 
@@ -632,6 +717,9 @@ bot.command('pin', async (ctx) => {
       Markup.button.callback('🎨 NFT Levels', 'cmd_nft')
     ],
     [
+    Markup.button.callback('🎁 Airdrop NFT', 'cmd_nftairdrop')
+    ],
+    [
       Markup.button.callback('🎁 Presale Airdrop', 'cmd_tasks'),
       Markup.button.callback('💵 Referral Program', 'cmd_referral')
     ],
@@ -673,13 +761,17 @@ bot.action(/cmd_(.+)/, async (ctx) => {
   await ctx.answerCbQuery();
   
   const commands = {
-    presale: () => ctx.reply(getPresaleText(), { parse_mode: 'Markdown' }),
-    nft: () => ctx.reply(getNftText(), { parse_mode: 'Markdown' }),
-    tasks: () => ctx.reply(getTasksText(), { parse_mode: 'Markdown' }),
-    referral: () => ctx.reply(getReferralText(), { parse_mode: 'Markdown' }),
-    faq: () => ctx.reply(getFaqText(), { parse_mode: 'Markdown' }),
-    rules: () => ctx.reply(getRulesText(), { parse_mode: 'Markdown' })
-  };
+  presale: () => ctx.reply(getPresaleText()),
+  nft: () => ctx.reply(getNftText()),
+  nftairdrop: async () => {
+    const text = `🎨 AIRDROP NFT PROGRAM\n\n━━━━━━━━━━━━━━━━━━━━\n\nEarn exclusive Silver NFTs by completing tasks!\n\n100 NFTs per stage (1-14)\nMinimum purchase: 10,000 MAI\nFirst 100 users per stage win\n\nBenefits:\n✅ +2 months early mining\n✅ 6 months governance voting\n✅ +10% mining bonus FOREVER\n\nTotal: 1,400 Airdrop NFTs\n\n━━━━━━━━━━━━━━━━━━━━\n\nUse /nftairdrop for full details\n🌐 https://miningmai.com`;
+    await ctx.reply(text);
+  },
+  tasks: () => ctx.reply(getTasksText()),
+  referral: () => ctx.reply(getReferralText()),
+  faq: () => ctx.reply(getFaqText()),
+  rules: () => ctx.reply(getRulesText())
+};
   
   if (commands[command]) {
     await commands[command]();
