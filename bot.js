@@ -2,6 +2,12 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
+console.log('🚀 Запуск MAI Bot...');
+console.log('📋 Проверка переменных:');
+console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
+console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '✅' : '❌');
+console.log('  NEWS_CHANNEL_ID:', process.env.NEWS_CHANNEL_ID || '❌');
+console.log('  CHAT_CHANNEL_ID:', process.env.CHAT_CHANNEL_ID || '❌');
 
 const config = {
   BOT_TOKEN: process.env.BOT_TOKEN,
@@ -33,7 +39,7 @@ const PRESALE_STAGES = [
   { stage: 8, price: 0.0014, discount: 44, allocation: 11.8, tokens: '826M' },
   { stage: 9, price: 0.0015, discount: 40, allocation: 8.8, tokens: '616M' },
   { stage: 10, price: 0.0016, discount: 36, allocation: 6.5, tokens: '455M' },
-  { stage: 11, price: 0.0017, discord: 32, allocation: 3.5, tokens: '245M' },
+  { stage: 11, price: 0.0017, discount: 32, allocation: 3.5, tokens: '245M' },
   { stage: 12, price: 0.0018, discount: 28, allocation: 2.5, tokens: '175M' },
   { stage: 13, price: 0.0019, discount: 24, allocation: 1.0, tokens: '70M' },
   { stage: 14, price: 0.0020, discount: 20, allocation: 0.5, tokens: '35M' },
@@ -205,74 +211,75 @@ bot.catch((err, ctx) => {
 initDatabase().catch(() => {});
 
 bot.start(async (ctx) => {
+  console.log('✅ /start получен от:', ctx.from.id, ctx.from.username);
+  
   const welcomeMsg = `
 🚀 *WELCOME TO MAI PROJECT!*
 
 *The Future of Decentralized AI is Here*
 
-MAI is revolutionizing the intersection of artificial intelligence and blockchain technology. We're building a decentralized AI platform that belongs to the community - powered by you, governed by you, owned by you.
+MAI is revolutionizing the intersection of artificial intelligence and blockchain technology.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💰 *ACTIVE PRESALE - STAGE ${config.CURRENT_PRESALE_STAGE}/14*
-Current Price: *$${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}*
-Discount: *${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}% OFF*
-🔥 Limited Time Offer!
+💰 *PRESALE IS LIVE!*
+View all stages: /presale
 
 ━━━━━━━━━━━━━━━━━━━━
 
 🎁 *MEGA REWARDS PROGRAM*
 
 *Community Airdrop:* 5,000 MAI
-• First ${config.AIRDROP_LIMIT.toLocaleString()} members only!
-• Command: /airdrop
+- First 20,000 members only!
+- Command: /airdrop
 
 *Presale Airdrop:* Up to 1,000,000 MAI
-• Complete tasks during presale
-• Total pool: 800,000,000 MAI
-• Command: /tasks
+- Complete tasks during presale
+- Command: /tasks
 
 *Referral Program:* Earn USDT
-• $500,000 reward pool
-• Up to 7% per referral purchase
-• Command: /referral
+- $500,000 reward pool
+- Command: /referral
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📋 *ESSENTIAL COMMANDS*
+📋 *COMMANDS*
 
-/presale - View all 14 presale stages
-/nft - NFT reward levels & bonuses
+/presale - View all presale stages
+/nft - NFT reward levels
 /tasks - Presale airdrop program
 /referral - Earn USDT rewards
 /airdrop - Register for community airdrop
-/status - Check your airdrop status
-/faq - Frequently asked questions
-/rules - Community guidelines
+/status - Check your status
+/faq - FAQ
+/rules - Community rules
 /help - Full command list
 
 ━━━━━━━━━━━━━━━━━━━━
 
-⚠️ *CRITICAL REQUIREMENTS*
-To qualify for ANY rewards, you MUST:
-✅ Subscribe to our news channel: @mai_news
-✅ Stay in our community chat until MAI listing
-✅ Follow all community rules
+⚠️ *REQUIREMENTS*
+✅ Subscribe: @mai_news
+✅ Stay until MAI listing
+✅ Follow rules
 
-*Unsubscribing = Automatic disqualification*
+*Unsubscribing = Disqualification*
 
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 Website: https://miningmai.com
-📱 Join the revolution. Build the future.
-
-*Let's decentralize AI together! 🤖⚡*
 `;
   
-  await ctx.reply(welcomeMsg, { parse_mode: 'Markdown' });
+  try {
+    await ctx.reply(welcomeMsg, { parse_mode: 'Markdown' });
+    console.log('✅ /start отправлен успешно');
+  } catch (error) {
+    console.error('❌ Ошибка /start:', error.message);
+  }
 });
 
 bot.command('airdrop', async (ctx) => {
+  console.log('✅ /airdrop получен от:', ctx.from.id, ctx.from.username);
+  
   if (ctx.chat.type !== 'private') {
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.url('🎁 Register for Airdrop', `https://t.me/${ctx.botInfo.username}?start=airdrop`)]
@@ -292,6 +299,7 @@ bot.command('airdrop', async (ctx) => {
   
   try {
     const userStatus = await getUserStatus(userId);
+    console.log('📊 Статус пользователя:', userStatus);
     
     if (userStatus?.banned) {
       return ctx.reply('❌ You are banned and cannot participate in the airdrop.');
@@ -309,6 +317,7 @@ bot.command('airdrop', async (ctx) => {
     }
     
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+    console.log('📺 Подписка на новости:', newsSubscribed);
     
     if (!newsSubscribed) {
       return ctx.reply(
@@ -321,12 +330,14 @@ bot.command('airdrop', async (ctx) => {
     }
     
     const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+    console.log('💬 Подписка на чат:', chatSubscribed);
     
     if (!chatSubscribed) {
       return ctx.reply('❌ You must be a member of our community chat to participate!');
     }
     
     await setAwaitingWallet(userId, true);
+    console.log('✅ Установлен awaiting_wallet для:', userId);
     
     await ctx.reply(
       `🎁 *COMMUNITY AIRDROP REGISTRATION*\n\n` +
@@ -344,7 +355,9 @@ bot.command('airdrop', async (ctx) => {
       `• This is where you'll receive your tokens`,
       { parse_mode: 'Markdown' }
     );
+    console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
+    console.error('❌ Ошибка /airdrop:', error.message);
     await ctx.reply('❌ An error occurred. Please try again later.');
   }
 });
@@ -682,23 +695,19 @@ bot.on('new_chat_members', async (ctx) => {
 
 function getPresaleText() {
   let text = '💰 *MAI PRESALE - ALL 14 STAGES*\n\n';
-  text += `📊 *Current Stage: ${config.CURRENT_PRESALE_STAGE}*\n`;
-  text += `💵 Price: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].price}\n`;
-  text += `📈 Discount: ${PRESALE_STAGES[config.CURRENT_PRESALE_STAGE - 1].discount}%\n\n`;
-  text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  text += '━━━━━━━━━━━━━━━━━━━━\n\n';
   
   PRESALE_STAGES.forEach(s => {
-    const current = s.stage === config.CURRENT_PRESALE_STAGE ? '👉 ' : '   ';
-    text += `${current}*Stage ${s.stage}:* ${s.price} | ${s.discount}% OFF | ${s.tokens} MAI\n`;
+    text += `*Stage ${s.stage}:* $${s.price} | ${s.discount}% OFF | ${s.tokens} MAI\n`;
   });
   
-  text += `\n━━━━━━━━━━━━━━━━━━━━\n\n`;
-  text += `🎨 *NFT REWARD BONUSES:*\n\n`;
-  text += `🥉 Bronze ($50-99): +5% mining FOREVER\n`;
-  text += `🥈 Silver ($100-199): +10% mining FOREVER\n`;
-  text += `🥇 Gold ($200-299): +15% mining FOREVER\n`;
-  text += `💎 Platinum ($300+): +20% mining FOREVER\n\n`;
-  text += `🌐 Buy now: https://miningmai.com`;
+  text += '\n━━━━━━━━━━━━━━━━━━━━\n\n';
+  text += '🎨 *NFT REWARD BONUSES:*\n\n';
+  text += '🥉 Bronze ($50-99): +5% mining FOREVER\n';
+  text += '🥈 Silver ($100-199): +10% mining FOREVER\n';
+  text += '🥇 Gold ($200-299): +15% mining FOREVER\n';
+  text += '💎 Platinum ($300+): +20% mining FOREVER\n\n';
+  text += '🌐 Buy now: https://miningmai.com';
   return text;
 }
 
@@ -870,13 +879,20 @@ bot.on(message('text'), async (ctx) => {
   const userId = ctx.from.id;
   const text = ctx.message.text;
   
+  console.log('📨 Сообщение от:', userId, 'Текст:', text);
+  
   if (text.startsWith('/')) return;
   
   try {
     const userStatus = await getUserStatus(userId);
+    console.log('👤 Статус:', userStatus);
     
+    // ОБРАБОТКА КОШЕЛЬКА
     if (userStatus?.awaiting_wallet) {
+      console.log('💼 Обработка кошелька:', text);
+      
       if (!isValidSolanaAddress(text)) {
+        console.log('❌ Невалидный адрес');
         return ctx.reply(
           `❌ *Invalid Solana Address!*\n\n` +
           `Solana addresses must be 32-44 characters (base58 format).\n\n` +
@@ -888,7 +904,9 @@ bot.on(message('text'), async (ctx) => {
       const username = ctx.from.username || 'no_username';
       const firstName = ctx.from.first_name;
       
+      console.log('📝 Регистрация пользователя...');
       const registration = await registerUser(userId, username, firstName, text);
+      console.log('📊 Результат регистрации:', registration);
       
       if (!registration.success) {
         if (registration.reason === 'limit_reached') {
@@ -899,9 +917,11 @@ bot.on(message('text'), async (ctx) => {
             { parse_mode: 'Markdown' }
           );
         }
+        console.error('❌ Ошибка регистрации:', registration.reason);
         return ctx.reply('❌ Registration error. Please try /airdrop again.');
       }
       
+      console.log('✅ Регистрация успешна!');
       return ctx.reply(
         `🎉 *REGISTRATION SUCCESSFUL!*\n\n` +
         `Welcome to the MAI Community Airdrop!\n\n` +
@@ -925,6 +945,7 @@ bot.on(message('text'), async (ctx) => {
       );
     }
     
+    // Остальной код модерации...
     if (userStatus?.banned) {
       await ctx.deleteMessage();
       return;
@@ -960,7 +981,9 @@ bot.on(message('text'), async (ctx) => {
       
       return ctx.reply(`⚠️ Unauthorized links forbidden! Warning ${warnings}/${config.WARN_LIMIT}. Next violation = BAN.`);
     }
-  } catch {}
+  } catch (error) {
+    console.error('❌ Ошибка обработки текста:', error.message);
+  }
 });
 
 cron.schedule('0 0 * * *', async () => {
