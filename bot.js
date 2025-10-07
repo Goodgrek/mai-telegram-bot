@@ -1,4 +1,4 @@
-const { Telegraf, Markup } = require('telegraf');
+const { Telegraf, Markup, session } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
@@ -10,7 +10,6 @@ const config = {
   ADMIN_IDS: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => parseInt(id.trim())) : [],
   AIRDROP_REWARD: 5000,
   AIRDROP_LIMIT: 20000,
-  MESSAGE_INTERVAL: 10000,
   WARN_LIMIT: 3,
   REPORT_MUTE_LIMIT: 10,
   REPORT_BAN_LIMIT: 20,
@@ -43,12 +42,6 @@ const PRESALE_STAGES = [
 const LANGUAGES = {
   en: { name: 'English', flag: '🇬🇧' },
   ru: { name: 'Русский', flag: '🇷🇺' },
-  uk: { name: 'Українська', flag: '🇺🇦' },
-  de: { name: 'Deutsch', flag: '🇩🇪' },
-  pl: { name: 'Polski', flag: '🇵🇱' },
-  fr: { name: 'Français', flag: '🇫🇷' },
-  tr: { name: 'Türkçe', flag: '🇹🇷' },
-  es: { name: 'Español', flag: '🇪🇸' },
 };
 
 const TEXTS = {
@@ -574,11 +567,8 @@ TEXTS.tr = { ...TEXTS.en, lang_changed: `✅ Dil Türkçe olarak değiştirildi!
 TEXTS.es = { ...TEXTS.en, lang_changed: `✅ Idioma cambiado a Español!`, lang_select: `🌍 *Seleccionar idioma*\n\nSelecciona tu idioma:` };
 
 async function initDatabase() {
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
-    await client.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS telegram_users (
         id SERIAL PRIMARY KEY,
         telegram_id BIGINT UNIQUE NOT NULL,
@@ -601,31 +591,20 @@ async function initDatabase() {
       )
     `);
     
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_messages (
-        id SERIAL PRIMARY KEY,
-        user_id BIGINT NOT NULL,
-        message_time TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_telegram_id ON telegram_users(telegram_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_wallet ON telegram_users(wallet_address)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_position ON telegram_users(position)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_messages ON user_messages(user_id, message_time)`);
-    
-    await client.query('COMMIT');
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_telegram_id ON telegram_users(telegram_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_wallet ON telegram_users(wallet_address)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_position ON telegram_users(position)`);
   } catch (error) {
-    await client.query('ROLLBACK');
     throw error;
-  } finally {
-    client.release();
   }
 }
 
 function getLang(ctx) {
-  const userLang = ctx.session?.lang || ctx.from?.language_code?.substring(0, 2);
-  return TEXTS[userLang] ? userLang : 'en';
+  if (ctx.session?.lang && TEXTS[ctx.session.lang]) {
+    return ctx.session.lang;
+  }
+  const userLang = ctx.from?.language_code?.substring(0, 2);
+  return (userLang === 'ru') ? 'ru' : 'en';
 }
 
 function t(ctx, key, replacements = {}) {
@@ -670,23 +649,7 @@ function containsSpamLinks(text) {
   return false;
 }
 
-async function checkFlood(userId) {
-  try {
-    const tenSecondsAgo = new Date(Date.now() - config.MESSAGE_INTERVAL);
-    const result = await pool.query(
-      'SELECT COUNT(*) FROM user_messages WHERE user_id = $1 AND message_time > $2',
-      [userId, tenSecondsAgo]
-    );
-    const count = parseInt(result.rows[0].count);
-    
-    await pool.query('INSERT INTO user_messages (user_id, message_time) VALUES ($1, NOW())', [userId]);
-    await pool.query('DELETE FROM user_messages WHERE message_time < $1', [new Date(Date.now() - 60000)]);
-    
-    return count > 0;
-  } catch {
-    return false;
-  }
-}
+
 
 async function registerUser(userId, username, firstName, langCode, walletAddress) {
   const client = await pool.connect();
@@ -791,9 +754,22 @@ async function setAwaitingWallet(userId, awaiting) {
 
 const bot = new Telegraf(config.BOT_TOKEN);
 
+bot.use(session());
+
 bot.use(async (ctx, next) => {
-  const user = await getUserStatus(ctx.from?.id);
-  ctx.session = { lang: user?.language_code || (ctx.from?.language_code?.substring(0, 2) === 'ru' ? 'ru' : 'en') };
+  if (!ctx.session) {
+    ctx.session = {};
+  }
+  
+  if (ctx.from?.id) {
+    const user = await getUserStatus(ctx.from.id);
+    if (user?.language_code) {
+      ctx.session.lang = user.language_code;
+    } else if (!ctx.session.lang) {
+      ctx.session.lang = (ctx.from?.language_code?.substring(0, 2) === 'ru') ? 'ru' : 'en';
+    }
+  }
+  
   return next();
 });
 
@@ -816,7 +792,7 @@ bot.command('airdrop', async (ctx) => {
       return ctx.reply(t(ctx, 'banned'));
     }
     
-    if (userStatus?.position) {
+    if (userStatus?.position && userStatus?.wallet_address) {
       return ctx.reply(
         t(ctx, 'airdrop_already', { 
           position: userStatus.position,
@@ -827,20 +803,25 @@ bot.command('airdrop', async (ctx) => {
     }
     
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
     
     if (!newsSubscribed) {
       return ctx.reply(t(ctx, 'airdrop_no_news'), { parse_mode: 'Markdown' });
     }
     
+    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+    
     if (!chatSubscribed) {
       return ctx.reply(t(ctx, 'airdrop_no_chat'));
     }
     
-    await setAwaitingWallet(userId, true);
+    await pool.query(
+      'INSERT INTO telegram_users (telegram_id, username, first_name, language_code, awaiting_wallet) VALUES ($1, $2, $3, $4, true) ON CONFLICT (telegram_id) DO UPDATE SET awaiting_wallet = true',
+      [userId, username, firstName, langCode]
+    );
+    
     await ctx.reply(t(ctx, 'airdrop_start'), { parse_mode: 'Markdown' });
-  } catch {
-    ctx.reply(t(ctx, 'error'));
+  } catch (error) {
+    await ctx.reply(t(ctx, 'error'));
   }
 });
 
@@ -906,16 +887,16 @@ bot.command('rules', async (ctx) => {
   await ctx.reply(t(ctx, 'rules'), { parse_mode: 'Markdown' });
 });
 
-bot.help(async (ctx) => {
+bot.command('help', async (ctx) => {
   await ctx.reply(t(ctx, 'help'), { parse_mode: 'Markdown' });
 });
 
 bot.command(['lang', 'language'], async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.callback(`${LANGUAGES.en.flag} ${LANGUAGES.en.name}`, 'lang_en'), Markup.button.callback(`${LANGUAGES.ru.flag} ${LANGUAGES.ru.name}`, 'lang_ru')],
-    [Markup.button.callback(`${LANGUAGES.uk.flag} ${LANGUAGES.uk.name}`, 'lang_uk'), Markup.button.callback(`${LANGUAGES.de.flag} ${LANGUAGES.de.name}`, 'lang_de')],
-    [Markup.button.callback(`${LANGUAGES.pl.flag} ${LANGUAGES.pl.name}`, 'lang_pl'), Markup.button.callback(`${LANGUAGES.fr.flag} ${LANGUAGES.fr.name}`, 'lang_fr')],
-    [Markup.button.callback(`${LANGUAGES.tr.flag} ${LANGUAGES.tr.name}`, 'lang_tr'), Markup.button.callback(`${LANGUAGES.es.flag} ${LANGUAGES.es.name}`, 'lang_es')],
+    [
+      Markup.button.callback(`${LANGUAGES.en.flag} ${LANGUAGES.en.name}`, 'lang_en'),
+      Markup.button.callback(`${LANGUAGES.ru.flag} ${LANGUAGES.ru.name}`, 'lang_ru')
+    ]
   ]);
   
   await ctx.reply(t(ctx, 'lang_select'), { parse_mode: 'Markdown', ...keyboard });
@@ -927,10 +908,11 @@ bot.action(/lang_(.+)/, async (ctx) => {
   if (TEXTS[newLang]) {
     await updateLanguage(ctx.from.id, newLang);
     ctx.session.lang = newLang;
-    await ctx.answerCbQuery('✅');
     
-    const langChangedText = TEXTS[newLang]?.lang_changed || TEXTS.en.lang_changed;
-    await ctx.editMessageText(langChangedText);
+    await ctx.answerCbQuery('✅');
+    await ctx.editMessageText(TEXTS[newLang].lang_changed);
+  } else {
+    await ctx.answerCbQuery('❌ Language not available');
   }
 });
 
@@ -1076,23 +1058,6 @@ bot.on(message('text'), async (ctx) => {
     if (userStatus?.muted_until && new Date() < new Date(userStatus.muted_until)) {
       await ctx.deleteMessage();
       return;
-    }
-    
-    const isFlood = await checkFlood(userId);
-    if (isFlood) {
-      await ctx.deleteMessage();
-      const warnings = await addWarning(userId);
-      
-      if (warnings >= config.WARN_LIMIT) {
-        await banUser(userId);
-        await ctx.telegram.banChatMember(ctx.chat.id, userId);
-        return;
-      }
-      
-      return ctx.reply(
-        `⚠️ @${ctx.from.username || ctx.from.first_name}, no flooding! Warning ${warnings}/${config.WARN_LIMIT}`,
-        { reply_to_message_id: ctx.message.message_id }
-      );
     }
     
     if (containsBadContent(text)) {
