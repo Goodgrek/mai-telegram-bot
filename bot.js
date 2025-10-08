@@ -264,6 +264,10 @@ Presale Airdrop: Up to 1,000,000 MAI
 - Complete tasks during presale
 - Command: /tasks
 
+Airdrop NFT program (1,400 NFTs)
+- Complete tasks during presale
+- Command: /nftairdrop
+
 Referral Program: Earn USDT
 - $500,000 reward pool
 - Command: /referral
@@ -717,11 +721,11 @@ bot.command('pin', async (ctx) => {
       Markup.button.callback('🎨 NFT Levels', 'cmd_nft')
     ],
     [
-    Markup.button.callback('🎁 Airdrop NFT', 'cmd_nftairdrop')
+      Markup.button.callback('🎁 Airdrop NFT', 'cmd_nftairdrop')
     ],
     [
       Markup.button.callback('🎁 Presale Airdrop', 'cmd_tasks'),
-      Markup.button.callback('💵 Referral Program', 'cmd_referral')
+      Markup.button.callback('💵 Referral', 'cmd_referral')
     ],
     [
       Markup.button.callback('❓ FAQ', 'cmd_faq'),
@@ -731,27 +735,30 @@ bot.command('pin', async (ctx) => {
   ]);
   
   const pinMsg = await ctx.reply(
-    `🚀 *WELCOME TO MAI PROJECT!*\n\n` +
-    `*The Future of Decentralized AI*\n\n` +
+    `🚀 WELCOME TO MAI PROJECT!\n\n` +
+    `The Future of Decentralized AI\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `💰 PRESALE: 14 STAGES\n` +
     `Up to 80% discount available\n` +
     `View details: /presale\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `🎁 *REWARDS:*\n` +
+    `🎁 REWARDS:\n` +
     `• Community Airdrop: 5,000 MAI\n` +
     `• Presale Airdrop: Up to 1M MAI\n` +
+    `• Airdrop NFT: 1,400 NFTs\n` +
     `• Referral Program: Earn USDT\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `⚠️ *STAY SUBSCRIBED:*\n` +
+    `⚠️ STAY SUBSCRIBED:\n` +
     `Subscribe to @mai_news and stay in this chat until MAI listing to qualify for rewards!\n\n` +
-    `*Click buttons below to learn more:*`,
-    { parse_mode: 'Markdown', ...keyboard }
+    `Click buttons below to learn more:`,
+    { ...keyboard }
   );
   
   try {
     await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
-  } catch {}
+  } catch (err) {
+    console.error('❌ Не удалось закрепить:', err.message);
+  }
   
   await ctx.deleteMessage().catch(() => {});
 });
