@@ -223,6 +223,31 @@ async function setAwaitingWallet(userId, awaiting) {
   }
 }
 
+async function sendToPrivate(ctx, messageText, options = {}) {
+  if (ctx.chat.type === 'private') {
+    // Уже в ЛС - отправляем как обычно
+    return ctx.reply(messageText, options);
+  }
+  
+  // В группе - пытаемся отправить в ЛС
+  try {
+    await ctx.telegram.sendMessage(ctx.from.id, messageText, options);
+    // Отправляем подтверждение в группу
+    await ctx.reply('✅ Sent to your private messages!', { 
+      reply_to_message_id: ctx.message.message_id 
+    });
+  } catch (error) {
+    // Не получилось отправить в ЛС - юзер не запустил бота
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.url('📱 Open Bot', `https://t.me/${ctx.botInfo.username}?start=${ctx.message.text.slice(1)}`)]
+    ]);
+    await ctx.reply(
+      `⚠️ Please start the bot first to receive information in private messages:`,
+      { ...keyboard, reply_to_message_id: ctx.message.message_id }
+    );
+  }
+}
+
 const bot = new Telegraf(config.BOT_TOKEN);
 
 bot.use(async (ctx, next) => {
@@ -285,6 +310,7 @@ Referral Program: Earn USDT
 /status - Check your status
 /faq - Frequently asked questions
 /rules - Community rules
+/report - Report rule violations (reply to message)
 /help - Full command list
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -459,7 +485,7 @@ All decisions regarding winner eligibility and NFT allocation are final and at o
 📱 Stay connected: @mai_news`;
 
   try {
-    await ctx.reply(text);
+    await sendToPrivate(ctx, text);
     console.log('✅ /nftairdrop отправлен');
   } catch (error) {
     console.error('❌ Ошибка /nftairdrop:', error.message);
@@ -548,30 +574,45 @@ bot.command('presale', async (ctx) => {
 });
 
 bot.command('nft', async (ctx) => {
-  await ctx.reply(getNftText(), { parse_mode: 'Markdown' });
+  try {
+    await sendToPrivate(ctx, getNftText(), { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('❌ Ошибка /nft:', error.message);
+  }
 });
 
 bot.command('tasks', async (ctx) => {
-  await ctx.reply(getTasksText(), { parse_mode: 'Markdown' });
+  try {
+    await sendToPrivate(ctx, getTasksText(), { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('❌ Ошибка /tasks:', error.message);
+  }
 });
 
 bot.command('referral', async (ctx) => {
-  await ctx.reply(getReferralText(), { parse_mode: 'Markdown' });
+  try {
+    await sendToPrivate(ctx, getReferralText(), { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('❌ Ошибка /referral:', error.message);
+  }
 });
 
 bot.command('faq', async (ctx) => {
   console.log('✅ /faq получен от:', ctx.from.id);
   try {
-    await ctx.reply(getFaqText());
+    await sendToPrivate(ctx, getFaqText());
     console.log('✅ /faq отправлен');
   } catch (error) {
     console.error('❌ Ошибка /faq:', error.message);
-    await ctx.reply('❌ Error loading FAQ. Please try again.');
   }
 });
 
 bot.command('rules', async (ctx) => {
-  await ctx.reply(getRulesText(), { parse_mode: 'Markdown' });
+  try {
+    await sendToPrivate(ctx, getRulesText(), { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('❌ Ошибка /rules:', error.message);
+  }
 });
 
 bot.command('help', async (ctx) => {
@@ -621,10 +662,19 @@ Make sure to stay subscribed to @mai_news and remain in the community chat to ma
 *Questions? Check /faq first!* 📚
 `;
   
-  await ctx.reply(helpMsg, { parse_mode: 'Markdown' });
+  try {
+    await sendToPrivate(ctx, helpMsg, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('❌ Ошибка /help:', error.message);
+  }
 });
 
 bot.command('report', async (ctx) => {
+  // Команда /report работает ТОЛЬКО в группе
+  if (ctx.chat.type === 'private') {
+    return ctx.reply('⚠️ This command only works in group chats!');
+  }
+  
   if (!ctx.message.reply_to_message) {
     return ctx.reply('⚠️ Reply to a violator\'s message and type /report');
   }
@@ -726,7 +776,7 @@ bot.command('pin', async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
     [
       Markup.button.url('🎁 Airdrop (5K MAI)', `https://t.me/${ctx.botInfo.username}?start=airdrop`),
-      Markup.button.url('💰 Buy Presale', 'https://miningmai.com')
+      Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
     ],
     [
       Markup.button.callback('📋 Presale Stages', 'cmd_presale'),
@@ -780,16 +830,16 @@ bot.action(/cmd_(.+)/, async (ctx) => {
   await ctx.answerCbQuery();
   
   const commands = {
-  presale: () => ctx.reply(getPresaleText()),
-  nft: () => ctx.reply(getNftText()),
+  presale: () => sendToPrivate(ctx, getPresaleText()),
+  nft: () => sendToPrivate(ctx, getNftText(), { parse_mode: 'Markdown' }),
   nftairdrop: async () => {
     const text = `🎨 AIRDROP NFT PROGRAM\n\n━━━━━━━━━━━━━━━━━━━━\n\nEarn exclusive Silver NFTs by completing tasks!\n\n100 NFTs per stage (1-14)\nMinimum purchase: 10,000 MAI\nFirst 100 users per stage win\n\nBenefits:\n✅ +2 months early mining\n✅ 6 months governance voting\n✅ +10% mining bonus FOREVER\n\nTotal: 1,400 Airdrop NFTs\n\n━━━━━━━━━━━━━━━━━━━━\n\nUse /nftairdrop for full details\n🌐 https://miningmai.com`;
-    await ctx.reply(text);
+    await sendToPrivate(ctx, text);
   },
-  tasks: () => ctx.reply(getTasksText()),
-  referral: () => ctx.reply(getReferralText()),
-  faq: () => ctx.reply(getFaqText()),
-  rules: () => ctx.reply(getRulesText())
+  tasks: () => sendToPrivate(ctx, getTasksText(), { parse_mode: 'Markdown' }),
+  referral: () => sendToPrivate(ctx, getReferralText(), { parse_mode: 'Markdown' }),
+  faq: () => sendToPrivate(ctx, getFaqText()),
+  rules: () => sendToPrivate(ctx, getRulesText(), { parse_mode: 'Markdown' })
 };
   
   if (commands[command]) {
