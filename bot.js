@@ -60,6 +60,7 @@ async function initDatabase() {
         last_check TIMESTAMP DEFAULT NOW(),
         warnings INT DEFAULT 0,
         reports_received INT DEFAULT 0,
+        mute_count INT DEFAULT 0,
         banned BOOLEAN DEFAULT false,
         muted_until TIMESTAMP NULL,
         reward_amount INT DEFAULT 5000,
@@ -69,9 +70,21 @@ async function initDatabase() {
       )
     `);
     
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_reports (
+        id SERIAL PRIMARY KEY,
+        reporter_id BIGINT NOT NULL,
+        reported_user_id BIGINT NOT NULL,
+        chat_id BIGINT NOT NULL,
+        report_time TIMESTAMP DEFAULT NOW(),
+        UNIQUE(reporter_id, reported_user_id)
+      )
+    `);
+    
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_telegram_id ON telegram_users(telegram_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_wallet ON telegram_users(wallet_address)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_position ON telegram_users(position)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_reported_user ON user_reports(reported_user_id)`);
   } catch (error) {
     throw error;
   }
@@ -180,14 +193,31 @@ async function addWarning(userId) {
   }
 }
 
-async function addReport(userId) {
+async function addReport(reporterId, reportedUserId, chatId) {
   try {
-    const result = await pool.query(
-      `UPDATE telegram_users SET reports_received = reports_received + 1 WHERE telegram_id = $1 RETURNING reports_received`,
-      [userId]
+    // Пытаемся добавить уникальную жалобу
+    await pool.query(
+      `INSERT INTO user_reports (reporter_id, reported_user_id, chat_id) 
+       VALUES ($1, $2, $3) 
+       ON CONFLICT (reporter_id, reported_user_id) DO NOTHING`,
+      [reporterId, reportedUserId, chatId]
     );
-    return result.rows[0]?.reports_received || 0;
-  } catch {
+    
+    // Обновляем общий счетчик
+    await pool.query(
+      `UPDATE telegram_users SET reports_received = reports_received + 1 WHERE telegram_id = $1`,
+      [reportedUserId]
+    );
+    
+    // Считаем УНИКАЛЬНЫЕ жалобы
+    const result = await pool.query(
+      `SELECT COUNT(DISTINCT reporter_id) as unique_reports FROM user_reports WHERE reported_user_id = $1`,
+      [reportedUserId]
+    );
+    
+    return parseInt(result.rows[0].unique_reports);
+  } catch (error) {
+    console.error('❌ Ошибка addReport:', error.message);
     return 0;
   }
 }
@@ -202,6 +232,42 @@ async function muteUser(userId, hours = 24) {
   try {
     const muteUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
     await pool.query('UPDATE telegram_users SET muted_until = $1 WHERE telegram_id = $2', [muteUntil, userId]);
+  } catch {}
+}
+
+async function incrementMuteCount(userId) {
+  try {
+    const result = await pool.query(
+      `UPDATE telegram_users SET mute_count = mute_count + 1 WHERE telegram_id = $1 RETURNING mute_count`,
+      [userId]
+    );
+    return result.rows[0]?.mute_count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function getMuteCount(userId) {
+  try {
+    const result = await pool.query(
+      `SELECT mute_count FROM telegram_users WHERE telegram_id = $1`,
+      [userId]
+    );
+    return result.rows[0]?.mute_count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function unbanUser(userId) {
+  try {
+    await pool.query('UPDATE telegram_users SET banned = false WHERE telegram_id = $1', [userId]);
+  } catch {}
+}
+
+async function unmuteUser(userId) {
+  try {
+    await pool.query('UPDATE telegram_users SET muted_until = NULL WHERE telegram_id = $1', [userId]);
   } catch {}
 }
 
@@ -229,20 +295,18 @@ async function sendToPrivate(ctx, messageText, options = {}) {
     return ctx.reply(messageText, options);
   }
   
-  // В группе - пытаемся отправить в ЛС
+  // В группе - МОЛЧА отправляем в ЛС, БЕЗ подтверждений в группе
   try {
     await ctx.telegram.sendMessage(ctx.from.id, messageText, options);
-    // Отправляем подтверждение в группу
-    await ctx.reply('✅ Sent to your private messages!', { 
-      reply_to_message_id: ctx.message.message_id 
-    });
+    // НИЧЕГО НЕ ОТПРАВЛЯЕМ В ГРУППУ!
   } catch (error) {
     // Не получилось отправить в ЛС - юзер не запустил бота
+    // Отправляем ТОЛЬКО кнопку, без лишних слов
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.url('📱 Open Bot', `https://t.me/${ctx.botInfo.username}?start=${ctx.message.text.slice(1)}`)]
+      [Markup.button.url('📱 Start Bot', `https://t.me/${ctx.botInfo.username}?start=${ctx.message.text.slice(1).replace('@' + ctx.botInfo.username, '')}`)]
     ]);
     await ctx.reply(
-      `⚠️ Please start the bot first to receive information in private messages:`,
+      `⚠️ Please start the bot first:`,
       { ...keyboard, reply_to_message_id: ctx.message.message_id }
     );
   }
@@ -310,7 +374,6 @@ Referral Program: Earn USDT
 /status - Check your status
 /faq - Frequently asked questions
 /rules - Community rules
-/report - Report rule violations (reply to message)
 /help - Full command list
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -331,7 +394,8 @@ Unsubscribing = Automatic disqualification
 Let's decentralize AI together! 🤖⚡`;
   
   try {
-    await ctx.reply(welcomeMsg);
+    // ВСЕГДА отправляем в ЛС, независимо от типа чата
+    await sendToPrivate(ctx, welcomeMsg);
     console.log('✅ /start отправлен успешно');
   } catch (error) {
     console.error('❌ Ошибка /start:', error.message);
@@ -340,19 +404,6 @@ Let's decentralize AI together! 🤖⚡`;
 
 bot.command('airdrop', async (ctx) => {
   console.log('✅ /airdrop получен от:', ctx.from.id, ctx.from.username);
-  
-  if (ctx.chat.type !== 'private') {
-    const keyboard = Markup.inlineKeyboard([
-      [Markup.button.url('🎁 Register for Airdrop', `https://t.me/${ctx.botInfo.username}?start=airdrop`)]
-    ]);
-    
-    return ctx.reply(
-      `🎁 *COMMUNITY AIRDROP - 5,000 MAI*\n\n` +
-      `First ${config.AIRDROP_LIMIT.toLocaleString()} members get free tokens!\n\n` +
-      `Click the button below to register:`,
-      { parse_mode: 'Markdown', ...keyboard }
-    );
-  }
   
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
@@ -363,11 +414,12 @@ bot.command('airdrop', async (ctx) => {
     console.log('📊 Статус пользователя:', userStatus);
     
     if (userStatus?.banned) {
-      return ctx.reply('❌ You are banned and cannot participate in the airdrop.');
+      return sendToPrivate(ctx, '❌ You are banned and cannot participate in the airdrop.');
     }
     
     if (userStatus?.position && userStatus?.wallet_address) {
-      return ctx.reply(
+      return sendToPrivate(
+        ctx,
         `✅ *You're Already Registered!*\n\n` +
         `🎫 Position: *#${userStatus.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
         `🎁 Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
@@ -381,7 +433,8 @@ bot.command('airdrop', async (ctx) => {
     console.log('📺 Подписка на новости:', newsSubscribed);
     
     if (!newsSubscribed) {
-      return ctx.reply(
+      return sendToPrivate(
+        ctx,
         `❌ *Subscription Required!*\n\n` +
         `You must subscribe to our news channel first:\n` +
         `👉 @mai_news\n\n` +
@@ -394,33 +447,34 @@ bot.command('airdrop', async (ctx) => {
     console.log('💬 Подписка на чат:', chatSubscribed);
     
     if (!chatSubscribed) {
-      return ctx.reply('❌ You must be a member of our community chat to participate!');
+      return sendToPrivate(ctx, '❌ You must be a member of our community chat to participate!');
     }
     
     await setAwaitingWallet(userId, true);
     console.log('✅ Установлен awaiting_wallet для:', userId);
     
-    await ctx.reply(
-  `🎁 COMMUNITY AIRDROP REGISTRATION\n\n` +
-  `Great! You're eligible to register.\n\n` +
-  `Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
-  `Available spots: ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `📝 Next Step: Provide Your Solana Wallet\n\n` +
-  `Please send your Solana wallet address in the next message.\n\n` +
-  `Example:\n` +
-  `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\n\n` +
-  `⚠️ Supported Wallets:\n` +
-  `• Phantom, Solflare, Trust Wallet\n` +
-  `• Binance Web3, MetaMask (Solana)\n` +
-  `• Backpack or any Solana wallet\n` +
-  `• Double-check your address\n` +
-  `• This is where you'll receive your tokens`
-);
+    await sendToPrivate(
+      ctx,
+      `🎁 COMMUNITY AIRDROP REGISTRATION\n\n` +
+      `Great! You're eligible to register.\n\n` +
+      `Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
+      `Available spots: ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📝 Next Step: Provide Your Solana Wallet\n\n` +
+      `Please send your Solana wallet address in the next message.\n\n` +
+      `Example:\n` +
+      `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\n\n` +
+      `⚠️ Supported Wallets:\n` +
+      `• Phantom, Solflare, Trust Wallet\n` +
+      `• Binance Web3, MetaMask (Solana)\n` +
+      `• Backpack or any Solana wallet\n` +
+      `• Double-check your address\n` +
+      `• This is where you'll receive your tokens`
+    );
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
     console.error('❌ Ошибка /airdrop:', error.message);
-    await ctx.reply('❌ An error occurred. Please try again later.');
+    await sendToPrivate(ctx, '❌ An error occurred. Please try again later.');
   }
 });
 
@@ -493,23 +547,14 @@ All decisions regarding winner eligibility and NFT allocation are final and at o
 });
 
 bot.command('status', async (ctx) => {
-  if (ctx.chat.type !== 'private') {
-    const keyboard = Markup.inlineKeyboard([
-      [Markup.button.url('📊 Check Status', `https://t.me/${ctx.botInfo.username}?start=status`)]
-    ]);
-    return ctx.reply(
-      '📊 Check your airdrop status in private messages:',
-      { ...keyboard }
-    );
-  }
-  
   const userId = ctx.from.id;
   
   try {
     const userStatus = await getUserStatus(userId);
     
     if (!userStatus?.position) {
-      return ctx.reply(
+      return sendToPrivate(
+        ctx,
         `❌ *Not Registered*\n\n` +
         `You haven't registered for the community airdrop yet.\n\n` +
         `Use /airdrop to register and claim your ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens!`,
@@ -534,7 +579,8 @@ bot.command('status', async (ctx) => {
     if (!chatSubscribed) warnings += '\n⚠️ Join community chat';
     if (!userStatus.wallet_address) warnings += '\n⚠️ Wallet not linked';
     
-    await ctx.reply(
+    await sendToPrivate(
+      ctx,
       `📊 *YOUR AIRDROP STATUS*\n\n` +
       `👤 Username: @${userStatus.username}\n` +
       `🎫 Position: *#${userStatus.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
@@ -553,24 +599,16 @@ bot.command('status', async (ctx) => {
       { parse_mode: 'Markdown' }
     );
   } catch {
-    ctx.reply('❌ Error checking status. Try again later.');
+    sendToPrivate(ctx, '❌ Error checking status. Try again later.');
   }
 });
 
 bot.command('presale', async (ctx) => {
-  // Если в группе - отправляем в личку
-  if (ctx.chat.type !== 'private') {
-    try {
-      await ctx.telegram.sendMessage(ctx.from.id, getPresaleText());
-      await ctx.reply('✅ Sent to your private messages!', { reply_to_message_id: ctx.message.message_id });
-    } catch {
-      await ctx.reply(`⚠️ Start bot first: https://t.me/${ctx.botInfo.username}`);
-    }
-    return;
+  try {
+    await sendToPrivate(ctx, getPresaleText());
+  } catch (error) {
+    console.error('❌ Ошибка /presale:', error.message);
   }
-  
-  // В личке - как обычно
-  await ctx.reply(getPresaleText());
 });
 
 bot.command('nft', async (ctx) => {
@@ -682,6 +720,7 @@ bot.command('report', async (ctx) => {
   const reportedUserId = ctx.message.reply_to_message.from.id;
   const reporterId = ctx.from.id;
   
+  // Проверки
   if (reportedUserId === reporterId) {
     return ctx.reply('❌ You cannot report yourself!');
   }
@@ -690,20 +729,54 @@ bot.command('report', async (ctx) => {
     return ctx.reply('❌ You cannot report an administrator!');
   }
   
-  const reports = await addReport(reportedUserId);
-  await ctx.reply(`✅ Report accepted. User has ${reports} total reports.`);
+  // Добавляем жалобу (только уникальные)
+  const uniqueReports = await addReport(reporterId, reportedUserId, ctx.chat.id);
   
-  if (reports >= config.REPORT_BAN_LIMIT) {
+  // Получаем количество мутов у этого юзера
+  const muteCount = await getMuteCount(reportedUserId);
+  
+  await ctx.reply(`✅ Report accepted. User has ${uniqueReports} unique reports.`);
+  
+  // ЛОГИКА ЭСКАЛАЦИИ:
+  // 10 жалоб → первый мут (24 часа)
+  // 20 жалоб → второй мут (7 дней)
+  // 30 жалоб → пермабан
+  
+  if (uniqueReports === 30) {
+    // ТРЕТИЙ ПОРОГ - ПЕРМАБАН
     await banUser(reportedUserId);
-    await ctx.telegram.banChatMember(ctx.chat.id, reportedUserId);
-    await ctx.reply(`🚫 User permanently banned after ${reports} reports from community.`);
-  } else if (reports >= config.REPORT_MUTE_LIMIT) {
+    try {
+      await ctx.telegram.banChatMember(ctx.chat.id, reportedUserId);
+      await ctx.reply(`🚫 User permanently banned after ${uniqueReports} reports from community.`);
+    } catch (err) {
+      await ctx.reply(`🚫 User marked as banned in database (${uniqueReports} reports).`);
+    }
+  } else if (uniqueReports === 20 && muteCount === 1) {
+    // ВТОРОЙ ПОРОГ - МУТ НА 7 ДНЕЙ
+    await muteUser(reportedUserId, 168); // 7 дней = 168 часов
+    await incrementMuteCount(reportedUserId);
+    try {
+      await ctx.telegram.restrictChatMember(ctx.chat.id, reportedUserId, {
+        until_date: Math.floor(Date.now() / 1000) + (168 * 3600),
+        permissions: { can_send_messages: false }
+      });
+      await ctx.reply(`⚠️ User muted for 7 DAYS after ${uniqueReports} reports (2nd offense).`);
+    } catch (err) {
+      await ctx.reply(`⚠️ User marked as muted for 7 days in database (${uniqueReports} reports).`);
+    }
+  } else if (uniqueReports === 10 && muteCount === 0) {
+    // ПЕРВЫЙ ПОРОГ - МУТ НА 24 ЧАСА  
     await muteUser(reportedUserId, 24);
-    await ctx.telegram.restrictChatMember(ctx.chat.id, reportedUserId, {
-      until_date: Math.floor(Date.now() / 1000) + 86400,
-      permissions: { can_send_messages: false }
-    });
-    await ctx.reply(`⚠️ User muted for 24 hours after ${reports} reports.`);
+    await incrementMuteCount(reportedUserId);
+    try {
+      await ctx.telegram.restrictChatMember(ctx.chat.id, reportedUserId, {
+        until_date: Math.floor(Date.now() / 1000) + 86400,
+        permissions: { can_send_messages: false }
+      });
+      await ctx.reply(`⚠️ User muted for 24 hours after ${uniqueReports} reports (1st offense).`);
+    } catch (err) {
+      await ctx.reply(`⚠️ User marked as muted for 24 hours in database (${uniqueReports} reports).`);
+    }
   }
 });
 
@@ -770,6 +843,146 @@ bot.command('winners', async (ctx) => {
   }
 });
 
+// ===== АДМИНСКИЕ КОМАНДЫ ДЛЯ УПРАВЛЕНИЯ =====
+
+bot.command('mute', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  if (!ctx.message.reply_to_message) {
+    return ctx.reply('⚠️ Reply to user\'s message and type:\n/mute [hours]\n\nExample: /mute 48');
+  }
+  
+  const targetUserId = ctx.message.reply_to_message.from.id;
+  const args = ctx.message.text.split(' ');
+  const hours = args[1] ? parseInt(args[1]) : 24;
+  
+  if (isNaN(hours) || hours < 1) {
+    return ctx.reply('❌ Invalid hours! Use: /mute 24');
+  }
+  
+  await muteUser(targetUserId, hours);
+  await incrementMuteCount(targetUserId);
+  
+  try {
+    await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
+      until_date: Math.floor(Date.now() / 1000) + (hours * 3600),
+      permissions: { can_send_messages: false }
+    });
+    await ctx.reply(`✅ User muted for ${hours} hours by admin.`);
+  } catch (err) {
+    await ctx.reply(`✅ User marked as muted in database for ${hours} hours.`);
+  }
+});
+
+bot.command('unmute', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  if (!ctx.message.reply_to_message) {
+    return ctx.reply('⚠️ Reply to user\'s message and type /unmute');
+  }
+  
+  const targetUserId = ctx.message.reply_to_message.from.id;
+  
+  await unmuteUser(targetUserId);
+  
+  try {
+    await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
+      permissions: {
+        can_send_messages: true,
+        can_send_media_messages: true,
+        can_send_polls: true,
+        can_send_other_messages: true,
+        can_add_web_page_previews: true
+      }
+    });
+    await ctx.reply('✅ User unmuted by admin.');
+  } catch (err) {
+    await ctx.reply('✅ User unmarked as muted in database.');
+  }
+});
+
+bot.command('ban', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  if (!ctx.message.reply_to_message) {
+    return ctx.reply('⚠️ Reply to user\'s message and type /ban [reason]');
+  }
+  
+  const targetUserId = ctx.message.reply_to_message.from.id;
+  const reason = ctx.message.text.replace('/ban', '').trim() || 'Admin decision';
+  
+  await banUser(targetUserId);
+  
+  try {
+    await ctx.telegram.banChatMember(ctx.chat.id, targetUserId);
+    await ctx.reply(`🚫 User permanently banned by admin.\nReason: ${reason}`);
+  } catch (err) {
+    await ctx.reply(`🚫 User marked as banned in database.\nReason: ${reason}`);
+  }
+});
+
+bot.command('unban', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  if (!ctx.message.reply_to_message) {
+    return ctx.reply('⚠️ Reply to user\'s message and type /unban');
+  }
+  
+  const targetUserId = ctx.message.reply_to_message.from.id;
+  
+  await unbanUser(targetUserId);
+  
+  try {
+    await ctx.telegram.unbanChatMember(ctx.chat.id, targetUserId);
+    await ctx.reply('✅ User unbanned by admin.');
+  } catch (err) {
+    await ctx.reply('✅ User unmarked as banned in database.');
+  }
+});
+
+bot.command('userinfo', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  if (!ctx.message.reply_to_message) {
+    return ctx.reply('⚠️ Reply to user\'s message and type /userinfo');
+  }
+  
+  const targetUserId = ctx.message.reply_to_message.from.id;
+  
+  try {
+    const userStatus = await getUserStatus(targetUserId);
+    const reportsResult = await pool.query(
+      `SELECT COUNT(DISTINCT reporter_id) as unique_reports FROM user_reports WHERE reported_user_id = $1`,
+      [targetUserId]
+    );
+    const uniqueReports = parseInt(reportsResult.rows[0]?.unique_reports || 0);
+    
+    if (!userStatus) {
+      return ctx.reply('❌ User not found in database.');
+    }
+    
+    const info = `📊 *USER INFORMATION*\n\n` +
+      `ID: \`${userStatus.telegram_id}\`\n` +
+      `Username: @${userStatus.username || 'N/A'}\n` +
+      `Name: ${userStatus.first_name}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `⚠️ Warnings: ${userStatus.warnings}\n` +
+      `📊 Reports (total): ${userStatus.reports_received}\n` +
+      `👥 Unique Reports: ${uniqueReports}\n` +
+      `🔇 Mute Count: ${userStatus.mute_count}\n` +
+      `🚫 Banned: ${userStatus.banned ? 'YES' : 'NO'}\n` +
+      `🔇 Muted Until: ${userStatus.muted_until ? new Date(userStatus.muted_until).toLocaleString() : 'NO'}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎫 Airdrop Position: ${userStatus.position ? `#${userStatus.position}` : 'Not registered'}\n` +
+      `💼 Wallet: ${userStatus.wallet_address ? `\`${userStatus.wallet_address.substring(0, 20)}...\`` : 'Not linked'}`;
+    
+    await ctx.reply(info, { parse_mode: 'Markdown' });
+  } catch (err) {
+    console.error('❌ Error userinfo:', err);
+    await ctx.reply('❌ Error fetching user info.');
+  }
+});
+
 bot.command('pin', async (ctx) => {
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
   
@@ -798,6 +1011,7 @@ bot.command('pin', async (ctx) => {
   
   const pinMsg = await ctx.reply(
     `🚀 WELCOME TO MAI PROJECT!\n\n` +
+    `🌐 Website: https://miningmai.com\n\n` +
     `The Future of Decentralized AI\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `💰 PRESALE: 14 STAGES\n` +
