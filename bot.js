@@ -532,7 +532,19 @@ bot.command('status', async (ctx) => {
 });
 
 bot.command('presale', async (ctx) => {
-  await ctx.reply(getPresaleText(), { parse_mode: 'Markdown' });
+  // Если в группе - отправляем в личку
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.telegram.sendMessage(ctx.from.id, getPresaleText());
+      await ctx.reply('✅ Sent to your private messages!', { reply_to_message_id: ctx.message.message_id });
+    } catch {
+      await ctx.reply(`⚠️ Start bot first: https://t.me/${ctx.botInfo.username}`);
+    }
+    return;
+  }
+  
+  // В личке - как обычно
+  await ctx.reply(getPresaleText());
 });
 
 bot.command('nft', async (ctx) => {
@@ -709,25 +721,7 @@ bot.command('winners', async (ctx) => {
 });
 
 bot.command('pin', async (ctx) => {
-  console.log('📌 /pin получен от:', ctx.from.id, 'в чате:', ctx.chat.id, 'тип:', ctx.chat.type);
-  console.log('👤 ADMIN_IDS:', config.ADMIN_IDS);
-  console.log('🔍 Это админ?', config.ADMIN_IDS.includes(ctx.from.id));
-  
-  // ПРОВЕРКА: только для админов
-  if (!config.ADMIN_IDS.includes(ctx.from.id)) {
-    console.log('❌ Пользователь не админ!');
-    await ctx.reply('❌ Only admins can use this command.');
-    return;
-  }
-  
-  // ПРОВЕРКА: только в группах
-  if (ctx.chat.type === 'private') {
-    console.log('❌ Команда в личке, не в группе!');
-    await ctx.reply('❌ This command works only in group chats!');
-    return;
-  }
-  
-  console.log('✅ Создание сообщения...');
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
   
   const keyboard = Markup.inlineKeyboard([
     [
@@ -752,49 +746,33 @@ bot.command('pin', async (ctx) => {
     [Markup.button.url('📱 News Channel', 'https://t.me/mai_news')]
   ]);
   
+  const pinMsg = await ctx.reply(
+    `🚀 WELCOME TO MAI PROJECT!\n\n` +
+    `The Future of Decentralized AI\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💰 PRESALE: 14 STAGES\n` +
+    `Up to 80% discount available\n` +
+    `View details: /presale\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🎁 REWARDS:\n` +
+    `• Community Airdrop: 5,000 MAI\n` +
+    `• Presale Airdrop: Up to 1M MAI\n` +
+    `• Airdrop NFT: 1,400 NFTs\n` +
+    `• Referral Program: Earn USDT\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `⚠️ STAY SUBSCRIBED:\n` +
+    `Subscribe to @mai_news and stay in this chat until MAI listing to qualify for rewards!\n\n` +
+    `Click buttons below to learn more:`,
+    { ...keyboard }
+  );
+  
   try {
-    const pinMsg = await ctx.reply(
-      `🚀 WELCOME TO MAI PROJECT!\n\n` +
-      `The Future of Decentralized AI\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💰 PRESALE: 14 STAGES\n` +
-      `Up to 80% discount available\n` +
-      `View details: /presale\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 REWARDS:\n` +
-      `• Community Airdrop: 5,000 MAI\n` +
-      `• Presale Airdrop: Up to 1M MAI\n` +
-      `• Airdrop NFT: 1,400 NFTs\n` +
-      `• Referral Program: Earn USDT\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `⚠️ STAY SUBSCRIBED:\n` +
-      `Subscribe to @mai_news and stay in this chat until MAI listing to qualify for rewards!\n\n` +
-      `Click buttons below to learn more:`,
-      { ...keyboard }
-    );
-    
-    console.log('✅ Сообщение создано, ID:', pinMsg.message_id);
-    
-    // Попытка закрепить
-    try {
-      await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
-      console.log('✅ Сообщение закреплено!');
-      await ctx.reply('✅ Message pinned successfully!');
-    } catch (pinError) {
-      console.error('❌ Ошибка закрепления:', pinError.message);
-      await ctx.reply(`❌ Cannot pin message. Error: ${pinError.message}\n\nMake sure bot is admin with "Pin messages" permission!`);
-    }
-    
-    // Попытка удалить команду
-    await ctx.deleteMessage().catch((delError) => {
-      console.error('⚠️ Не удалось удалить команду:', delError.message);
-    });
-    
-  } catch (error) {
-    console.error('❌ ОШИБКА /pin:', error.message);
-    console.error('Stack:', error.stack);
-    await ctx.reply(`❌ Error creating message: ${error.message}`);
+    await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
+  } catch (err) {
+    console.error('❌ Не удалось закрепить:', err.message);
   }
+  
+  await ctx.deleteMessage().catch(() => {});
 });
 
 bot.action(/cmd_(.+)/, async (ctx) => {
