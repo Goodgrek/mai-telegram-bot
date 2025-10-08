@@ -491,30 +491,37 @@ bot.command('airdrop', async (ctx) => {
     
     await sendToPrivate(
   ctx,
-  `🎁 *COMMUNITY AIRDROP REGISTRATION*\n\n` +
-  `Great! You're eligible to register.\n\n` +
+  `🎁 *AIRDROP REGISTRATION*\n\n` +
+  `You're eligible! Let's register.\n\n` +
+  
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `🎯 *Reward:* ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
-  `👥 *Available spots:* ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n` +
-  `💰 *Cost:* 100% FREE\n` +
-  `📅 *Distribution:* Within 10 days after listing\n\n` +
+  
+  `🎯 Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI\n` +
+  `👥 Spots: ${config.AIRDROP_LIMIT.toLocaleString()} (limited)\n` +
+  `💰 Cost: FREE\n` +
+  `📅 Distribution: 10 days after listing\n\n` +
+  
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `📝 *Next Step: Provide Your Solana Wallet*\n\n` +
-  `Please send your Solana wallet address in the next message.\n\n` +
-  `*Example:*\n` +
-  `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\n\n` +
-  `⚠️ *Supported Wallets:*\n` +
-  `• Phantom, Solflare, Trust Wallet\n` +
-  `• Binance Web3, MetaMask (Solana)\n` +
-  `• Backpack or any Solana wallet\n\n` +
-  `⚠️ *Important:*\n` +
-  `• Double-check your address\n` +
-  `• Tokens sent to this address after listing\n` +
-  `• Wrong address = Lost tokens\n\n` +
+  
+  `📝 *Next: Send Solana Wallet*\n\n` +
+  
+  `Example:\n` +
+  `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...\n\n` +
+  
+  `Supported wallets:\n` +
+  `• Phantom, Solflare, Trust\n` +
+  `• Binance Web3, MetaMask\n` +
+  `• Any Solana wallet\n\n` +
+  
+  `⚠️ Double-check address!\n` +
+  `Wrong address = Lost tokens\n\n` +
+  
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `🔒 *Keep Your Position:*\n` +
-  `After registration, stay subscribed to @mai_news and remain in community chat.\n\n` +
-  `Daily check at 00:00 UTC → Unsubscribed = Position lost!`,
+  
+  `🔒 *Keep Position:*\n` +
+  `Stay in @mai_news + this chat\n` +
+  `Daily check 00:00 UTC\n` +
+  `Unsubscribe = Position lost!`,
   { parse_mode: 'Markdown' }
 );
     console.log('✅ Запрос кошелька отправлен');
@@ -1056,109 +1063,75 @@ bot.command('pin', async (ctx) => {
   ]);
   
   const pinMsg = await ctx.reply(
-    `🚀 *WELCOME TO MAI PROJECT!*\n` +
-    `_The Future of Decentralized AI_\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `🎁 *GET 5,000 MAI TOKENS FREE!*\n\n` +
-
-`💎 Worth $10+ at listing\n` +
-`⚡️ Limited to first 20,000 members\n` +
-`🎯 Distribution: After official MAI listing\n\n` +
-
-`*How to claim:*\n` +
-`1️⃣ Subscribe to @mai_news\n` +
-`2️⃣ Join this community chat\n` +
-`3️⃣ Register wallet: /airdrop\n` +
-`4️⃣ Stay subscribed until listing\n\n` +
-`✅ 100% FREE! No purchase required!\n\n` +
-
-`⚠️ *CRITICAL:* Unsubscribing = Losing your position!\n` +
-`Daily check at 00:00 UTC. If unsubscribed, your spot goes to the next person in queue.\n\n`
-    
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `💰 *PRESALE INFORMATION:*\n\n` +
-    
-    `14 Stages | Up to 80% Discount\n` +
-    `Stage 1: $0.0005 per token\n` +
-    `Final Stage: $0.0020 per token\n\n` +
-    
-    `🎨 *Bonus: Get Exclusive NFTs!*\n` +
-    `• Bronze NFT: +5% mining forever\n` +
-    `• Silver NFT: +10% mining forever\n` +
-    `• Gold NFT: +15% mining forever\n` +
-    `• Platinum NFT: +20% mining forever\n\n` +
-    
-    `💸 Purchase starts from just $50!\n` +
-    `👉 /presale for all stages\n\n` +
-    
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `🎯 *MORE REWARDS AVAILABLE:*\n\n` +
-    
-    `🏆 *Presale Airdrop:* Up to 1,000,000 MAI\n` +
-    `Complete tasks during presale → /tasks\n\n` +
-    
-    `🎨 *Airdrop NFT:* 1,400 Free NFTs\n` +
-    `First 100 buyers per stage → /nftairdrop\n\n` +
-    
-    `💵 *Referral Program:* Earn USDT\n` +
-    `Up to 7% commission → /referral\n\n` +
-    
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `📋 *COMMUNITY RULES:*\n\n` +
-    
-    `✅ *Allowed:*\n` +
-    `• MAI Project discussions\n` +
-    `• Questions & help\n` +
-    `• Crypto memes\n\n` +
-    
-    `❌ *Forbidden:*\n` +
-    `• Spam & flooding\n` +
-    `• Other project ads\n` +
-    `• Scam links & harassment\n\n` +
-    
-    `⚠️ *Warning System:*\n` +
-    `3 warnings = Permanent ban\n\n` +
-    
-    `📊 *Community Reports:*\n` +
-    `• 10 reports → 24h mute\n` +
-    `• 20 reports → 7 days mute\n` +
-    `• 30 reports → Permanent ban\n\n` +
-    
-    `Report violations: Reply to message + /report\n\n` +
-    
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `🚨 *HOW TO KEEP YOUR 5,000 MAI:*\n\n` +
-
-`✅ Stay subscribed to @mai_news\n` +
-`✅ Remain in this chat until listing\n` +
-`✅ Follow all community rules\n\n` +
-
-`⚠️ *Position System:*\n` +
-`• Daily check: 00:00 UTC\n` +
-`• Unsubscribed = Position removed\n` +
-`• Your spot → Next person in queue\n` +
-`• Re-register = New position at end\n\n` +
-`*Tokens distributed within 10 days after listing*\n\n`
-    
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `🌐 *OFFICIAL LINKS:*\n\n` +
-    
-    `Website: https://miningmai.com\n` +
-    `News Channel: @mai_news\n` +
-    `Support: Contact admins in chat\n\n` +
-    
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    
-    `💡 *Use buttons below for quick access:*\n` +
-    `👇 Click to learn more and start earning! 👇`,
-    { parse_mode: 'Markdown', ...keyboard }
-  );
+  `🚀 *WELCOME TO MAI PROJECT!*\n` +
+  `_Decentralized AI Platform_\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🎁 *GET 5,000 MAI FREE!*\n\n` +
+  `💎 Worth $10+ at listing\n` +
+  `⚡ First 20,000 members\n` +
+  `📅 Distribution: After listing\n\n` +
+  
+  `*How to claim:*\n` +
+  `1️⃣ Subscribe @mai_news\n` +
+  `2️⃣ Join this chat\n` +
+  `3️⃣ Use /airdrop\n` +
+  `4️⃣ Stay until listing\n\n` +
+  
+  `⚠️ Daily check 00:00 UTC\n` +
+  `Unsubscribe = Position lost!\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `💰 *PRESALE NOW!*\n\n` +
+  `14 Stages | 80% OFF\n` +
+  `$0.0005 → $0.0020\n\n` +
+  
+  `🎨 *Get NFT Bonus!*\n` +
+  `$50+ purchase = NFT\n` +
+  `+5% to +20% mining forever\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🎯 *MORE REWARDS:*\n\n` +
+  `🏆 Presale Airdrop: 1M MAI\n` +
+  `🎨 Free NFTs: 1,400 available\n` +
+  `💵 Referrals: Earn USDT\n\n` +
+  
+  `Commands: /tasks /referral\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `📋 *RULES:*\n\n` +
+  `✅ MAI discussions, questions\n` +
+  `❌ Spam, scams, other ads\n\n` +
+  
+  `⚠️ 3 warnings = Ban\n` +
+  `📊 10 reports = 24h mute\n` +
+  `📊 20 reports = 7 days mute\n` +
+  `📊 30 reports = Permanent ban\n\n` +
+  
+  `Report: Reply + /report\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🚨 *KEEP YOUR REWARDS:*\n\n` +
+  `✅ Stay in @mai_news\n` +
+  `✅ Stay in this chat\n` +
+  `✅ Follow rules\n\n` +
+  
+  `Position check: 00:00 UTC daily\n` +
+  `Tokens: 10 days after listing\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🌐 https://miningmai.com\n` +
+  `📱 @mai_news\n\n` +
+  
+  `👇 *Click buttons below!* 👇`,
+  { parse_mode: 'Markdown', ...keyboard }
+);
   
   try {
     await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
@@ -1355,538 +1328,145 @@ function getReferralText() {
 
 function getFaqText() {
   return `❓ FREQUENTLY ASKED QUESTIONS
-*Complete Guide to MAI Project*
 
-━━━━━━━━━━━━━━━━━━━━
-
-🤖 *ABOUT MAI PROJECT*
-
-*1. What is MAI?*
-MAI (Mining Artificial Intelligence) is a revolutionary decentralized AI platform that combines blockchain technology with artificial intelligence. Unlike traditional AI controlled by corporations, MAI belongs to the community—powered by you, governed by you, owned by you.
-
-*Key Features:*
-- Decentralized - No single entity controls MAI
-- Censorship-resistant - No restrictions on usage
-- Community-driven - Governed by DAO voting
-- Accessible to everyone - No geographic limitations
-- Blockchain-powered - Transparent and secure
-
-*2. What makes MAI different from other AI projects?*
-MAI is building a truly decentralized AI ecosystem where:
-✅ Users earn by contributing computing power (mining)
-✅ Token holders participate in governance decisions
-✅ NFT holders get permanent mining bonuses
-✅ Community drives development roadmap
-✅ No corporate censorship or control
-
-━━━━━━━━━━━━━━━━━━━━
-
-💰 *PRESALE & TOKENOMICS*
-
-*3. How does the Presale work?*
-MAI Presale consists of 14 stages with increasing prices:
-- Stage 1: $0.0005 (80% discount)
-- Stage 2-13: Progressive price increase
-- Stage 14: $0.0020 (20% discount)
-
-Total Presale Allocation: 7 billion MAI tokens
-Early stages offer maximum discounts!
-
-*4. Which payment methods are accepted?*
-You can purchase MAI tokens using:
-- SOL (Solana)
-- USDT (Tether)
-- USDC (USD Coin)
-
-All transactions on Solana blockchain.
-
-*5. What is the token vesting schedule?*
-Vesting varies by presale stage:
-
-Early Stages (1-3):
-- 3-4% TGE Unlock
-- 2-4 month Cliff period
-- 10 month Vesting period
-
-Mid Stages (4-9):
-- 4-7% TGE Unlock
-- 0-2 month Cliff period
-- 8-9 month Vesting period
-
-Late Stages (10-14):
-- 7-8% TGE Unlock
-- No Cliff period
-- 5-8 month Vesting period
-
-*Example: Stage 1 buyer receives 3% at TGE, waits 4 months, then receives remaining 97% over 10 months.*
-
-*6. When is the listing date?*
-Q4 2025 on major platforms:
-- DEX: Raydium, Jupiter
-- CEX: Major exchanges (TBA)
-
-Exact date announced in @mai_news
-
-*7. What is TGE (Token Generation Event)?*
-TGE is when MAI tokens are created and first unlocked. After TGE:
-- Initial unlock percentage released immediately
-- Cliff period begins (waiting period)
-- Vesting period starts (gradual token release)
-
-━━━━━━━━━━━━━━━━━━━━
-
-💼 *WALLETS & SECURITY*
-
-*8. Which wallets are supported?*
-Any Solana-compatible wallet:
-✅ Phantom (most popular)
-✅ Solflare
-✅ Trust Wallet
-✅ Binance Web3 Wallet
-✅ MetaMask (with Solana support)
-✅ Backpack
-✅ Any SPL wallet
-
-*9. How do I set up a Solana wallet?*
-Step-by-step:
-1. Download Phantom from official site
-2. Create new wallet
-3. **WRITE DOWN seed phrase** (never share!)
-4. Secure with password
-5. Copy your wallet address
-6. Use for MAI purchase/airdrop
-
-*10. Is KYC required?*
-- Community Airdrop: NO KYC
-- Presale purchases: Basic verification may be required for large amounts
-- Compliance with regulations ensures project security
-
-━━━━━━━━━━━━━━━━━━━━
-
-🎁 *AIRDROPS & REWARDS*
-
-*11. How does Community Airdrop work?*
-First 20,000 members receive 5,000 MAI tokens completely FREE!
-
-*Registration Requirements:*
-✅ Subscribe to @mai_news
-✅ Join community chat  
-✅ Register Solana wallet (/airdrop)
-✅ Stay subscribed until listing
-
-*Position System:*
-- You receive a position number (e.g., #5,432 of 20,000)
-- Daily check at 00:00 UTC verifies subscriptions
-- If unsubscribed → Position removed immediately
-- Your spot goes to next person in queue (e.g., #20,001 → #20,000)
-- If you re-register → You get NEW position at end of queue
-
-*Token Distribution:*
-Within 10 days after official MAI listing on exchanges
-
-*Example Scenario:*
-- You're position #5,000
-- You unsubscribe from @mai_news
-- Daily check removes your position
-- Person at #5,001 becomes #5,000
-- Person at #20,001 enters top 20,000 (gets airdrop!)
-- If you subscribe again and use /airdrop → You become #20,001 (new position)
-
-⚠️ *Stay subscribed to keep your position!*
-
-*12. What is Presale Airdrop Program?*
-Earn up to 1,000,000 MAI by completing tasks:
-
-*5 Total Tasks:*
-1️⃣ Buy 10,000+ MAI in Stages 1-3
-2️⃣ Buy 10,000+ MAI in Stages 5-7
-3️⃣ Buy 10,000+ MAI in Stages 10-14
-4️⃣ Earn a Reward NFT
-5️⃣ Refer 2+ friends
-
-*Rewards:*
-🥇 5/5 tasks: 1,000,000 MAI
-🥈 4/5 tasks: 500,000 MAI
-🥉 3/5 tasks: 100,000 MAI
-
-*Minimum: 3 tasks required*
-
-*13. What is Airdrop NFT Program?*
-Earn Silver NFT (same value as $100-199 purchase) by:
-- Buying 10,000+ MAI tokens in ANY stage
-- Being among first 100 buyers in that stage
-- One NFT per wallet maximum
-
-Total: 1,400 Airdrop NFTs (100 per stage × 14 stages)
-
-Claiming: After listing (~0.03 SOL fee)
-
-*14. What happens if I unsubscribe temporarily?*
-You LOSE your position immediately at the next daily check (00:00 UTC).
-
-*Consequences:*
-❌ Your position number is deleted
-❌ Everyone behind you moves up one spot
-❌ Person at #20,001 may enter top 20,000
-❌ You receive notification about position loss
-
-*Can I get my old position back?*
-NO. If you subscribe again and use /airdrop:
-- You get a COMPLETELY NEW position
-- At the END of the current queue
-- Your old position is gone forever
-
-*Best Practice:*
-Stay subscribed to both @mai_news and community chat from registration until listing date. Don't risk losing your spot!
-
-━━━━━━━━━━━━━━━━━━━━
-
-🎨 *NFT REWARDS*
-
-*14. What are MAI NFT Reward Levels?*
-Exclusive NFTs for presale participants:
-
-🥉 *BRONZE NFT* ($50-99 purchase)
-- +1 month early mining access
-- 3 months early DAO voting
-- +5% mining bonus FOREVER
-
-🥈 *SILVER NFT* ($100-199 purchase)
-- +2 months early mining access
-- 6 months early DAO voting
-- +10% mining bonus FOREVER
-
-🥇 *GOLD NFT* ($200-299 purchase)
-- +3 months early mining access
-- 12 months early DAO voting
-- +15% mining bonus FOREVER
-
-💎 *PLATINUM NFT* ($300+ purchase)
-- +3 months early mining access
-- 12 months early DAO voting
-- +20% mining bonus FOREVER
-
-*15. Are NFT bonuses permanent?*
-YES! Mining bonuses are FOREVER!
-- Bronze: +5% extra mining rewards for life
-- Silver: +10% extra mining rewards for life
-- Gold: +15% extra mining rewards for life
-- Platinum: +20% extra mining rewards for life
-
-*16. Can I trade my NFT?*
-Yes! NFTs are tradeable on marketplaces:
-- OpenSea
-- Magic Eden
-- Tensor
-
-Rare high-level NFTs will increase in value as MAI ecosystem grows.
-
-━━━━━━━━━━━━━━━━━━━━
-
-⛏️ *MINING & STAKING*
-
-*17. What is MAI Mining?*
-MAI Mining allows you to earn tokens by contributing computing power to decentralized AI tasks:
-- Process AI computations
-- Earn MAI tokens as rewards
-- Higher computing power = higher rewards
-- NFT holders get bonus percentages
-
-*Launch: Q4 2026*
-
-*18. How does Staking work?*
-Stake your MAI tokens to earn passive income:
-- Lock tokens for fixed period
-- Earn high APY rewards
-- No computing power needed
-- Flexible staking periods
-
-*Launch: Q4 2026 alongside mining*
-
-*19. What hardware do I need for mining?*
-Details coming in 2026, but expected requirements:
-- Mid-range GPU or CPU
-- Stable internet connection
-- Mining software (provided free)
-- Mobile app also available (2027-2028)
-
-━━━━━━━━━━━━━━━━━━━━
-
-💸 *REFERRAL PROGRAM*
-
-*20. How does the Referral Program work?*
-Earn up to 7% in USDT from referrals!
-
-*Reward Levels:*
-Level 1: 1-9 referrals → 1% bonus
-Level 2: 10-19 referrals → 3% bonus
-Level 3: 20-29 referrals → 5% bonus
-Level 4: 30+ referrals → 7% bonus
-
-- Paid in USDT every Friday
-- $500,000 total reward pool
-- Get your link at https://miningmai.com
-
-*21. When do I receive referral payments?*
-Payments processed weekly:
-- Every Friday
-- Direct to your wallet
-- In USDT (not MAI tokens)
-- Track earnings in dashboard
-
-━━━━━━━━━━━━━━━━━━━━
-
-🗳️ *DAO GOVERNANCE*
-
-*22. What is DAO governance?*
-MAI DAO (Decentralized Autonomous Organization) lets community vote on:
-- Development priorities
-- New features
-- Partnerships
-- Token allocation changes
-- Ecosystem improvements
-
-*NFT holders get early voting access:*
-- Bronze/Silver: 3-6 months early
-- Gold/Platinum: 12 months early
-- All holders: After early period ends
-
-━━━━━━━━━━━━━━━━━━━━
-
-📅 *ROADMAP & TIMELINE*
-
-*23. What's the project timeline?*
-
-*2025 (Q1-Q4):*
-✅ Platform development & testing
-✅ Presale launch (NOW!)
-✅ Community building
-✅ NFT distribution
-✅ Token listing (Q4)
-
-*2026 (Q1-Q3):*
-🔹 Decentralized MAI development
-🔹 Mining/Staking platform building
-🔹 Community testing
-
-*2026 (Q4) - 2027 (Q2):*
-🚀 Full MAI launch
-🚀 Mining start (NFT holders first!)
-🚀 Staking launch
-🚀 DAO voting begins
-
-*2027 (Q3) - 2028 (Q1):*
-📱 Mobile app development
-📱 Mobile mining launch
-📱 1M+ users target
-
-*2028 (Q2+):*
-🌟 Platform stability
-🌟 New products & services
-🌟 Market leadership
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ *IMPORTANT WARNINGS*
-
-*24. How do I avoid scams?*
-🚨 *NEVER share:*
-- Private keys
-- Seed phrases
-- Passwords
-
-🚨 *ONLY use official links:*
-- Website: https://miningmai.com
-- News: @mai_news
-- Bot: Official MAI bot only
-
-🚨 *Admins will NEVER:*
-- DM you first
-- Ask for private keys
-- Ask for "test transactions"
-
-*25. What disqualifies me from rewards?*
-You lose ALL rewards if you:
-❌ Unsubscribe from @mai_news
-❌ Leave community chat before listing
-❌ Get banned for rule violations
-❌ Violate terms and conditions
-
-*Stay subscribed to keep your rewards!*
-
-━━━━━━━━━━━━━━━━━━━━
-
-🆘 *SUPPORT*
-
-*26. How do I get help?*
-- Check this FAQ first
-- Use /help for command list
-- Ask in community chat
-- Tag admins for urgent issues
-- Email: support@miningmai.com
-
-*27. How do I check my status?*
-Use /status command anytime to see:
-- Airdrop registration status
-- Subscription status
-- Wallet address
-- Reward eligibility
-- Warning count
-
-━━━━━━━━━━━━━━━━━━━━
-
-🔗 *OFFICIAL LINKS*
-
-🌐 Website: https://miningmai.com
-📱 News Channel: @mai_news
-💬 Community: This chat
-📧 Support: Contact admins
-
-━━━━━━━━━━━━━━━━━━━━
-
-*Last Updated: October 2025*
-*For latest updates, check @mai_news*
-
-💡 *Still have questions?*
-Ask in community chat—we're here to help! 🚀`;
+🤖 ABOUT MAI
+MAI is a decentralized AI platform owned by the community. Unlike corporate AI, MAI belongs to everyone.
+
+💰 PRESALE
+- 14 stages: $0.0005 → $0.0020
+- Up to 80% discount
+- Payment: SOL, USDT, USDC
+- Listing: Q4 2025 on DEX/CEX
+
+🎁 COMMUNITY AIRDROP (5,000 MAI)
+- First 20,000 members only
+- FREE - just subscribe & register
+- Daily check at 00:00 UTC
+- Unsubscribe = Position lost
+- Spot goes to next person
+- Distribution: 10 days after listing
+
+Requirements:
+✅ Subscribe @mai_news
+✅ Stay in chat until listing
+✅ Register wallet: /airdrop
+
+💼 WALLET SETUP
+- Use any Solana wallet
+- Phantom (recommended)
+- Solflare, Trust Wallet, Backpack
+- NO KYC required
+
+🎨 NFT REWARDS
+Buy presale → Get permanent bonuses:
+- $50-99: Bronze (+5% mining forever)
+- $100-199: Silver (+10% forever)
+- $200-299: Gold (+15% forever)
+- $300+: Platinum (+20% forever)
+
+⛏️ MINING & STAKING
+- Launch: Q4 2026
+- Earn MAI with computing power
+- NFT holders get bonus %
+- Mobile app: 2027-2028
+
+💸 REFERRAL PROGRAM
+- Earn up to 7% in USDT
+- $500K reward pool
+- Paid weekly (Fridays)
+- Link: https://miningmai.com
+
+🗳️ DAO GOVERNANCE
+- Community votes on decisions
+- NFT holders vote early
+- Shape MAI's future together
+
+⚠️ AVOID SCAMS
+NEVER share:
+❌ Private keys
+❌ Seed phrases
+❌ Passwords
+
+Admins NEVER DM first!
+
+🆘 SUPPORT
+- Questions: Check /help
+- Status: Use /status
+- Issues: Ask admins in chat
+
+🔗 OFFICIAL LINKS
+🌐 https://miningmai.com
+📱 @mai_news
+
+Last Updated: October 2025`;
 }
 
 function getRulesText() {
-  return `
-📋 *COMMUNITY RULES*
-*Welcome to MAI Project Community!*
-
-To maintain a safe, friendly, and productive environment for all members, please follow these guidelines:
+  return `📋 COMMUNITY RULES
 
 ━━━━━━━━━━━━━━━━━━━━
 
-✅ *ALLOWED & ENCOURAGED:*
+✅ ALLOWED:
+- MAI discussions
+- Questions & help
+- Crypto memes (appropriate)
+- Constructive feedback
 
-- Discussing MAI Project features, updates, and roadmap
-- Asking questions about presale, airdrops, NFTs, and tokenomics
-- Sharing constructive feedback and suggestions
-- Helping other community members
-- Posting crypto-related memes (keep it appropriate)
-- Discussing blockchain, AI, and Web3 technologies
-- Sharing official MAI Project announcements
-- Celebrating milestones and achievements together
-
-━━━━━━━━━━━━━━━━━━━━
-
-❌ *STRICTLY FORBIDDEN:*
-
-*Financial & Scams:*
-- Promoting other projects, tokens, or ICOs
-- Posting referral links to external platforms
-- Sharing pump & dump schemes
-- Requesting private keys, seed phrases, or passwords
-- Impersonating team members or admins
-- Posting scam/phishing links
-
-*Spam & Abuse:*
-- Spamming messages, emojis, or stickers
-- Excessive use of CAPS LOCK
-- Flooding chat with repetitive content
-- Cross-posting the same message multiple times
-- Advertising unrelated products or services
-
-*Harmful Content:*
-- Harassment, bullying, or personal attacks
-- Hate speech, racism, or discrimination
-- Explicit, NSFW, or 18+ content
-- Threats or doxxing (sharing personal information)
-- Spreading FUD (Fear, Uncertainty, Doubt) without basis
-
-*Market Manipulation:*
-- Price manipulation attempts
-- Coordinated pump/dump discussions
-- Spreading false rumors about listings or partnerships
+❌ FORBIDDEN:
+- Spam & flooding
+- Other project ads
+- Scam links
+- Harassment, hate speech
+- Price manipulation
+- NSFW content
 
 ━━━━━━━━━━━━━━━━━━━━
 
-⚠️ *WARNING SYSTEM:*
-
-Our automated moderation system tracks violations:
-
-*1st Violation:* ⚠️ Official Warning
-*2nd Violation:* ⚠️ Final Warning  
-*3rd Violation:* 🚫 Permanent Ban
-
-Warnings are issued for spam, unauthorized links, and prohibited content. Take warnings seriously!
+⚠️ WARNING SYSTEM:
+1st: ⚠️ Warning
+2nd: ⚠️ Final Warning
+3rd: 🚫 Permanent Ban
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📊 *COMMUNITY REPORTING SYSTEM:*
+📊 COMMUNITY REPORTS:
+Use /report (reply to violator's message)
 
-Members can report rule violations using /report (reply to violator's message).
-
-*Report-Based Actions:*
-- 10 unique reports → 🔇 Muted for 24 hours
-- 20 unique reports → 🔇 Muted for 7 days
+- 10 unique reports → 🔇 24h mute
+- 20 unique reports → 🔇 7 days mute
 - 30 unique reports → 🚫 Permanent ban
 
-Only unique reports count (one report per user). False reporting may result in penalties.
+━━━━━━━━━━━━━━━━━━━━
+
+🛡️ AIRDROP ELIGIBILITY:
+
+Breaking rules = Loss of rewards!
+
+❌ Banned = No airdrop
+❌ Unsubscribe = Position lost
+❌ Leave chat = Position removed
+
+To keep rewards:
+✅ Follow rules
+✅ Stay in @mai_news
+✅ Stay in this chat
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🛡️ *AIRDROP ELIGIBILITY:*
+💡 TIPS:
+- Read /faq before asking
+- Be respectful
+- Help newcomers
+- Report violations
+- Stay on-topic
 
-Breaking rules can disqualify you from ALL rewards:
-
-❌ Getting banned = Loss of all airdrop eligibility
-❌ Multiple warnings = Risk of disqualification  
-❌ Unsubscribing from @mai_news = Automatic disqualification
-❌ Leaving community chat = Loss of airdrop position
-
-*To maintain eligibility:*
-✅ Follow all community rules
-✅ Stay subscribed to @mai_news
-✅ Remain in community chat until listing
-✅ Be respectful and helpful
+🆘 NEED HELP?
+Use /help or ask admins
 
 ━━━━━━━━━━━━━━━━━━━━
 
-👮 *ADMIN ACTIONS:*
-
-Admins reserve the right to:
-- Remove messages that violate rules
-- Mute or ban users without warning in severe cases
-- Make final decisions on disputes
-- Update rules as needed
-
-*Admin decisions are final.*
-
-━━━━━━━━━━━━━━━━━━━━
-
-💡 *TIPS FOR GOOD STANDING:*
-
-1. Read FAQ before asking questions (/faq)
-2. Use search to find previous discussions
-3. Be patient waiting for responses
-4. Respect different opinions and perspectives
-5. Help newcomers feel welcome
-6. Report violations using /report
-7. Keep discussions on-topic
-
-━━━━━━━━━━━━━━━━━━━━
-
-🆘 *NEED HELP?*
-
-- Questions: Use /help for command list
-- Technical Support: Contact admins in chat
-- Report Issues: Tag @admin in your message
-- Check Status: Use /status command
-
-━━━━━━━━━━━━━━━━━━━━
-
-*Remember: This is YOUR community!*
-Let's build something amazing together while keeping it safe and welcoming for everyone.
-
-🌐 Official Website: https://miningmai.com
-📱 News Channel: @mai_news
-
-*Last Updated: October 2025*
-`;
+🌐 https://miningmai.com
+📱 @mai_news`;
 }
 
 bot.on(message('text'), async (ctx) => {
