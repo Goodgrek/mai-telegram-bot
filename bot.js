@@ -490,23 +490,33 @@ bot.command('airdrop', async (ctx) => {
     console.log('✅ Установлен awaiting_wallet для:', userId);
     
     await sendToPrivate(
-      ctx,
-      `🎁 COMMUNITY AIRDROP REGISTRATION\n\n` +
-      `Great! You're eligible to register.\n\n` +
-      `Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
-      `Available spots: ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📝 Next Step: Provide Your Solana Wallet\n\n` +
-      `Please send your Solana wallet address in the next message.\n\n` +
-      `Example:\n` +
-      `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\n\n` +
-      `⚠️ Supported Wallets:\n` +
-      `• Phantom, Solflare, Trust Wallet\n` +
-      `• Binance Web3, MetaMask (Solana)\n` +
-      `• Backpack or any Solana wallet\n` +
-      `• Double-check your address\n` +
-      `• This is where you'll receive your tokens`
-    );
+  ctx,
+  `🎁 *COMMUNITY AIRDROP REGISTRATION*\n\n` +
+  `Great! You're eligible to register.\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `🎯 *Reward:* ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens\n` +
+  `👥 *Available spots:* ${config.AIRDROP_LIMIT.toLocaleString()} (limited!)\n` +
+  `💰 *Cost:* 100% FREE\n` +
+  `📅 *Distribution:* Within 10 days after listing\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `📝 *Next Step: Provide Your Solana Wallet*\n\n` +
+  `Please send your Solana wallet address in the next message.\n\n` +
+  `*Example:*\n` +
+  `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5pJ4B8E6T6X...\n\n` +
+  `⚠️ *Supported Wallets:*\n` +
+  `• Phantom, Solflare, Trust Wallet\n` +
+  `• Binance Web3, MetaMask (Solana)\n` +
+  `• Backpack or any Solana wallet\n\n` +
+  `⚠️ *Important:*\n` +
+  `• Double-check your address\n` +
+  `• Tokens sent to this address after listing\n` +
+  `• Wrong address = Lost tokens\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `🔒 *Keep Your Position:*\n` +
+  `After registration, stay subscribed to @mai_news and remain in community chat.\n\n` +
+  `Daily check at 00:00 UTC → Unsubscribed = Position lost!`,
+  { parse_mode: 'Markdown' }
+);
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
     console.error('❌ Ошибка /airdrop:', error.message);
@@ -1051,17 +1061,20 @@ bot.command('pin', async (ctx) => {
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     
     `🎁 *GET 5,000 MAI TOKENS FREE!*\n\n` +
-    
-    `💎 *Worth $10+ at listing!*\n` +
-    `⚡️ *Limited to first 20,000 members*\n` +
-    `⏰ *Spots filling fast!*\n\n` +
-    
-    `*How to claim:*\n` +
-    `1️⃣ Subscribe to @mai_news\n` +
-    `2️⃣ Stay in this chat until listing\n` +
-    `3️⃣ Register your wallet with /airdrop\n\n` +
-    
-    `✅ *That's it! 100% FREE!*\n\n` +
+
+`💎 Worth $10+ at listing\n` +
+`⚡️ Limited to first 20,000 members\n` +
+`🎯 Distribution: After official MAI listing\n\n` +
+
+`*How to claim:*\n` +
+`1️⃣ Subscribe to @mai_news\n` +
+`2️⃣ Join this community chat\n` +
+`3️⃣ Register wallet: /airdrop\n` +
+`4️⃣ Stay subscribed until listing\n\n` +
+`✅ 100% FREE! No purchase required!\n\n` +
+
+`⚠️ *CRITICAL:* Unsubscribing = Losing your position!\n` +
+`Daily check at 00:00 UTC. If unsubscribed, your spot goes to the next person in queue.\n\n`
     
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     
@@ -1119,14 +1132,18 @@ bot.command('pin', async (ctx) => {
     
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     
-    `🚨 *CRITICAL: DON'T LOSE YOUR REWARDS!*\n\n` +
-    
-    `To keep your 5,000 MAI airdrop:\n` +
-    `✅ Stay subscribed to @mai_news\n` +
-    `✅ Stay in this chat until listing\n` +
-    `✅ Follow all community rules\n\n` +
-    
-    `*Unsubscribing = Losing ALL rewards!*\n\n` +
+    `🚨 *HOW TO KEEP YOUR 5,000 MAI:*\n\n` +
+
+`✅ Stay subscribed to @mai_news\n` +
+`✅ Remain in this chat until listing\n` +
+`✅ Follow all community rules\n\n` +
+
+`⚠️ *Position System:*\n` +
+`• Daily check: 00:00 UTC\n` +
+`• Unsubscribed = Position removed\n` +
+`• Your spot → Next person in queue\n` +
+`• Re-register = New position at end\n\n` +
+`*Tokens distributed within 10 days after listing*\n\n`
     
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     
@@ -1449,15 +1466,33 @@ Step-by-step:
 🎁 *AIRDROPS & REWARDS*
 
 *11. How does Community Airdrop work?*
-First 20,000 members get 5,000 MAI FREE!
+First 20,000 members receive 5,000 MAI tokens completely FREE!
 
-Requirements:
+*Registration Requirements:*
 ✅ Subscribe to @mai_news
-✅ Join community chat
+✅ Join community chat  
 ✅ Register Solana wallet (/airdrop)
 ✅ Stay subscribed until listing
 
-*Distribution: Within 10 days after listing*
+*Position System:*
+- You receive a position number (e.g., #5,432 of 20,000)
+- Daily check at 00:00 UTC verifies subscriptions
+- If unsubscribed → Position removed immediately
+- Your spot goes to next person in queue (e.g., #20,001 → #20,000)
+- If you re-register → You get NEW position at end of queue
+
+*Token Distribution:*
+Within 10 days after official MAI listing on exchanges
+
+*Example Scenario:*
+- You're position #5,000
+- You unsubscribe from @mai_news
+- Daily check removes your position
+- Person at #5,001 becomes #5,000
+- Person at #20,001 enters top 20,000 (gets airdrop!)
+- If you subscribe again and use /airdrop → You become #20,001 (new position)
+
+⚠️ *Stay subscribed to keep your position!*
 
 *12. What is Presale Airdrop Program?*
 Earn up to 1,000,000 MAI by completing tasks:
@@ -1485,6 +1520,24 @@ Earn Silver NFT (same value as $100-199 purchase) by:
 Total: 1,400 Airdrop NFTs (100 per stage × 14 stages)
 
 Claiming: After listing (~0.03 SOL fee)
+
+*14. What happens if I unsubscribe temporarily?*
+You LOSE your position immediately at the next daily check (00:00 UTC).
+
+*Consequences:*
+❌ Your position number is deleted
+❌ Everyone behind you moves up one spot
+❌ Person at #20,001 may enter top 20,000
+❌ You receive notification about position loss
+
+*Can I get my old position back?*
+NO. If you subscribe again and use /airdrop:
+- You get a COMPLETELY NEW position
+- At the END of the current queue
+- Your old position is gone forever
+
+*Best Practice:*
+Stay subscribed to both @mai_news and community chat from registration until listing date. Don't risk losing your spot!
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1886,26 +1939,29 @@ bot.on(message('text'), async (ctx) => {
       
       console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
       return ctx.reply(
-        `🎉 *REGISTRATION SUCCESSFUL!*\n\n` +
-        `Welcome to the MAI Community Airdrop!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🎫 Your Position: *#${registration.user.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-        `🎁 Your Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
-        `💼 Wallet: \`${text}\`\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `⚠️ *CRITICAL REQUIREMENTS:*\n\n` +
-        `To receive your tokens, you MUST:\n` +
-        `✅ Stay subscribed to @mai_news until listing\n` +
-        `✅ Remain in community chat until listing\n` +
-        `✅ Follow all community rules\n\n` +
-        `*Unsubscribing = Automatic disqualification!*\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `📊 Daily Check: 00:00 UTC\n` +
-        `💰 Distribution: Within 10 days after listing\n\n` +
-        `Use /status anytime to check your status.\n\n` +
-        `*Thank you for joining MAI! 🚀*`,
-        { parse_mode: 'Markdown' }
-      );
+  `🎉 *REGISTRATION SUCCESSFUL!*\n\n` +
+  `Welcome to the MAI Community Airdrop!\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `🎫 Your Position: *#${registration.user.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+  `🎁 Your Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
+  `💼 Wallet: \`${text}\`\n` +
+  `📅 Distribution: Within 10 days after listing\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `⚠️ *HOW TO KEEP YOUR POSITION:*\n\n` +
+  `✅ Stay subscribed to @mai_news\n` +
+  `✅ Remain in community chat\n` +
+  `✅ Follow all rules\n\n` +
+  `🔍 *Daily Check: 00:00 UTC*\n` +
+  `If you unsubscribe, you will:\n` +
+  `❌ Lose your position #${registration.user.position}\n` +
+  `❌ Your spot goes to next person\n` +
+  `❌ Cannot restore old position\n\n` +
+  `Use /status anytime to verify your status.\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `*Thank you for joining MAI! 🚀*\n` +
+  `Tokens will be distributed after official listing.`,
+  { parse_mode: 'Markdown' }
+);
     } 
     
     // Если нет статуса или не ждет кошелек - выход
