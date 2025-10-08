@@ -492,8 +492,8 @@ bot.command('airdrop', async (ctx) => {
     
     await sendToPrivate(
   ctx,
-  `🎁 *AIRDROP REGISTRATION*\n\n` +
-  `You're eligible! Let's register.\n\n` +
+  `🎁 AIRDROP REGISTRATION\n\n` +  // УБРАЛИ *
+  `You are eligible!\n\n` +  // УБРАЛИ апостроф
   
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   
@@ -504,7 +504,7 @@ bot.command('airdrop', async (ctx) => {
   
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   
-  `📝 *Next: Send Solana Wallet*\n\n` +
+  `📝 Next: Send Solana Wallet\n\n` +  // УБРАЛИ *
   
   `Example:\n` +
   `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...\n\n` +
@@ -519,11 +519,11 @@ bot.command('airdrop', async (ctx) => {
   
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   
-  `🔒 *Keep Position:*\n` +
-  `Stay in @mai_news + this chat\n` +
+  `🔒 Keep Position:\n` +  // УБРАЛИ *
+  `Stay in @mai_news and this chat\n` +  // УБРАЛИ "+"
   `Daily check 00:00 UTC\n` +
-  `Unsubscribe = Position lost!`,
-  { parse_mode: 'Markdown' }
+  `Unsubscribe = Position lost!`
+  // УБРАЛИ { parse_mode: 'Markdown' }
 );
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
@@ -1064,59 +1064,58 @@ bot.command('pin', async (ctx) => {
   ]);
   
   const pinMsg = await ctx.reply(
-  `🚀 *WELCOME TO MAI!*\n` +
-  `_Decentralized AI Platform_\n\n` +
+  `🚀 WELCOME TO MAI PROJECT!\n` +  // УБРАЛИ * и _
+  `Decentralized AI Platform\n\n` +  // УБРАЛИ _
   
-  `🎁 *GET 5,000 MAI FREE!*\n` +
-  `💎 $10+ value | First 20K\n` +
-  `📅 After listing\n\n` +
+  `🎁 GET 5,000 MAI FREE!\n` +
+  `First 20,000 members\n` +
+  `Distribution: After listing\n\n` +
   
-  `*How:*\n` +
-  `1. @mai_news\n` +
-  `2. This chat\n` +
-  `3. /airdrop\n` +
-  `4. Stay\n\n` +
+  `How to claim:\n` +
+  `1. Subscribe @mai_news\n` +
+  `2. Join this chat\n` +
+  `3. Use /airdrop\n` +
+  `4. Stay until listing\n\n` +
   
-  `⚠️ Check 00:00 UTC\n` +
-  `Unsubscribe = Lost!\n\n` +
+  `⚠️ Check daily 00:00 UTC\n` +
+  `Unsubscribe = Position lost!\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `💰 *PRESALE*\n` +
+  `💰 PRESALE\n` +
   `14 stages | 80% OFF\n` +
   `$0.0005 → $0.0020\n\n` +
   
-  `🎨 NFT: +5-20% forever\n` +
-  `Buy $50+\n\n` +
+  `🎨 NFT Bonus\n` +
+  `Buy $50+ = Get NFT\n` +
+  `+5% to +20% mining forever\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `🎯 *MORE:*\n` +
+  `🎯 MORE REWARDS:\n` +
   `🏆 Presale: 1M MAI\n` +
-  `🎨 NFTs: 1,400\n` +
+  `🎨 Free NFTs: 1,400\n` +
   `💵 Referrals: USDT\n\n` +
   
-  `/tasks /referral\n\n` +
-  
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `📋 *RULES:*\n` +
-  `✅ Discussions\n` +
-  `❌ Spam, scams\n\n` +
+  `📋 RULES:\n` +
+  `✅ Discussions, help\n` +
+  `❌ Spam, scams, ads\n\n` +
   
-  `⚠️ 3 warns = Ban\n` +
+  `⚠️ 3 warnings = Ban\n` +
   `📊 10 reports = Mute 24h\n` +
   `📊 20 reports = Mute 7d\n` +
   `📊 30 reports = Ban\n\n` +
   
-  `Reply + /report\n\n` +
+  `Report: Reply + /report\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `🔒 *KEEP REWARDS:*\n` +
-  `✅ @mai_news\n` +
-  `✅ This chat\n` +
-  `✅ Rules\n\n` +
+  `🔒 KEEP REWARDS:\n` +
+  `✅ Stay @mai_news\n` +
+  `✅ Stay in chat\n` +
+  `✅ Follow rules\n\n` +
   
   `Check: 00:00 UTC\n` +
   `Tokens: 10d after\n\n` +
@@ -1126,8 +1125,8 @@ bot.command('pin', async (ctx) => {
   `🌐 miningmai.com\n` +
   `📱 @mai_news\n\n` +
   
-  `👇 *Click!* 👇`,
-  { parse_mode: 'Markdown', ...keyboard }
+  `👇 Click buttons! 👇`,
+  { ...keyboard }  // УБРАЛИ parse_mode: 'Markdown'
 );
   
   try {
