@@ -2,13 +2,28 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
-console.log('🚀 Запуск MAI Bot...');
-console.log('📋 Проверка переменных:');
-console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
-console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '✅' : '❌');
-console.log('  NEWS_CHANNEL_ID:', process.env.NEWS_CHANNEL_ID || '❌');
-console.log('  CHAT_CHANNEL_ID:', process.env.CHAT_CHANNEL_ID || '❌');
+// ===== НАЧАЛО ЛОГИРОВАНИЯ =====
+console.log('\n' + '='.repeat(60));
+console.log('🚀 ЗАПУСК MAI TELEGRAM BOT');
+console.log('='.repeat(60));
 
+console.log('\n📅 Время запуска:', new Date().toISOString());
+console.log('🖥️  Node.js версия:', process.version);
+console.log('⚙️  Environment:', process.env.NODE_ENV || 'production');
+console.log('🌍 Платформа:', process.platform);
+
+console.log('\n📋 ПРОВЕРКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ:');
+console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅ Установлен' : '❌ Отсутствует');
+console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '✅ Установлен' : '❌ Отсутствует');
+console.log('  NEWS_CHANNEL_ID:', process.env.NEWS_CHANNEL_ID ? `✅ ${process.env.NEWS_CHANNEL_ID}` : '❌ Отсутствует');
+console.log('  CHAT_CHANNEL_ID:', process.env.CHAT_CHANNEL_ID ? `✅ ${process.env.CHAT_CHANNEL_ID}` : '❌ Отсутствует');
+console.log('  ADMIN_IDS:', process.env.ADMIN_IDS ? `✅ ${process.env.ADMIN_IDS}` : '⚠️  Отсутствует (команды админа не будут работать!)');
+console.log('  PORT:', process.env.PORT || '3000');
+
+console.log('\n' + '='.repeat(60));
+console.log('⏳ Инициализация компонентов...');
+console.log('='.repeat(60) + '\n');
+// ===== КОНЕЦ ЛОГИРОВАНИЯ =====
 const config = {
   BOT_TOKEN: process.env.BOT_TOKEN,
   NEWS_CHANNEL_ID: process.env.NEWS_CHANNEL_ID,
