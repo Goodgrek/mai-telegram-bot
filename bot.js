@@ -1710,18 +1710,19 @@ cron.schedule('0 0 * * *', async () => {
 bot.launch({
   dropPendingUpdates: true
 }).then(() => {
-  console.log('✅ БОТ УСПЕШНО ЗАПУЩЕН!');
+  console.log('✅✅✅ БОТ УСПЕШНО ЗАПУЩЕН И РАБОТАЕТ! ✅✅✅');
   if (config.ADMIN_IDS[0]) {
-    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot online!').catch(() => {});
   }
 }).catch((error) => {
-  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА ЗАПУСКА БОТА:');
-  console.error('Описание:', error.message);
-  console.error('Stack:', error.stack);
-  console.error('\nПроверьте:');
-  console.error('1. Правильность BOT_TOKEN');
-  console.error('2. Доступ к Telegram API');
-  console.error('3. Интернет-соединение');
+  console.error('❌❌❌ ОШИБКА ЗАПУСКА БОТА ❌❌❌');
+  console.error('Error name:', error.name);
+  console.error('Error message:', error.message);
+  console.error('Full error:', error);
+  console.error('\n⚠️ ВОЗМОЖНЫЕ ПРИЧИНЫ:');
+  console.error('1. Неверный BOT_TOKEN (проверьте у @BotFather)');
+  console.error('2. Токен устарел или отозван');
+  console.error('3. Проблемы с Telegram API');
   process.exit(1);
 });
 
