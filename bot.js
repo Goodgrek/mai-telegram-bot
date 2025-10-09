@@ -2,6 +2,8 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
+const http = require('http'); // ← ДОБАВЬ
+const express = require('express');
 console.log('🚀 Запуск MAI Bot...');
 console.log('📋 Проверка переменных:');
 console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
@@ -1736,6 +1738,31 @@ cron.schedule('0 0 * * *', async () => {
     console.error('Stack:', error.stack);
   }
 });
+
+// ===== HTTP СЕРВЕР ДЛЯ RAILWAY HEALTH CHECK =====
+const PORT = process.env.PORT || 3000;
+
+// Простой HTTP сервер
+const server = http.createServer((req, res) => {
+  if (req.url === '/' || req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      bot: 'MAI Telegram Bot',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    }));
+  } else {
+    res.writeHead(404);
+    res.end('Not Found');
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`🌐 HTTP сервер запущен на порту ${PORT}`);
+  console.log(`✅ Health check доступен на http://localhost:${PORT}/health`);
+});
+// ===== КОНЕЦ HTTP СЕРВЕРА =====
 
 // Задержка перед запуском (чтобы старый инстанс успел умереть)
 async function startBot() {
