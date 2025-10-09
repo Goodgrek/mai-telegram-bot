@@ -2,28 +2,13 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
-// ===== НАЧАЛО ЛОГИРОВАНИЯ =====
-console.log('\n' + '='.repeat(60));
-console.log('🚀 ЗАПУСК MAI TELEGRAM BOT');
-console.log('='.repeat(60));
+console.log('🚀 Запуск MAI Bot...');
+console.log('📋 Проверка переменных:');
+console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
+console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '✅' : '❌');
+console.log('  NEWS_CHANNEL_ID:', process.env.NEWS_CHANNEL_ID || '❌');
+console.log('  CHAT_CHANNEL_ID:', process.env.CHAT_CHANNEL_ID || '❌');
 
-console.log('\n📅 Время запуска:', new Date().toISOString());
-console.log('🖥️  Node.js версия:', process.version);
-console.log('⚙️  Environment:', process.env.NODE_ENV || 'production');
-console.log('🌍 Платформа:', process.platform);
-
-console.log('\n📋 ПРОВЕРКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ:');
-console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅ Установлен' : '❌ Отсутствует');
-console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '✅ Установлен' : '❌ Отсутствует');
-console.log('  NEWS_CHANNEL_ID:', process.env.NEWS_CHANNEL_ID ? `✅ ${process.env.NEWS_CHANNEL_ID}` : '❌ Отсутствует');
-console.log('  CHAT_CHANNEL_ID:', process.env.CHAT_CHANNEL_ID ? `✅ ${process.env.CHAT_CHANNEL_ID}` : '❌ Отсутствует');
-console.log('  ADMIN_IDS:', process.env.ADMIN_IDS ? `✅ ${process.env.ADMIN_IDS}` : '⚠️  Отсутствует (команды админа не будут работать!)');
-console.log('  PORT:', process.env.PORT || '3000');
-
-console.log('\n' + '='.repeat(60));
-console.log('⏳ Инициализация компонентов...');
-console.log('='.repeat(60) + '\n');
-// ===== КОНЕЦ ЛОГИРОВАНИЯ =====
 const config = {
   BOT_TOKEN: process.env.BOT_TOKEN,
   NEWS_CHANNEL_ID: process.env.NEWS_CHANNEL_ID,
@@ -49,8 +34,8 @@ const PRESALE_STAGES = [
   { stage: 3, price: 0.0007, discount: 72, allocation: 7.4, tokens: '518M' },
   { stage: 4, price: 0.0008, discount: 68, allocation: 9.2, tokens: '644M' },
   { stage: 5, price: 0.0011, discount: 56, allocation: 13.2, tokens: '924M' },
-  { stage: 6, price: 0.0012, discount: 52, allocation: 16.2, tokens: '1.13B' },
-  { stage: 7, price: 0.0013, discount: 48, allocation: 14.4, tokens: '1.01B' },
+  { stage: 6, price: 0.0012, discount: 52, allocation: 16.2, tokens: '1.134B' },
+  { stage: 7, price: 0.0013, discount: 48, allocation: 14.4, tokens: '1.008B' },
   { stage: 8, price: 0.0014, discount: 44, allocation: 11.8, tokens: '826M' },
   { stage: 9, price: 0.0015, discount: 40, allocation: 8.8, tokens: '616M' },
   { stage: 10, price: 0.0016, discount: 36, allocation: 6.5, tokens: '455M' },
@@ -329,8 +314,6 @@ bot.use(async (ctx, next) => {
 bot.catch((err, ctx) => {
   return;
 });
-
-console.log('✅ База данных: используем Neon PostgreSQL');
 
 bot.start(async (ctx) => {
   console.log('✅ /start получен от:', ctx.from.id, ctx.from.username, 'тип чата:', ctx.chat.type);
@@ -1710,19 +1693,10 @@ cron.schedule('0 0 * * *', async () => {
 bot.launch({
   dropPendingUpdates: true
 }).then(() => {
-  console.log('✅✅✅ БОТ УСПЕШНО ЗАПУЩЕН И РАБОТАЕТ! ✅✅✅');
   if (config.ADMIN_IDS[0]) {
-    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot online!').catch(() => {});
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
   }
-}).catch((error) => {
-  console.error('❌❌❌ ОШИБКА ЗАПУСКА БОТА ❌❌❌');
-  console.error('Error name:', error.name);
-  console.error('Error message:', error.message);
-  console.error('Full error:', error);
-  console.error('\n⚠️ ВОЗМОЖНЫЕ ПРИЧИНЫ:');
-  console.error('1. Неверный BOT_TOKEN (проверьте у @BotFather)');
-  console.error('2. Токен устарел или отозван');
-  console.error('3. Проблемы с Telegram API');
+}).catch(() => {
   process.exit(1);
 });
 
