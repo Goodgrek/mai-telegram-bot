@@ -1093,7 +1093,7 @@ bot.command('pin', async (ctx) => {
   `📱 @mai_news\n\n` +
   
   `👇 *Click!* 👇`,
-  { ...keyboard }
+   { ...keyboard }
 );
   
   try {
