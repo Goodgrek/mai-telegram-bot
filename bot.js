@@ -997,13 +997,7 @@ bot.command('userinfo', async (ctx) => {
 });
 
 bot.command('pin', async (ctx) => {
-  if (!config.ADMIN_IDS.includes(ctx.from.id)) {
-    return ctx.reply('❌ Only admins can use this command!');
-  }
-  
-  if (ctx.chat.type === 'private') {
-    return ctx.reply('❌ This command works only in groups!');
-  }
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
   
   const keyboard = Markup.inlineKeyboard([
     [
@@ -1029,88 +1023,86 @@ bot.command('pin', async (ctx) => {
     [Markup.button.url('📱 News Channel', 'https://t.me/mai_news')]
   ]);
   
+  const pinMsg = await ctx.reply(
+  `🚀 *WELCOME TO MAI!*\n` +
+  `_Decentralized AI Platform_\n\n` +
+  
+  `🎁 *GET 5,000 MAI FREE!*\n` +
+  `💎 $10+ value | First 20K\n` +
+  `📅 After listing\n\n` +
+  
+  `*How:*\n` +
+  `1. @mai_news\n` +
+  `2. This chat\n` +
+  `3. /airdrop\n` +
+  `4. Stay\n\n` +
+  
+  `⚠️ Check 00:00 UTC\n` +
+  `Unsubscribe = Lost!\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+  
+  `💰 *PRESALE*\n` +
+  `14 stages | 80% OFF\n` +
+  `$0.0005 → $0.0020\n\n` +
+  
+  `🎨 NFT: +5-20% forever\n` +
+  `Buy $50+\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🎯 *MORE:*\n` +
+  `🏆 Presale: 1M MAI\n` +
+  `🎨 NFTs: 1,400\n` +
+  `💵 Referrals: USDT\n\n` +
+  
+  `/tasks /referral\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+  
+  `📋 *RULES:*\n` +
+  `✅ Discussions\n` +
+  `❌ Spam, scams\n\n` +
+  
+  `⚠️ 3 warns = Ban\n` +
+  `📊 10 reports = Mute 24h\n` +
+  `📊 20 reports = Mute 7d\n` +
+  `📊 30 reports = Ban\n\n` +
+  
+  `Reply + /report\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🔒 *KEEP REWARDS:*\n` +
+  `✅ @mai_news\n` +
+  `✅ This chat\n` +
+  `✅ Rules\n\n` +
+  
+  `Check: 00:00 UTC\n` +
+  `Tokens: 10d after\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+
+  `🎨 MAI STICKERS!\n` +  // ← ДОБАВИЛИ!
+  `Express yourself:\n` +
+  `https://t.me/addstickers/MAImining\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🌐 miningmai.com\n` +
+  `📱 @mai_news\n\n` +
+  
+  `👇 *Click!* 👇`,
+  { ...keyboard }
+);
+  
   try {
-    const pinMsg = await ctx.reply(
-      `🚀 WELCOME TO MAI!\n` +
-      `Decentralized AI Platform\n\n` +
-      
-      `🎁 GET 5,000 MAI FREE!\n` +
-      `💎 $10+ value | First 20K\n` +
-      `📅 After listing\n\n` +
-      
-      `How:\n` +
-      `1. @mai_news\n` +
-      `2. This chat\n` +
-      `3. /airdrop\n` +
-      `4. Stay\n\n` +
-      
-      `⚠️ Check 00:00 UTC\n` +
-      `Unsubscribe = Lost!\n\n` +
-      
-      `━━━━━━━━━━━━━━━━\n\n` +
-      
-      `💰 PRESALE\n` +
-      `7B tokens | 14 stages\n` +
-      `80% OFF | $0.0005 to $0.0020\n\n` +
-      
-      `🎨 NFT: +5-20% forever\n` +
-      `Buy $50+\n\n` +
-      
-      `━━━━━━━━━━━━━━━━\n\n` +
-      
-      `🎯 MORE:\n` +
-      `🏆 Presale: 1M MAI\n` +
-      `🎨 NFTs: 1,400\n` +
-      `💵 Referrals: USDT\n\n` +
-      
-      `/tasks /referral\n\n` +
-      
-      `━━━━━━━━━━━━━━━━\n\n` +
-      
-      `📋 RULES:\n` +
-      `✅ Discussions\n` +
-      `❌ Spam, scams\n\n` +
-      
-      `⚠️ 3 warns = Ban\n` +
-      `📊 10 reports = Mute 24h\n` +
-      `📊 20 reports = Mute 7d\n` +
-      `📊 30 reports = Ban\n\n` +
-      
-      `Reply + /report\n\n` +
-      
-      `━━━━━━━━━━━━━━━━\n\n` +
-      
-      `🔒 KEEP REWARDS:\n` +
-      `✅ @mai_news\n` +
-      `✅ This chat\n` +
-      `✅ Rules\n\n` +
-      
-      `Check: 00:00 UTC\n` +
-      `Tokens: 10d after\n\n` +
-      
-      `━━━━━━━━━━━━━━━━\n\n` +
-      
-      `🎨 MAI STICKERS!\n` +
-      `Express yourself:\n` +
-      `https://t.me/addstickers/MAImining\n\n` +
-      
-      `━━━━━━━━━━━━━━━━\n\n` +
-      
-      `🌐 miningmai.com\n` +
-      `📱 @mai_news\n\n` +
-      
-      `👇 Click! 👇`,
-      { ...keyboard }  // ← БЕЗ parse_mode!
-    );
-    
     await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
-    console.log('✅ Сообщение закреплено успешно');
-    
-    await ctx.deleteMessage().catch(() => {});
   } catch (err) {
-    console.error('❌ Ошибка /pin:', err.message);
-    await ctx.reply(`❌ Error: ${err.message}`);
+    console.error('❌ Не удалось закрепить:', err.message);
   }
+  
+  await ctx.deleteMessage().catch(() => {});
 });
 
 bot.action(/cmd_(.+)/, async (ctx) => {
