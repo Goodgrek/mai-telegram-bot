@@ -1710,10 +1710,18 @@ cron.schedule('0 0 * * *', async () => {
 bot.launch({
   dropPendingUpdates: true
 }).then(() => {
+  console.log('✅ БОТ УСПЕШНО ЗАПУЩЕН!');
   if (config.ADMIN_IDS[0]) {
     bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
   }
-}).catch(() => {
+}).catch((error) => {
+  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА ЗАПУСКА БОТА:');
+  console.error('Описание:', error.message);
+  console.error('Stack:', error.stack);
+  console.error('\nПроверьте:');
+  console.error('1. Правильность BOT_TOKEN');
+  console.error('2. Доступ к Telegram API');
+  console.error('3. Интернет-соединение');
   process.exit(1);
 });
 
