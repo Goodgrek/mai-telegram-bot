@@ -1754,10 +1754,53 @@ cron.schedule('0 0 * * *', async () => {
 bot.launch({
   dropPendingUpdates: true
 }).then(() => {
-  if (config.ADMIN_IDS[0]) {
-    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
+  console.log('='.repeat(50));
+  console.log('✅ БОТ ЗАПУЩЕН УСПЕШНО!');
+  console.log('🕐 Время запуска:', new Date().toISOString());
+  console.log('🤖 MAI Bot v2.2 - READY TO WORK!');
+  console.log('👥 Admin IDs:', config.ADMIN_IDS);
+  console.log('='.repeat(50));
+  
+  // Отправляем сообщение админу
+  if (config.ADMIN_IDS && config.ADMIN_IDS.length > 0 && config.ADMIN_IDS[0]) {
+    bot.telegram.sendMessage(
+      config.ADMIN_IDS[0], 
+      '✅ MAI Bot v2.2 Professional\n\n' +
+      '🟢 Status: ONLINE\n' +
+      '🕐 Time: ' + new Date().toLocaleString() + '\n' +
+      '🤖 Ready to work!'
+    ).then(() => {
+      console.log('📨 Уведомление админу отправлено успешно');
+    }).catch((error) => {
+      console.error('❌ Ошибка отправки уведомления админу:', error.message);
+    });
+  } else {
+    console.warn('⚠️ ADMIN_IDS не настроен или пустой:', config.ADMIN_IDS);
   }
-}).catch(() => {
+}).catch((error) => {
+  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА ЗАПУСКА БОТА:', error);
+  console.error('Stack trace:', error.stack);
+  process.exit(1);
+});
+
+// Обработка остановки
+process.once('SIGINT', () => {
+  console.log('⚠️ Получен SIGINT - остановка бота...');
+  bot.stop('SIGINT');
+});
+
+process.once('SIGTERM', () => {
+  console.log('⚠️ Получен SIGTERM - остановка бота...');
+  bot.stop('SIGTERM');
+});
+
+// Обработка необработанных ошибок
+process.on('unhandledRejection', (error) => {
+  console.error('❌ Unhandled Promise Rejection:', error);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 
