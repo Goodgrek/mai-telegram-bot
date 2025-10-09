@@ -997,12 +997,10 @@ bot.command('userinfo', async (ctx) => {
 });
 
 bot.command('pin', async (ctx) => {
-  // ✅ ИСПРАВЛЕНО: Даем обратную связь!
   if (!config.ADMIN_IDS.includes(ctx.from.id)) {
     return ctx.reply('❌ Only admins can use this command!');
   }
   
-  // ✅ ИСПРАВЛЕНО: Проверяем что в группе!
   if (ctx.chat.type === 'private') {
     return ctx.reply('❌ This command works only in groups!');
   }
@@ -1033,14 +1031,14 @@ bot.command('pin', async (ctx) => {
   
   try {
     const pinMsg = await ctx.reply(
-      `🚀 *WELCOME TO MAI!*\n` +
-      `_Decentralized AI Platform_\n\n` +
+      `🚀 WELCOME TO MAI!\n` +
+      `Decentralized AI Platform\n\n` +
       
-      `🎁 *GET 5,000 MAI FREE!*\n` +
+      `🎁 GET 5,000 MAI FREE!\n` +
       `💎 $10+ value | First 20K\n` +
       `📅 After listing\n\n` +
       
-      `*How:*\n` +
+      `How:\n` +
       `1. @mai_news\n` +
       `2. This chat\n` +
       `3. /airdrop\n` +
@@ -1051,16 +1049,16 @@ bot.command('pin', async (ctx) => {
       
       `━━━━━━━━━━━━━━━━\n\n` +
       
-      `💰 *PRESALE*\n` +
-      `7B tokens | 14 stages\n` +  // ← ОБНОВЛЕНО!
-      `80% OFF | $0.0005 → $0.0020\n\n` +
+      `💰 PRESALE\n` +
+      `7B tokens | 14 stages\n` +
+      `80% OFF | $0.0005 to $0.0020\n\n` +
       
       `🎨 NFT: +5-20% forever\n` +
       `Buy $50+\n\n` +
       
       `━━━━━━━━━━━━━━━━\n\n` +
       
-      `🎯 *MORE:*\n` +
+      `🎯 MORE:\n` +
       `🏆 Presale: 1M MAI\n` +
       `🎨 NFTs: 1,400\n` +
       `💵 Referrals: USDT\n\n` +
@@ -1069,7 +1067,7 @@ bot.command('pin', async (ctx) => {
       
       `━━━━━━━━━━━━━━━━\n\n` +
       
-      `📋 *RULES:*\n` +
+      `📋 RULES:\n` +
       `✅ Discussions\n` +
       `❌ Spam, scams\n\n` +
       
@@ -1082,7 +1080,7 @@ bot.command('pin', async (ctx) => {
       
       `━━━━━━━━━━━━━━━━\n\n` +
       
-      `🔒 *KEEP REWARDS:*\n` +
+      `🔒 KEEP REWARDS:\n` +
       `✅ @mai_news\n` +
       `✅ This chat\n` +
       `✅ Rules\n\n` +
@@ -1101,18 +1099,18 @@ bot.command('pin', async (ctx) => {
       `🌐 miningmai.com\n` +
       `📱 @mai_news\n\n` +
       
-      `👇 *Click!* 👇`,
-      { parse_mode: 'Markdown', ...keyboard }
+      `👇 Click! 👇`,
+      { ...keyboard }  // ← БЕЗ parse_mode!
     );
     
     await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
     console.log('✅ Сообщение закреплено успешно');
+    
+    await ctx.deleteMessage().catch(() => {});
   } catch (err) {
     console.error('❌ Ошибка /pin:', err.message);
-    await ctx.reply(`❌ Error: ${err.message}\n\n⚠️ Make sure bot has "Pin Messages" permission!`);
+    await ctx.reply(`❌ Error: ${err.message}`);
   }
-  
-  await ctx.deleteMessage().catch(() => {});
 });
 
 bot.action(/cmd_(.+)/, async (ctx) => {
