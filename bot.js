@@ -1034,75 +1034,74 @@ bot.command('pin', async (ctx) => {
       { source: './images/mai-pin.png' },  // ← ПУТЬ К ФОТО!
       {
         caption: 
-          `🚀 WELCOME TO MAI!\n` +
-          `Decentralized AI Platform\n\n` +
-          
-          `🎁 GET 5,000 MAI FREE!\n` +
-          `💎 $10+ value | First 20K\n` +
-          `📅 After listing\n\n` +
-          
-          `How:\n` +
-          `1. @mai_news\n` +
-          `2. This chat\n` +
-          `3. /airdrop\n` +
-          `4. Stay\n\n` +
-          
-          `⚠️ Check 00:00 UTC\n` +
-          `Unsubscribe = Lost!\n\n` +
-          
-          `━━━━━━━━━━━━━━━━\n\n` +
-          
-          `💰 PRESALE\n` +
-          `7B tokens | 14 stages\n` +
-          `80% OFF | $0.0005 to $0.0020\n\n` +
-          
-          `🎨 NFT: +5-20% forever\n` +
-          `Buy $50+\n\n` +
-          
-          `━━━━━━━━━━━━━━━━\n\n` +
-          
-          `🎯 MORE:\n` +
-          `🏆 Presale: 1M MAI\n` +
-          `🎨 NFTs: 1,400\n` +
-          `💵 Referrals: USDT\n\n` +
-          
-          `/tasks /referral\n\n` +
-          
-          `━━━━━━━━━━━━━━━━\n\n` +
-          
-          `📋 RULES:\n` +
-          `✅ Discussions\n` +
-          `❌ Spam, scams\n\n` +
-          
-          `⚠️ 3 warns = Ban\n` +
-          `📊 10 reports = Mute 24h\n` +
-          `📊 20 reports = Mute 7d\n` +
-          `📊 30 reports = Ban\n\n` +
-          
-          `Reply + /report\n\n` +
-          
-          `━━━━━━━━━━━━━━━━\n\n` +
-          
-          `🔒 KEEP REWARDS:\n` +
-          `✅ @mai_news\n` +
-          `✅ This chat\n` +
-          `✅ Rules\n\n` +
-          
-          `Check: 00:00 UTC\n` +
-          `Tokens: 10d after\n\n` +
-          
-          `━━━━━━━━━━━━━━━━\n\n` +
-          
-          `🎨 MAI STICKERS!\n` +
-          `Express yourself:\n` +
-          `https://t.me/addstickers/MAImining\n\n` +
-          
-          `━━━━━━━━━━━━━━━━\n\n` +
-          
-          `🌐 miningmai.com\n` +
-          `📱 @mai_news\n\n` +
-          
-          `👇 Click! 👇`,
+  `🚀 WELCOME TO MAI!\n` +
+  `Decentralized AI Platform\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n` +
+  `🎁 FREE AIRDROP\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `💰 5,000 MAI (~$10)\n` +
+  `👥 First 20,000 only\n` +
+  `📅 After listing\n\n` +
+  
+  `✅ Subscribe @mai_news\n` +
+  `✅ Stay in chat\n` +
+  `✅ Use /airdrop\n\n` +
+  
+  `⚠️ Daily check 00:00 UTC\n` +
+  `Unsubscribe = Position lost!\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n` +
+  `💎 PRESALE\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🪙 7B tokens • 14 stages\n` +
+  `🔥 Up to 80% discount\n` +
+  `💵 $0.0005 → $0.0020\n\n` +
+  
+  `🎨 NFT Bonus: +5-20%\n` +
+  `   Mining boost FOREVER!\n` +
+  `   Min. buy: $50\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n` +
+  `🎯 EARN MORE\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🏆 Tasks: Up to 1M MAI\n` +
+  `🎨 NFT Airdrop: 1,400\n` +
+  `💵 Referrals: USDT pool\n\n` +
+  
+  `📋 /tasks • /referral\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n` +
+  `🛡️ COMMUNITY RULES\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `✅ Discussions OK\n` +
+  `❌ Spam/Scams = Ban\n\n` +
+  
+  `⚡ Auto-moderation:\n` +
+  `• 3 warns → Ban\n` +
+  `• 10 reports → Mute 24h\n` +
+  `• 20 reports → Mute 7d\n` +
+  `• 30 reports → Perma ban\n\n` +
+  
+  `📢 Report: Reply + /report\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n` +
+  `🎨 Get MAI Stickers!\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `Express yourself ➜\n` +
+  `t.me/addstickers/MAImining\n\n` +
+  
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+  
+  `🌐 miningmai.com\n` +
+  `📱 @mai_news\n\n` +
+  
+  `👇 Click buttons below! 👇`,
         ...keyboard
       }
     );
