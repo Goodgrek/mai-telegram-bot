@@ -1031,7 +1031,7 @@ bot.command('pin', async (ctx) => {
   
   try {
     const pinMsg = await ctx.replyWithPhoto(
-      { source: './images/mai-pin.png' },  // ← ПУТЬ К ФОТО!
+      { source: './images/mai-pin.webp' },  // ← ПУТЬ К ФОТО!
       {
         caption: 
   `🚀 WELCOME TO MAI!\n` +
@@ -1059,6 +1059,10 @@ bot.command('pin', async (ctx) => {
   `🪙 7B tokens • 14 stages\n` +
   `🔥 Up to 80% discount\n` +
   `💵 $0.0005 → $0.0020\n\n` +
+
+  `💡 *HOW TO BUY:*\n` +
+  `📱 Mobile: HOLD link → "Open in..."\n` +
+  `💻 Desktop: Just click!\n\n` +
   
   `🎨 NFT Bonus: +5-20%\n` +
   `   Mining boost FOREVER!\n` +
@@ -1068,11 +1072,11 @@ bot.command('pin', async (ctx) => {
   `🎯 EARN MORE\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   
-  `🏆 Tasks: Up to 1M MAI\n` +
+  `🏆 Presale Airdrop: 800,000,000 MAI\n` +
   `🎨 NFT Airdrop: 1,400\n` +
   `💵 Referrals: USDT pool\n\n` +
   
-  `📋 /tasks • /referral\n\n` +
+  `📋 /tasks • /nftairdrop • /referral\n\n` +
   
   `━━━━━━━━━━━━━━━━━━━━\n` +
   `🛡️ COMMUNITY RULES\n` +
@@ -1271,9 +1275,35 @@ Complete tasks during presale to participate in our massive *800,000,000 MAI* ai
 ━━━━━━━━━━━━━━━━━━━━
 
 💰 *REWARDS:*
+
 🥇 5/5 tasks: 1,000,000 MAI
+   • 500 spots available
+
 🥈 4/5 tasks: 500,000 MAI
+   • 500 spots available
+
 🥉 3/5 tasks: 100,000 MAI
+   • 500 spots available
+
+━━━━━━━━━━━━━━━━━━━━
+
+🎰 *ALLOCATION SYSTEM:*
+
+✅ If participants ≤ 500 per level:
+   Everyone gets the reward!
+
+🎲 If participants > 500 per level:
+   Random lottery determines winners
+
+📊 Total: 1,500 winners across all levels
+
+━━━━━━━━━━━━━━━━━━━━
+
+⏰ *Important:*
+- Complete tasks during presale
+- Winners announced after presale ends
+- Lottery is provably fair
+- Track progress on dashboard
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1307,9 +1337,29 @@ function getFaqText() {
 🤖 ABOUT MAI
 MAI is a decentralized AI platform owned by the community. Unlike corporate AI, MAI belongs to everyone.
 
+💼 HOW TO BUY MAI
+
+Q: How to buy from mobile?
+A: HOLD "Buy MAI" button
+   → Tap "Open in..."
+   → Choose Chrome/Safari
+   → Connect wallet & buy!
+
+Q: Why doesn't work in Telegram?
+A: Telegram browser blocks Web3.
+   Must open in real browser!
+   Desktop: just click link
+
+Q: Which wallets supported?
+A: Any Solana wallet:
+   Phantom, Solflare, Trust Wallet,
+   Backpack, Binance Web3, etc.
+   NO KYC required!
+
 💰 PRESALE
 - 14 stages: $0.0005 → $0.0020
 - Up to 80% discount
+- Total: 7 billion MAI tokens
 - Payment: SOL, USDT, USDC
 - Listing: Q4 2025 on DEX/CEX
 
@@ -1326,13 +1376,49 @@ Requirements:
 ✅ Stay in chat until listing
 ✅ Register wallet: /airdrop
 
-💼 WALLET SETUP
-- Use any Solana wallet
-- Phantom (recommended)
-- Solflare, Trust Wallet, Backpack
-- NO KYC required
+🏆 PRESALE AIRDROP (Up to 1M MAI)
 
-🎨 NFT REWARDS
+Q: How does it work?
+A: Complete 3-5 tasks during presale
+   
+   Rewards:
+   🥇 5/5 tasks: 1,000,000 MAI
+   🥈 4/5 tasks: 500,000 MAI
+   🥉 3/5 tasks: 100,000 MAI
+
+Q: How many winners?
+A: 500 spots per level (1,500 total)
+   
+   If ≤500 participants: Everyone wins!
+   If >500 participants: Random lottery
+   
+Q: What are the tasks?
+A: 1. Buy 10K+ MAI (stages 1-3)
+   2. Buy 10K+ MAI (stages 5-7)
+   3. Buy 10K+ MAI (stages 10-14)
+   4. Earn Reward NFT
+   5. Invite 2+ friends
+   
+   Track progress: /tasks
+
+🎨 NFT AIRDROP (1,400 NFTs)
+
+Q: How to get Airdrop NFT?
+A: Buy 10,000+ MAI in any stage
+   First 100 buyers per stage win!
+   Same as Silver NFT benefits
+   
+Q: What benefits?
+A: • +2 months early mining
+   • 6 months DAO voting
+   • +10% mining bonus FOREVER
+   
+Q: How many NFTs total?
+A: 1,400 NFTs (100 per stage × 14)
+   One per wallet max
+   Claim after listing (~0.03 SOL)
+
+🎨 NFT REWARD TIERS
 Buy presale → Get permanent bonuses:
 - $50-99: Bronze (+5% mining forever)
 - $100-199: Silver (+10% forever)
@@ -1349,7 +1435,7 @@ Buy presale → Get permanent bonuses:
 - Earn up to 7% in USDT
 - $500K reward pool
 - Paid weekly (Fridays)
-- Link: https://miningmai.com
+- Get link: https://miningmai.com
 
 🗳️ DAO GOVERNANCE
 - Community votes on decisions
@@ -1372,8 +1458,7 @@ Admins NEVER DM first!
 🔗 OFFICIAL LINKS
 🌐 https://miningmai.com
 📱 @mai_news
-
-Last Updated: October 2025`;
+`;
 }
 
 function getRulesText() {
