@@ -2,7 +2,6 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
-const fs = require('fs');
 console.log('🚀 Запуск MAI Bot...');
 console.log('📋 Проверка переменных:');
 console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
@@ -998,7 +997,13 @@ bot.command('userinfo', async (ctx) => {
 });
 
 bot.command('pin', async (ctx) => {
-  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) {
+    return ctx.reply('❌ Only admins can use this command!');
+  }
+  
+  if (ctx.chat.type === 'private') {
+    return ctx.reply('❌ This command works only in groups!');
+  }
   
   const keyboard = Markup.inlineKeyboard([
     [
@@ -1025,19 +1030,18 @@ bot.command('pin', async (ctx) => {
   ]);
   
   try {
-    // ИСПОЛЬЗУЕМ replyWithPhoto вместо reply
     const pinMsg = await ctx.replyWithPhoto(
-      { source: 'images/mai-pin.png' }, // ← ПУТЬ К ФОТО
+      { source: './images/mai-pin.png' },  // ← ПУТЬ К ФОТО!
       {
         caption: 
-          `🚀 *WELCOME TO MAI!*\n` +
-          `_Decentralized AI Platform_\n\n` +
+          `🚀 WELCOME TO MAI!\n` +
+          `Decentralized AI Platform\n\n` +
           
-          `🎁 *GET 5,000 MAI FREE!*\n` +
+          `🎁 GET 5,000 MAI FREE!\n` +
           `💎 $10+ value | First 20K\n` +
           `📅 After listing\n\n` +
           
-          `*How:*\n` +
+          `How:\n` +
           `1. @mai_news\n` +
           `2. This chat\n` +
           `3. /airdrop\n` +
@@ -1048,16 +1052,16 @@ bot.command('pin', async (ctx) => {
           
           `━━━━━━━━━━━━━━━━\n\n` +
           
-          `💰 *PRESALE*\n` +
-          `14 stages | 80% OFF\n` +
-          `$0.0005 → $0.0020\n\n` +
+          `💰 PRESALE\n` +
+          `7B tokens | 14 stages\n` +
+          `80% OFF | $0.0005 to $0.0020\n\n` +
           
           `🎨 NFT: +5-20% forever\n` +
           `Buy $50+\n\n` +
           
           `━━━━━━━━━━━━━━━━\n\n` +
           
-          `🎯 *MORE:*\n` +
+          `🎯 MORE:\n` +
           `🏆 Presale: 1M MAI\n` +
           `🎨 NFTs: 1,400\n` +
           `💵 Referrals: USDT\n\n` +
@@ -1066,7 +1070,7 @@ bot.command('pin', async (ctx) => {
           
           `━━━━━━━━━━━━━━━━\n\n` +
           
-          `📋 *RULES:*\n` +
+          `📋 RULES:\n` +
           `✅ Discussions\n` +
           `❌ Spam, scams\n\n` +
           
@@ -1079,7 +1083,7 @@ bot.command('pin', async (ctx) => {
           
           `━━━━━━━━━━━━━━━━\n\n` +
           
-          `🔒 *KEEP REWARDS:*\n` +
+          `🔒 KEEP REWARDS:\n` +
           `✅ @mai_news\n` +
           `✅ This chat\n` +
           `✅ Rules\n\n` +
@@ -1088,7 +1092,7 @@ bot.command('pin', async (ctx) => {
           `Tokens: 10d after\n\n` +
           
           `━━━━━━━━━━━━━━━━\n\n` +
-
+          
           `🎨 MAI STICKERS!\n` +
           `Express yourself:\n` +
           `https://t.me/addstickers/MAImining\n\n` +
@@ -1098,38 +1102,19 @@ bot.command('pin', async (ctx) => {
           `🌐 miningmai.com\n` +
           `📱 @mai_news\n\n` +
           
-          `👇 *Click!* 👇`,
-        parse_mode: 'Markdown',
+          `👇 Click! 👇`,
         ...keyboard
       }
     );
     
-    // Закрепляем сообщение
-    try {
-      await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
-    } catch (err) {
-      console.error('❌ Не удалось закрепить:', err.message);
-    }
+    await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
+    console.log('✅ Сообщение с фото закреплено успешно');
     
-  } catch (error) {
-    console.error('❌ Ошибка отправки фото:', error.message);
-    // Если фото не найдено, отправляем без фото
-    const pinMsg = await ctx.reply(
-      `🚀 *WELCOME TO MAI!*\n` +
-      `_Decentralized AI Platform_\n\n` +
-      // ... весь текст
-      `👇 *Click!* 👇`,
-      { ...keyboard }
-    );
-    
-    try {
-      await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
-    } catch (err) {
-      console.error('❌ Не удалось закрепить:', err.message);
-    }
+    await ctx.deleteMessage().catch(() => {});
+  } catch (err) {
+    console.error('❌ Ошибка /pin:', err.message);
+    await ctx.reply(`❌ Error: ${err.message}`);
   }
-  
-  await ctx.deleteMessage().catch(() => {});
 });
 
 bot.action(/cmd_(.+)/, async (ctx) => {
