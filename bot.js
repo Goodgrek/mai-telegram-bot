@@ -415,6 +415,12 @@ Referral Program: Earn USDT
 
 ━━━━━━━━━━━━━━━━━━━━
 
+🎨 GET OUR STICKERS!
+Express yourself with MAI stickers
+👉 https://t.me/addstickers/MAImining
+
+━━━━━━━━━━━━━━━━━━━━
+
 ⚠️ CRITICAL REQUIREMENTS
 To qualify for ANY rewards, you MUST:
 ✅ Subscribe to @mai_news
@@ -1050,7 +1056,8 @@ bot.command('pin', async (ctx) => {
       Markup.button.callback('🎨 NFT Levels', 'cmd_nft')
     ],
     [
-      Markup.button.callback('🎁 Airdrop NFT', 'cmd_nftairdrop')
+      Markup.button.callback('🎁 Airdrop NFT', 'cmd_nftairdrop'),
+      Markup.button.url('🎨 Stickers', 'https://t.me/addstickers/MAImining')
     ],
     [
       Markup.button.callback('🎁 Presale Airdrop', 'cmd_tasks'),
@@ -1064,69 +1071,76 @@ bot.command('pin', async (ctx) => {
   ]);
   
   const pinMsg = await ctx.reply(
-  `🚀 WELCOME TO MAI PROJECT!\n` +  // УБРАЛИ * и _
-  `Decentralized AI Platform\n\n` +  // УБРАЛИ _
+  `🚀 *WELCOME TO MAI!*\n` +
+  `_Decentralized AI Platform_\n\n` +
   
-  `🎁 GET 5,000 MAI FREE!\n` +
-  `First 20,000 members\n` +
-  `Distribution: After listing\n\n` +
+  `🎁 *GET 5,000 MAI FREE!*\n` +
+  `💎 $10+ value | First 20K\n` +
+  `📅 After listing\n\n` +
   
-  `How to claim:\n` +
-  `1. Subscribe @mai_news\n` +
-  `2. Join this chat\n` +
-  `3. Use /airdrop\n` +
-  `4. Stay until listing\n\n` +
+  `*How:*\n` +
+  `1. @mai_news\n` +
+  `2. This chat\n` +
+  `3. /airdrop\n` +
+  `4. Stay\n\n` +
   
-  `⚠️ Check daily 00:00 UTC\n` +
-  `Unsubscribe = Position lost!\n\n` +
+  `⚠️ Check 00:00 UTC\n` +
+  `Unsubscribe = Lost!\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `💰 PRESALE\n` +
+  `💰 *PRESALE*\n` +
   `14 stages | 80% OFF\n` +
   `$0.0005 → $0.0020\n\n` +
   
-  `🎨 NFT Bonus\n` +
-  `Buy $50+ = Get NFT\n` +
-  `+5% to +20% mining forever\n\n` +
+  `🎨 NFT: +5-20% forever\n` +
+  `Buy $50+\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `🎯 MORE REWARDS:\n` +
+  `🎯 *MORE:*\n` +
   `🏆 Presale: 1M MAI\n` +
-  `🎨 Free NFTs: 1,400\n` +
+  `🎨 NFTs: 1,400\n` +
   `💵 Referrals: USDT\n\n` +
   
+  `/tasks /referral\n\n` +
+  
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `📋 RULES:\n` +
-  `✅ Discussions, help\n` +
-  `❌ Spam, scams, ads\n\n` +
+  `📋 *RULES:*\n` +
+  `✅ Discussions\n` +
+  `❌ Spam, scams\n\n` +
   
-  `⚠️ 3 warnings = Ban\n` +
+  `⚠️ 3 warns = Ban\n` +
   `📊 10 reports = Mute 24h\n` +
   `📊 20 reports = Mute 7d\n` +
   `📊 30 reports = Ban\n\n` +
   
-  `Report: Reply + /report\n\n` +
+  `Reply + /report\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
-  `🔒 KEEP REWARDS:\n` +
-  `✅ Stay @mai_news\n` +
-  `✅ Stay in chat\n` +
-  `✅ Follow rules\n\n` +
+  `🔒 *KEEP REWARDS:*\n` +
+  `✅ @mai_news\n` +
+  `✅ This chat\n` +
+  `✅ Rules\n\n` +
   
   `Check: 00:00 UTC\n` +
   `Tokens: 10d after\n\n` +
+  
+  `━━━━━━━━━━━━━━━━\n\n` +
+
+  `🎨 MAI STICKERS!\n` +  // ← ДОБАВИЛИ!
+  `Express yourself:\n` +
+  `https://t.me/addstickers/MAImining\n\n` +
   
   `━━━━━━━━━━━━━━━━\n\n` +
   
   `🌐 miningmai.com\n` +
   `📱 @mai_news\n\n` +
   
-  `👇 Click buttons! 👇`,
-  { ...keyboard }  // УБРАЛИ parse_mode: 'Markdown'
+  `👇 *Click!* 👇`,
+  { parse_mode: 'Markdown', ...keyboard }
 );
   
   try {
@@ -1721,6 +1735,13 @@ cron.schedule('0 0 * * *', async () => {
     console.error('❌ CRON: Критическая ошибка:', error.message);
     console.error('Stack:', error.stack);
   }
+});
+
+// ВРЕМЕННЫЙ КОД - для получения file_id фото
+bot.on(message('photo'), (ctx) => {
+  const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+  console.log('📸 FILE_ID:', fileId);
+  ctx.reply(`📸 Your photo file_id:\n\n${fileId}\n\nCopy this!`);
 });
 
 bot.launch({
