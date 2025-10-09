@@ -1479,6 +1479,20 @@ Use /help or ask admins
 📱 @mai_news`;
 }
 
+// ВРЕМЕННЫЙ - для получения file_id фото
+bot.on(message('photo'), async (ctx) => {
+  console.log('📸 Фото получено от:', ctx.from.id);
+  
+  const photo = ctx.message.photo;
+  const fileId = photo[photo.length - 1].file_id;
+  
+  console.log('✅ FILE_ID:', fileId);
+  
+  await ctx.reply(
+    `📸 FILE_ID получен!\n\n${fileId}\n\nСкопируй эту строку!`
+  );
+});
+
 bot.on(message('text'), async (ctx) => {
   if (config.ADMIN_IDS.includes(ctx.from.id)) return;
   
@@ -1735,13 +1749,6 @@ cron.schedule('0 0 * * *', async () => {
     console.error('❌ CRON: Критическая ошибка:', error.message);
     console.error('Stack:', error.stack);
   }
-});
-
-// ВРЕМЕННЫЙ КОД - для получения file_id фото
-bot.on(message('photo'), (ctx) => {
-  const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
-  console.log('📸 FILE_ID:', fileId);
-  ctx.reply(`📸 Your photo file_id:\n\n${fileId}\n\nCopy this!`);
 });
 
 bot.launch({
