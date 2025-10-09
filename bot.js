@@ -60,51 +60,6 @@ const PRESALE_STAGES = [
   { stage: 14, price: 0.0020, discount: 20, allocation: 0.5, tokens: '35M' },
 ];
 
-async function initDatabase() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS telegram_users (
-        id SERIAL PRIMARY KEY,
-        telegram_id BIGINT UNIQUE NOT NULL,
-        username VARCHAR(255),
-        first_name VARCHAR(255),
-        wallet_address VARCHAR(44),
-        registered_at TIMESTAMP DEFAULT NOW(),
-        is_subscribed_news BOOLEAN DEFAULT true,
-        is_subscribed_chat BOOLEAN DEFAULT true,
-        last_check TIMESTAMP DEFAULT NOW(),
-        warnings INT DEFAULT 0,
-        reports_received INT DEFAULT 0,
-        mute_count INT DEFAULT 0,
-        banned BOOLEAN DEFAULT false,
-        muted_until TIMESTAMP NULL,
-        reward_amount INT DEFAULT 5000,
-        claimed BOOLEAN DEFAULT false,
-        position INT,
-        awaiting_wallet BOOLEAN DEFAULT false
-      )
-    `);
-    
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_reports (
-        id SERIAL PRIMARY KEY,
-        reporter_id BIGINT NOT NULL,
-        reported_user_id BIGINT NOT NULL,
-        chat_id BIGINT NOT NULL,
-        report_time TIMESTAMP DEFAULT NOW(),
-        UNIQUE(reporter_id, reported_user_id)
-      )
-    `);
-    
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_telegram_id ON telegram_users(telegram_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_wallet ON telegram_users(wallet_address)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_position ON telegram_users(position)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_reported_user ON user_reports(reported_user_id)`);
-  } catch (error) {
-    throw error;
-  }
-}
-
 async function checkSubscription(bot, channelId, userId) {
   try {
     const member = await bot.telegram.getChatMember(channelId, userId);
@@ -375,7 +330,7 @@ bot.catch((err, ctx) => {
   return;
 });
 
-initDatabase().catch(() => {});
+console.log('✅ База данных: используем Neon PostgreSQL');
 
 bot.start(async (ctx) => {
   console.log('✅ /start получен от:', ctx.from.id, ctx.from.username, 'тип чата:', ctx.chat.type);
