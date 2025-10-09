@@ -2,7 +2,6 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
-const express = require('express');
 console.log('🚀 Запуск MAI Bot...');
 console.log('📋 Проверка переменных:');
 console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
@@ -1738,109 +1737,13 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-// Задержка перед запуском (чтобы старый инстанс успел умереть)
-async function startBot() {
-  console.log('⏳ Ожидание 3 секунды перед запуском...');
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  
-  console.log('🚀 Начинаем запуск бота...');
-  
-  try {
-    await bot.launch({
-      dropPendingUpdates: true,
-      allowedUpdates: [] // Игнорируем все старые обновления
-    });
-    
-    console.log('='.repeat(50));
-    console.log('✅ БОТ ЗАПУЩЕН УСПЕШНО!');
-    console.log('🕐 Время запуска:', new Date().toISOString());
-    console.log('🤖 MAI Bot v2.2 - READY TO WORK!');
-    console.log('👥 Admin IDs:', config.ADMIN_IDS);
-    console.log('='.repeat(50));
-    
-    // Отправляем сообщение админу
-    if (config.ADMIN_IDS && config.ADMIN_IDS.length > 0 && config.ADMIN_IDS[0]) {
-      try {
-        await bot.telegram.sendMessage(
-          config.ADMIN_IDS[0], 
-          '✅ MAI Bot v2.2\n\n' +
-          '🟢 Status: ONLINE\n' +
-          '🕐 Time: ' + new Date().toLocaleString()
-        );
-        console.log('📨 Уведомление админу отправлено');
-      } catch (error) {
-        console.error('❌ Ошибка отправки уведомления:', error.message);
-      }
-    }
-  } catch (error) {
-    console.error('❌ КРИТИЧЕСКАЯ ОШИБКА ЗАПУСКА:', error.message);
-    
-    // Если ошибка 409 - ждем дольше и пробуем снова
-    if (error.message.includes('409') || error.message.includes('Conflict')) {
-      console.log('⚠️ Обнаружен конфликт (409). Ждем 10 секунд и пробуем снова...');
-      await new Promise(resolve => setTimeout(resolve, 10000));
-      
-      console.log('🔄 Повторная попытка запуска...');
-      try {
-        await bot.launch({
-          dropPendingUpdates: true,
-          allowedUpdates: []
-        });
-        console.log('✅ БОТ ЗАПУЩЕН УСПЕШНО (вторая попытка)!');
-      } catch (retryError) {
-        console.error('❌ ПОВТОРНАЯ ПОПЫТКА ПРОВАЛИЛАСЬ:', retryError.message);
-        process.exit(1);
-      }
-    } else {
-      process.exit(1);
-    }
+bot.launch({
+  dropPendingUpdates: true
+}).then(() => {
+  if (config.ADMIN_IDS[0]) {
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
   }
-}
-
-// Graceful shutdown
-let isShuttingDown = false;
-
-async function gracefulShutdown(signal) {
-  if (isShuttingDown) {
-    console.log('⚠️ Shutdown уже в процессе...');
-    return;
-  }
-  
-  isShuttingDown = true;
-  console.log(`⚠️ Получен сигнал ${signal} - начинаем graceful shutdown...`);
-  
-  try {
-    // Останавливаем бота
-    await bot.stop(signal);
-    console.log('✅ Бот остановлен gracefully');
-    
-    // Ждем 2 секунды чтобы все соединения закрылись
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    process.exit(0);
-  } catch (error) {
-    console.error('❌ Ошибка при shutdown:', error);
-    process.exit(1);
-  }
-}
-
-// Обработка сигналов
-process.once('SIGINT', () => gracefulShutdown('SIGINT'));
-process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));
-
-// Обработка необработанных ошибок
-process.on('unhandledRejection', (error) => {
-  console.error('❌ Unhandled Promise Rejection:', error);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
-  gracefulShutdown('uncaughtException');
-});
-
-// ЗАПУСКАЕМ БОТА
-startBot().catch((error) => {
-  console.error('❌ Фатальная ошибка при запуске:', error);
+}).catch(() => {
   process.exit(1);
 });
 
