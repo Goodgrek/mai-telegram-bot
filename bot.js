@@ -2,6 +2,7 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
+const fs = require('fs');
 console.log('🚀 Запуск MAI Bot...');
 console.log('📋 Проверка переменных:');
 console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
@@ -1023,83 +1024,109 @@ bot.command('pin', async (ctx) => {
     [Markup.button.url('📱 News Channel', 'https://t.me/mai_news')]
   ]);
   
-  const pinMsg = await ctx.reply(
-  `🚀 *WELCOME TO MAI!*\n` +
-  `_Decentralized AI Platform_\n\n` +
-  
-  `🎁 *GET 5,000 MAI FREE!*\n` +
-  `💎 $10+ value | First 20K\n` +
-  `📅 After listing\n\n` +
-  
-  `*How:*\n` +
-  `1. @mai_news\n` +
-  `2. This chat\n` +
-  `3. /airdrop\n` +
-  `4. Stay\n\n` +
-  
-  `⚠️ Check 00:00 UTC\n` +
-  `Unsubscribe = Lost!\n\n` +
-  
-  `━━━━━━━━━━━━━━━━\n\n` +
-  
-  `💰 *PRESALE*\n` +
-  `14 stages | 80% OFF\n` +
-  `$0.0005 → $0.0020\n\n` +
-  
-  `🎨 NFT: +5-20% forever\n` +
-  `Buy $50+\n\n` +
-  
-  `━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🎯 *MORE:*\n` +
-  `🏆 Presale: 1M MAI\n` +
-  `🎨 NFTs: 1,400\n` +
-  `💵 Referrals: USDT\n\n` +
-  
-  `/tasks /referral\n\n` +
-  
-  `━━━━━━━━━━━━━━━━\n\n` +
-  
-  `📋 *RULES:*\n` +
-  `✅ Discussions\n` +
-  `❌ Spam, scams\n\n` +
-  
-  `⚠️ 3 warns = Ban\n` +
-  `📊 10 reports = Mute 24h\n` +
-  `📊 20 reports = Mute 7d\n` +
-  `📊 30 reports = Ban\n\n` +
-  
-  `Reply + /report\n\n` +
-  
-  `━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🔒 *KEEP REWARDS:*\n` +
-  `✅ @mai_news\n` +
-  `✅ This chat\n` +
-  `✅ Rules\n\n` +
-  
-  `Check: 00:00 UTC\n` +
-  `Tokens: 10d after\n\n` +
-  
-  `━━━━━━━━━━━━━━━━\n\n` +
-
-  `🎨 MAI STICKERS!\n` +  // ← ДОБАВИЛИ!
-  `Express yourself:\n` +
-  `https://t.me/addstickers/MAImining\n\n` +
-  
-  `━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🌐 miningmai.com\n` +
-  `📱 @mai_news\n\n` +
-  
-  `👇 *Click!* 👇`,
-   { ...keyboard }
-);
-  
   try {
-    await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
-  } catch (err) {
-    console.error('❌ Не удалось закрепить:', err.message);
+    // ИСПОЛЬЗУЕМ replyWithPhoto вместо reply
+    const pinMsg = await ctx.replyWithPhoto(
+      { source: 'images/mai-pin.png' }, // ← ПУТЬ К ФОТО
+      {
+        caption: 
+          `🚀 *WELCOME TO MAI!*\n` +
+          `_Decentralized AI Platform_\n\n` +
+          
+          `🎁 *GET 5,000 MAI FREE!*\n` +
+          `💎 $10+ value | First 20K\n` +
+          `📅 After listing\n\n` +
+          
+          `*How:*\n` +
+          `1. @mai_news\n` +
+          `2. This chat\n` +
+          `3. /airdrop\n` +
+          `4. Stay\n\n` +
+          
+          `⚠️ Check 00:00 UTC\n` +
+          `Unsubscribe = Lost!\n\n` +
+          
+          `━━━━━━━━━━━━━━━━\n\n` +
+          
+          `💰 *PRESALE*\n` +
+          `14 stages | 80% OFF\n` +
+          `$0.0005 → $0.0020\n\n` +
+          
+          `🎨 NFT: +5-20% forever\n` +
+          `Buy $50+\n\n` +
+          
+          `━━━━━━━━━━━━━━━━\n\n` +
+          
+          `🎯 *MORE:*\n` +
+          `🏆 Presale: 1M MAI\n` +
+          `🎨 NFTs: 1,400\n` +
+          `💵 Referrals: USDT\n\n` +
+          
+          `/tasks /referral\n\n` +
+          
+          `━━━━━━━━━━━━━━━━\n\n` +
+          
+          `📋 *RULES:*\n` +
+          `✅ Discussions\n` +
+          `❌ Spam, scams\n\n` +
+          
+          `⚠️ 3 warns = Ban\n` +
+          `📊 10 reports = Mute 24h\n` +
+          `📊 20 reports = Mute 7d\n` +
+          `📊 30 reports = Ban\n\n` +
+          
+          `Reply + /report\n\n` +
+          
+          `━━━━━━━━━━━━━━━━\n\n` +
+          
+          `🔒 *KEEP REWARDS:*\n` +
+          `✅ @mai_news\n` +
+          `✅ This chat\n` +
+          `✅ Rules\n\n` +
+          
+          `Check: 00:00 UTC\n` +
+          `Tokens: 10d after\n\n` +
+          
+          `━━━━━━━━━━━━━━━━\n\n` +
+
+          `🎨 MAI STICKERS!\n` +
+          `Express yourself:\n` +
+          `https://t.me/addstickers/MAImining\n\n` +
+          
+          `━━━━━━━━━━━━━━━━\n\n` +
+          
+          `🌐 miningmai.com\n` +
+          `📱 @mai_news\n\n` +
+          
+          `👇 *Click!* 👇`,
+        parse_mode: 'Markdown',
+        ...keyboard
+      }
+    );
+    
+    // Закрепляем сообщение
+    try {
+      await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
+    } catch (err) {
+      console.error('❌ Не удалось закрепить:', err.message);
+    }
+    
+  } catch (error) {
+    console.error('❌ Ошибка отправки фото:', error.message);
+    // Если фото не найдено, отправляем без фото
+    const pinMsg = await ctx.reply(
+      `🚀 *WELCOME TO MAI!*\n` +
+      `_Decentralized AI Platform_\n\n` +
+      // ... весь текст
+      `👇 *Click!* 👇`,
+      { ...keyboard }
+    );
+    
+    try {
+      await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
+    } catch (err) {
+      console.error('❌ Не удалось закрепить:', err.message);
+    }
   }
   
   await ctx.deleteMessage().catch(() => {});
