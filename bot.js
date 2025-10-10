@@ -1031,80 +1031,79 @@ bot.command('pin', async (ctx) => {
   
   try {
     const pinMsg = await ctx.replyWithPhoto(
-      { source: './images/mai-pin.png' },  // ← ПУТЬ К ФОТО!
-      {
-        caption: 
-  `🚀 WELCOME TO MAI!\n` +
-  `Decentralized AI Platform\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n` +
-  `🎁 FREE AIRDROP\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `💰 5,000 MAI (~$10)\n` +
-  `👥 First 20,000 only\n` +
-  `📅 After listing\n\n` +
-  
-  `✅ Subscribe @mai_news\n` +
-  `✅ Stay in chat\n` +
-  `✅ Use /airdrop\n\n` +
-  
-  `⚠️ Daily check 00:00 UTC\n` +
-  `Unsubscribe = Position lost!\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n` +
-  `💎 PRESALE\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🪙 7B tokens • 14 stages\n` +
-  `🔥 Up to 80% discount\n` +
-  `💵 $0.0005 → $0.0020\n\n` +
-  
-  `🎨 NFT Bonus: +5-20%\n` +
-  `   Mining boost FOREVER!\n` +
-  `   Min. buy: $50\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n` +
-  `🎯 EARN MORE\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🏆 Presale Airdrop: 800,000,000 MAI\n` +
-  `🎨 NFT Airdrop: 1,400\n` +
-  `💵 Referrals: USDT pool\n\n` +
-  
-  `📋 /tasks • /nftairdrop • /referral\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n` +
-  `🛡️ COMMUNITY RULES\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `✅ Discussions OK\n` +
-  `❌ Spam/Scams = Ban\n\n` +
-  
-  `⚡ Auto-moderation:\n` +
-  `• 3 warns → Ban\n` +
-  `• 10 reports → Mute 24h\n` +
-  `• 20 reports → Mute 7d\n` +
-  `• 30 reports → Perma ban\n\n` +
-  
-  `📢 Report: Reply + /report\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n` +
-  `🎨 Get MAI Stickers!\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `Express yourself ➜\n` +
-  `t.me/addstickers/MAImining\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🌐 miningmai.com\n` +
-  `📱 @mai_news\n\n` +
-  
-  `👇 Click buttons below! 👇`,
-        ...keyboard
-      }
-    );
+  { source: './images/mai-pin.png' },
+  {
+    caption: `🚀 WELCOME TO MAI!
+Decentralized AI Platform
+
+━━━━━━━━━━━━━━━━━━━━
+🎁 FREE AIRDROP
+━━━━━━━━━━━━━━━━━━━━
+
+💰 5,000 MAI (~$10)
+👥 First 20,000 only
+📅 After listing
+
+✅ Subscribe @mai_news
+✅ Stay in chat
+✅ Use /airdrop
+
+⚠️ Daily check 00:00 UTC
+Unsubscribe = Position lost!
+
+━━━━━━━━━━━━━━━━━━━━
+💎 PRESALE
+━━━━━━━━━━━━━━━━━━━━
+
+🪙 7B tokens • 14 stages
+🔥 Up to 80% discount
+💵 $0.0005 → $0.0020
+
+🎨 NFT Bonus: +5-20%
+   Mining boost FOREVER!
+   Min. buy: $50
+
+━━━━━━━━━━━━━━━━━━━━
+🎯 EARN MORE
+━━━━━━━━━━━━━━━━━━━━
+
+🏆 Presale Airdrop: 800M MAI
+🎨 NFT Airdrop: 1,400
+💵 Referrals: USDT pool
+
+📋 /tasks • /nftairdrop • /referral
+
+━━━━━━━━━━━━━━━━━━━━
+🛡️ COMMUNITY RULES
+━━━━━━━━━━━━━━━━━━━━
+
+✅ Discussions OK
+❌ Spam/Scams = Ban
+
+⚡ Auto-moderation:
+- 3 warns → Ban
+- 10 reports → Mute 24h
+- 20 reports → Mute 7d
+- 30 reports → Perma ban
+
+📢 Report: Reply + /report
+
+━━━━━━━━━━━━━━━━━━━━
+🎨 Get MAI Stickers!
+━━━━━━━━━━━━━━━━━━━━
+
+Express yourself ➜
+t.me/addstickers/MAImining
+
+━━━━━━━━━━━━━━━━━━━━
+
+🌐 miningmai.com
+📱 @mai_news
+
+👇 Click buttons below! 👇`,
+    ...keyboard
+  }
+);
     
     await ctx.telegram.pinChatMessage(ctx.chat.id, pinMsg.message_id);
     console.log('✅ Сообщение с фото закреплено успешно');
