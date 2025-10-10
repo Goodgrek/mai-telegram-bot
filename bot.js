@@ -1031,7 +1031,7 @@ bot.command('pin', async (ctx) => {
   
   try {
     const pinMsg = await ctx.replyWithPhoto(
-      { source: './images/mai-pin.png' },  // ← ПУТЬ К ФОТО!
+      { source: './images/mai-pin.webp' },  // ← ПУТЬ К ФОТО!
       {
         caption: 
   `🚀 WELCOME TO MAI!\n` +
@@ -1059,10 +1059,6 @@ bot.command('pin', async (ctx) => {
   `🪙 7B tokens • 14 stages\n` +
   `🔥 Up to 80% discount\n` +
   `💵 $0.0005 → $0.0020\n\n` +
-
-  `💡 *HOW TO BUY:*\n` +
-  `📱 Mobile: HOLD link → "Open in..."\n` +
-  `💻 Desktop: Just click!\n\n` +
   
   `🎨 NFT Bonus: +5-20%\n` +
   `   Mining boost FOREVER!\n` +
