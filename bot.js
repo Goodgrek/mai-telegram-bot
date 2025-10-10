@@ -1042,65 +1042,42 @@ Decentralized AI Platform
 
 💰 5,000 MAI (~$10)
 👥 First 20,000 only
-📅 After listing
+📅 10 days after listing
 
-✅ Subscribe @mai_news
-✅ Stay in chat
-✅ Use /airdrop
-
-⚠️ Daily check 00:00 UTC
-Unsubscribe = Position lost!
+✅ @mai_news • Stay • /airdrop
+⚠️ Check 00:00 UTC daily
 
 ━━━━━━━━━━━━━━━━━━━━
 💎 PRESALE
 ━━━━━━━━━━━━━━━━━━━━
 
-🪙 7B tokens • 14 stages
-🔥 Up to 80% discount
+🪙 7B • 14 stages • 🔥 80% OFF
 💵 $0.0005 → $0.0020
 
-🎨 NFT Bonus: +5-20%
-   Mining boost FOREVER!
-   Min. buy: $50
+🎨 NFT: +5-20% forever (min $50)
 
 ━━━━━━━━━━━━━━━━━━━━
 🎯 EARN MORE
 ━━━━━━━━━━━━━━━━━━━━
 
-🏆 Presale Airdrop: 800M MAI
-🎨 NFT Airdrop: 1,400
-💵 Referrals: USDT pool
-
-📋 /tasks • /nftairdrop • /referral
+🏆 800M MAI • 🎨 1,400 NFTs • 💵 USDT
+/tasks • /nftairdrop • /referral
 
 ━━━━━━━━━━━━━━━━━━━━
-🛡️ COMMUNITY RULES
+🛡️ RULES
 ━━━━━━━━━━━━━━━━━━━━
 
-✅ Discussions OK
-❌ Spam/Scams = Ban
+✅ Talk OK • ❌ Spam = Ban
+3→Ban • 10→24h • 20→7d • 30→∞
+📢 Reply + /report
 
-⚡ Auto-moderation:
-- 3 warns → Ban
-- 10 reports → Mute 24h
-- 20 reports → Mute 7d
-- 30 reports → Perma ban
-
-📢 Report: Reply + /report
+🎨 t.me/addstickers/MAImining
 
 ━━━━━━━━━━━━━━━━━━━━
-🎨 Get MAI Stickers!
-━━━━━━━━━━━━━━━━━━━━
-
-Express yourself ➜
-t.me/addstickers/MAImining
-
-━━━━━━━━━━━━━━━━━━━━
-
 🌐 miningmai.com
 📱 @mai_news
 
-👇 Click buttons below! 👇`,
+👇 HOLD link to open in browser!`,
     ...keyboard
   }
 );
