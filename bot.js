@@ -1007,9 +1007,12 @@ bot.command('pin', async (ctx) => {
   
   const keyboard = Markup.inlineKeyboard([
     [
-      Markup.button.url('🎁 Airdrop (5K MAI)', `https://t.me/${ctx.botInfo.username}?start=airdrop`),
-      Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
-    ],
+    Markup.button.url('🚀 Start Bot', `https://t.me/${ctx.botInfo.username}`), // ← Просто старт
+    Markup.button.callback('🎁 Airdrop (5K MAI)', 'cmd_airdrop') // ← Callback!
+  ],
+  [
+    Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
+  ],
     [
       Markup.button.callback('📋 Presale Stages', 'cmd_presale'),
       Markup.button.callback('🎨 NFT Levels', 'cmd_nft')
@@ -1066,8 +1069,8 @@ Decentralized AI Platform
 ━━━━━━━━━━━━━━━━━━━━
 🛡️ RULES
 ━━━━━━━━━━━━━━━━━━━━
-
-✅ Talk OK • ❌ Spam = Ban
+⚡ Auto-moderation:
+✅ Talk OK • ❌ Spam/Scams = Ban
 3→Ban • 10→24h • 20→7d • 30→∞
 📢 Reply + /report
 
