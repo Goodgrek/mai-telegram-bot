@@ -1031,7 +1031,7 @@ bot.command('pin', async (ctx) => {
   
   try {
     const pinMsg = await ctx.replyWithPhoto(
-  { source: './images/mai-pin.png' },
+  { source: './images/mai-pin.webp' },
   {
     caption: `🚀 WELCOME TO MAI!
 Decentralized AI Platform
