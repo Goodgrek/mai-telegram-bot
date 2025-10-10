@@ -1007,11 +1007,11 @@ bot.command('pin', async (ctx) => {
   
   const keyboard = Markup.inlineKeyboard([
     [
-      Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
+      Markup.button.url('🎁 Airdrop (5K MAI)', 'cmd_airdrop'),
+      Markup.button.url('🚀 Start Bot', 'cmd_start')
     ],
     [
-    Markup.button.url('🚀 Start Bot', `https://t.me/${ctx.botInfo.username}?start=welcome`),
-    Markup.button.url('🎁 Airdrop (5K MAI)', `https://t.me/${ctx.botInfo.username}?start=airdrop`)
+    Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
   ],
     [
       Markup.button.callback('📋 Presale Stages', 'cmd_presale'),
