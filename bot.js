@@ -1031,7 +1031,7 @@ bot.command('pin', async (ctx) => {
   
   try {
     const pinMsg = await ctx.replyWithPhoto(
-      { source: './images/mai-pin.webp' },  // ← ПУТЬ К ФОТО!
+      { source: './images/mai-pin.png' },  // ← ПУТЬ К ФОТО!
       {
         caption: 
   `🚀 WELCOME TO MAI!\n` +
