@@ -1066,19 +1066,24 @@ Decentralized AI Platform
 ━━━━━━━━━━━━━━━━━━━━
 🛡️ RULES
 ━━━━━━━━━━━━━━━━━━━━
-⚡ Auto-moderation:
-✅ Talk OK • ❌ Spam/Scams = Ban
-3→Ban • 10→24h • 20→7d • 30→∞
-📢 Reply + /report
 
-🎨 t.me/addstickers/MAImining
+✅ Discussions OK 
+❌ Spam/Scams = Ban
+
+⚡ Auto-moderation:
+• 3 warns → Ban
+• 10 reports → Mute 24h
+• 20 reports → Mute 7d
+• 30 reports → Perma ban
+📢 Report: Reply + /report
 
 ━━━━━━━━━━━━━━━━━━━━
 🌐 miningmai.com
-📱 @mai_news
+📢 @mai_news
 🤖 /start
+🎨 t.me/addstickers/MAImining
 
-👇 HOLD link to open in browser!`,
+👇 Click buttons below!`,
     ...keyboard
   }
 );
