@@ -1784,44 +1784,171 @@ bot.command('testregister', async (ctx) => {
     
     let registered = 0;
     let failed = 0;
+    let errors = [];
     
     for (let i = 1; i <= count; i++) {
-      const fakeUserId = 1000000 + Math.floor(Math.random() * 1000000);
-      const fakeWallet = `Test${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-      
-      const result = await registerUser(
-        fakeUserId,
-        `testuser${i}`,
-        `Test User ${i}`,
-        fakeWallet
-      );
-      
-      if (result.success) {
-        registered++;
-      } else {
+      try {
+        // Генерируем уникальный ID (начинается с 1)
+        const timestamp = Date.now();
+        const fakeUserId = 1000000000 + timestamp + i; // Очень большой ID
+        
+        // Генерируем валидный Solana адрес (44 символа base58)
+        const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        let fakeWallet = '';
+        for (let j = 0; j < 44; j++) {
+          fakeWallet += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        console.log(`🧪 Создаю тестового юзера ${i}/${count}: ID=${fakeUserId}`);
+        
+        const result = await registerUser(
+          fakeUserId,
+          `testuser_${timestamp}_${i}`,
+          `Test User ${i}`,
+          fakeWallet
+        );
+        
+        if (result.success) {
+          registered++;
+          console.log(`✅ Юзер ${i} создан: позиция #${result.user.position}`);
+        } else {
+          failed++;
+          errors.push(`User ${i}: ${result.reason}`);
+          console.error(`❌ Юзер ${i} НЕ создан: ${result.reason}`);
+        }
+      } catch (error) {
         failed++;
+        errors.push(`User ${i}: ${error.message}`);
+        console.error(`❌ Ошибка создания юзера ${i}:`, error.message);
       }
       
-      // Небольшая задержка чтобы не перегрузить БД
+      // Небольшая задержка
       if (i % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
     
+    // Проверяем результат в БД
     const stats = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const total = parseInt(stats.rows[0].count);
     
-    await ctx.reply(
-      `✅ *РЕГИСТРАЦИЯ ЗАВЕРШЕНА*\n\n` +
+    // Проверяем тестовых юзеров отдельно
+    const testStats = await pool.query(
+      'SELECT COUNT(*) FROM telegram_users WHERE telegram_id >= 1000000000'
+    );
+    const testTotal = parseInt(testStats.rows[0].count);
+    
+    let message = `✅ *РЕГИСТРАЦИЯ ЗАВЕРШЕНА*\n\n` +
       `✅ Создано: ${registered}\n` +
       `❌ Ошибок: ${failed}\n` +
-      `📊 Всего в очереди: ${total}/${config.AIRDROP_LIMIT}\n\n` +
-      `Используйте /testlist для просмотра`,
-      { parse_mode: 'Markdown' }
-    );
+      `📊 Всего в очереди: ${total}/${config.AIRDROP_LIMIT}\n` +
+      `🧪 Тестовых юзеров в БД: ${testTotal}\n\n`;
+    
+    if (errors.length > 0 && errors.length <= 5) {
+      message += `*Ошибки:*\n${errors.join('\n')}\n\n`;
+    }
+    
+    if (registered === 0) {
+      message += `⚠️ *НИ ОДИН ЮЗЕР НЕ СОЗДАН!*\n\n` +
+        `Проверьте логи сервера для деталей.\n` +
+        `Возможные причины:\n` +
+        `• Проблема с БД\n` +
+        `• Достигнут лимит ${config.AIRDROP_LIMIT}\n` +
+        `• Ошибка в функции registerUser`;
+    } else {
+      message += `Используйте /testlist для просмотра`;
+    }
+    
+    await ctx.reply(message, { parse_mode: 'Markdown' });
   } catch (error) {
-    console.error('❌ Ошибка testregister:', error.message);
-    await ctx.reply(`❌ Ошибка: ${error.message}`);
+    console.error('❌ КРИТИЧЕСКАЯ ошибка testregister:', error.message);
+    console.error('Stack:', error.stack);
+    await ctx.reply(`❌ Критическая ошибка: ${error.message}`);
+  }
+});
+
+bot.command('testdebug', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  try {
+    // Проверяем подключение к БД
+    await ctx.reply('🔍 Запускаю диагностику...\n\n1️⃣ Проверяю подключение к БД...');
+    
+    const dbTest = await pool.query('SELECT NOW()');
+    await ctx.reply(`✅ БД подключена: ${dbTest.rows[0].now}`);
+    
+    // Проверяем структуру таблицы
+    await ctx.reply('2️⃣ Проверяю структуру таблицы...');
+    
+    const tableCheck = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'telegram_users'
+      ORDER BY ordinal_position
+    `);
+    
+    let columns = '✅ Таблица telegram_users:\n\n';
+    tableCheck.rows.forEach(col => {
+      columns += `• ${col.column_name} (${col.data_type})\n`;
+    });
+    await ctx.reply(columns);
+    
+    // Проверяем лимит
+    await ctx.reply('3️⃣ Проверяю лимиты...');
+    
+    const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
+    const currentCount = parseInt(countResult.rows[0].count);
+    
+    await ctx.reply(
+      `✅ Текущая заполненность:\n\n` +
+      `📊 Зарегистрировано: ${currentCount}\n` +
+      `📈 Лимит: ${config.AIRDROP_LIMIT}\n` +
+      `🟢 Доступно мест: ${config.AIRDROP_LIMIT - currentCount}`
+    );
+    
+    // Пробуем создать ОДНОГО тестового юзера
+    await ctx.reply('4️⃣ Пробую создать тестового юзера...');
+    
+    const testId = Date.now() + Math.floor(Math.random() * 10000);
+    const testWallet = '9'.repeat(44); // Простой тестовый адрес
+    
+    console.log('🧪 Тестовая регистрация:', testId);
+    
+    const result = await registerUser(
+      testId,
+      `test_${testId}`,
+      'Test User',
+      testWallet
+    );
+    
+    if (result.success) {
+      await ctx.reply(
+        `✅ *ТЕСТ УСПЕШЕН!*\n\n` +
+        `Юзер создан:\n` +
+        `• ID: ${testId}\n` +
+        `• Position: #${result.user.position}\n` +
+        `• Wallet: ${result.user.wallet_address.substring(0, 20)}...\n\n` +
+        `Проблема была в генерации ID или wallet!`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      // Удаляем тестового юзера
+      await pool.query('DELETE FROM telegram_users WHERE telegram_id = $1', [testId]);
+      await ctx.reply('🗑️ Тестовый юзер удален');
+    } else {
+      await ctx.reply(
+        `❌ *ТЕСТ ПРОВАЛЕН!*\n\n` +
+        `Причина: ${result.reason}\n\n` +
+        `Проверьте логи сервера!`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    await ctx.reply('✅ Диагностика завершена!');
+  } catch (error) {
+    console.error('❌ Ошибка testdebug:', error.message);
+    console.error('Stack:', error.stack);
+    await ctx.reply(`❌ Ошибка диагностики:\n\n${error.message}`);
   }
 });
 
@@ -1904,7 +2031,7 @@ bot.command('testlist', async (ctx) => {
     const users = await pool.query(
       `SELECT telegram_id, username, position, wallet_address, registered_at
        FROM telegram_users 
-       WHERE telegram_id >= 1000000 AND telegram_id < 2000000
+       WHERE telegram_id >= 1000000000
        ORDER BY position ASC 
        LIMIT 30`
     );
@@ -1913,8 +2040,8 @@ bot.command('testlist', async (ctx) => {
       return ctx.reply(
         'ℹ️ *Нет тестовых пользователей*\n\n' +
         'Используйте:\n' +
-        '/testregister 10 - создать 10 юзеров\n' +
-        '/testregister 50 - создать 50 юзеров',
+        '/testdebug - диагностика\n' +
+        '/testregister 10 - создать 10 юзеров',
         { parse_mode: 'Markdown' }
       );
     }
@@ -1940,9 +2067,8 @@ bot.command('testclear', async (ctx) => {
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
   
   try {
-    // Считаем перед удалением
     const countUsers = await pool.query(
-      `SELECT COUNT(*) FROM telegram_users WHERE telegram_id >= 1000000 AND telegram_id < 2000000`
+      `SELECT COUNT(*) FROM telegram_users WHERE telegram_id >= 1000000000`
     );
     const countReports = await pool.query(
       `SELECT COUNT(*) FROM user_reports WHERE reporter_id >= 2000000`
@@ -1955,8 +2081,7 @@ bot.command('testclear', async (ctx) => {
       return ctx.reply('ℹ️ Нет тестовых данных для удаления');
     }
     
-    // Удаляем
-    await pool.query(`DELETE FROM telegram_users WHERE telegram_id >= 1000000 AND telegram_id < 2000000`);
+    await pool.query(`DELETE FROM telegram_users WHERE telegram_id >= 1000000000`);
     await pool.query(`DELETE FROM user_reports WHERE reporter_id >= 2000000`);
     
     await ctx.reply(
