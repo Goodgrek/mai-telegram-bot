@@ -1765,6 +1765,308 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
+// ============================================================
+// 🧪 ТЕСТОВЫЕ КОМАНДЫ (ТОЛЬКО ДЛЯ АДМИНИСТРАТОРОВ)
+// ============================================================
+
+bot.command('testregister', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  try {
+    const args = ctx.message.text.split(' ');
+    const count = parseInt(args[1]) || 5;
+    
+    if (count > 100) {
+      return ctx.reply('⚠️ Максимум 100 пользователей за раз!');
+    }
+    
+    await ctx.reply(`⏳ Создаю ${count} тестовых пользователей...`);
+    
+    let registered = 0;
+    let failed = 0;
+    
+    for (let i = 1; i <= count; i++) {
+      const fakeUserId = 1000000 + Math.floor(Math.random() * 1000000);
+      const fakeWallet = `Test${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      
+      const result = await registerUser(
+        fakeUserId,
+        `testuser${i}`,
+        `Test User ${i}`,
+        fakeWallet
+      );
+      
+      if (result.success) {
+        registered++;
+      } else {
+        failed++;
+      }
+      
+      // Небольшая задержка чтобы не перегрузить БД
+      if (i % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    const stats = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
+    const total = parseInt(stats.rows[0].count);
+    
+    await ctx.reply(
+      `✅ *РЕГИСТРАЦИЯ ЗАВЕРШЕНА*\n\n` +
+      `✅ Создано: ${registered}\n` +
+      `❌ Ошибок: ${failed}\n` +
+      `📊 Всего в очереди: ${total}/${config.AIRDROP_LIMIT}\n\n` +
+      `Используйте /testlist для просмотра`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    console.error('❌ Ошибка testregister:', error.message);
+    await ctx.reply(`❌ Ошибка: ${error.message}`);
+  }
+});
+
+bot.command('testreport', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  if (!ctx.message.reply_to_message) {
+    return ctx.reply(
+      '⚠️ *Как использовать:*\n\n' +
+      '1. Ответьте на сообщение пользователя\n' +
+      '2. Напишите: /testreport [количество]\n\n' +
+      '*Примеры:*\n' +
+      '/testreport 5 - добавить 5 репортов\n' +
+      '/testreport 15 - добавить 15 репортов\n' +
+      '/testreport 25 - добавить 25 репортов',
+      { parse_mode: 'Markdown' }
+    );
+  }
+  
+  try {
+    const args = ctx.message.text.split(' ');
+    const count = parseInt(args[1]) || 10;
+    
+    if (count > 50) {
+      return ctx.reply('⚠️ Максимум 50 репортов за раз!');
+    }
+    
+    const reportedUserId = ctx.message.reply_to_message.from.id;
+    const reportedUsername = ctx.message.reply_to_message.from.username || 'no_username';
+    
+    await ctx.reply(`⏳ Добавляю ${count} тестовых репортов для @${reportedUsername}...`);
+    
+    for (let i = 0; i < count; i++) {
+      const fakeReporterId = 2000000 + Math.floor(Math.random() * 1000000);
+      await addReport(fakeReporterId, reportedUserId, ctx.chat.id);
+    }
+    
+    // Получаем актуальное количество уникальных репортов
+    const result = await pool.query(
+      `SELECT COUNT(DISTINCT reporter_id) as unique_reports FROM user_reports WHERE reported_user_id = $1`,
+      [reportedUserId]
+    );
+    
+    const uniqueReports = parseInt(result.rows[0].unique_reports);
+    const muteCount = await getMuteCount(reportedUserId);
+    
+    let status = '';
+    if (uniqueReports >= 30) {
+      status = '🚫 *PERMA BAN* (30+)';
+    } else if (uniqueReports >= 20) {
+      status = '🔇 *MUTE 7 DAYS* (20-29)';
+    } else if (uniqueReports >= 10) {
+      status = '🔇 *MUTE 24H* (10-19)';
+    } else {
+      status = `✅ *OK* (${uniqueReports}/10)`;
+    }
+    
+    await ctx.reply(
+      `✅ *ТЕСТ РЕПОРТОВ ЗАВЕРШЕН*\n\n` +
+      `👤 Пользователь: @${reportedUsername}\n` +
+      `📊 Уникальных репортов: *${uniqueReports}*\n` +
+      `🔢 Количество мутов: ${muteCount}\n\n` +
+      `📍 Статус: ${status}\n\n` +
+      `*Пороги:*\n` +
+      `• 10 репортов → Мут 24ч\n` +
+      `• 20 репортов → Мут 7д\n` +
+      `• 30 репортов → Бан`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    console.error('❌ Ошибка testreport:', error.message);
+    await ctx.reply(`❌ Ошибка: ${error.message}`);
+  }
+});
+
+bot.command('testlist', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  try {
+    const users = await pool.query(
+      `SELECT telegram_id, username, position, wallet_address, registered_at
+       FROM telegram_users 
+       WHERE telegram_id >= 1000000 AND telegram_id < 2000000
+       ORDER BY position ASC 
+       LIMIT 30`
+    );
+    
+    if (users.rows.length === 0) {
+      return ctx.reply(
+        'ℹ️ *Нет тестовых пользователей*\n\n' +
+        'Используйте:\n' +
+        '/testregister 10 - создать 10 юзеров\n' +
+        '/testregister 50 - создать 50 юзеров',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    let list = `📋 *ТЕСТОВЫЕ ПОЛЬЗОВАТЕЛИ* (${users.rows.length})\n\n`;
+    
+    users.rows.forEach((u, index) => {
+      list += `${index + 1}. Position #${u.position} | @${u.username}\n`;
+      list += `   ID: \`${u.telegram_id}\`\n`;
+      list += `   Wallet: \`${u.wallet_address?.substring(0, 25)}...\`\n\n`;
+    });
+    
+    list += `\nИспользуйте /testclear для очистки`;
+    
+    await ctx.reply(list, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('❌ Ошибка testlist:', error.message);
+    await ctx.reply(`❌ Ошибка: ${error.message}`);
+  }
+});
+
+bot.command('testclear', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  try {
+    // Считаем перед удалением
+    const countUsers = await pool.query(
+      `SELECT COUNT(*) FROM telegram_users WHERE telegram_id >= 1000000 AND telegram_id < 2000000`
+    );
+    const countReports = await pool.query(
+      `SELECT COUNT(*) FROM user_reports WHERE reporter_id >= 2000000`
+    );
+    
+    const usersCount = parseInt(countUsers.rows[0].count);
+    const reportsCount = parseInt(countReports.rows[0].count);
+    
+    if (usersCount === 0 && reportsCount === 0) {
+      return ctx.reply('ℹ️ Нет тестовых данных для удаления');
+    }
+    
+    // Удаляем
+    await pool.query(`DELETE FROM telegram_users WHERE telegram_id >= 1000000 AND telegram_id < 2000000`);
+    await pool.query(`DELETE FROM user_reports WHERE reporter_id >= 2000000`);
+    
+    await ctx.reply(
+      `✅ *ТЕСТОВЫЕ ДАННЫЕ УДАЛЕНЫ*\n\n` +
+      `👥 Пользователей: ${usersCount}\n` +
+      `📊 Репортов: ${reportsCount}\n\n` +
+      `База данных очищена!`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    console.error('❌ Ошибка testclear:', error.message);
+    await ctx.reply(`❌ Ошибка: ${error.message}`);
+  }
+});
+
+bot.command('testcron', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  await ctx.reply('⏰ Запускаю проверку подписок...');
+  
+  try {
+    const users = await pool.query(
+      'SELECT telegram_id, position, username FROM telegram_users WHERE position IS NOT NULL AND banned = false ORDER BY position ASC LIMIT 20'
+    );
+    
+    let checked = 0;
+    let removed = 0;
+    let active = 0;
+    
+    for (const user of users.rows) {
+      try {
+        const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, user.telegram_id);
+        const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, user.telegram_id);
+        
+        checked++;
+        
+        if (!newsSubscribed || !chatSubscribed) {
+          await removePosition(user.telegram_id);
+          removed++;
+          console.log(`❌ Удален: @${user.username} (#${user.position})`);
+        } else {
+          active++;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (err) {
+        console.error(`❌ Ошибка проверки ${user.telegram_id}:`, err.message);
+      }
+    }
+    
+    await ctx.reply(
+      `✅ *ПРОВЕРКА ЗАВЕРШЕНА*\n\n` +
+      `👥 Проверено: ${checked}\n` +
+      `✅ Активных: ${active}\n` +
+      `❌ Удалено: ${removed}\n\n` +
+      `Проверено первых ${checked} пользователей из очереди`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    console.error('❌ Ошибка testcron:', error.message);
+    await ctx.reply(`❌ Ошибка: ${error.message}`);
+  }
+});
+
+bot.command('testhelp', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  await ctx.reply(`
+🧪 *ТЕСТОВЫЕ КОМАНДЫ*
+
+━━━━━━━━━━━━━━━━━━━━
+
+*Регистрация:*
+/testregister [N] - создать N юзеров
+  Пример: /testregister 20
+
+*Репорты:*
+/testreport [N] - добавить N репортов
+  (ответьте на сообщение)
+  Пример: /testreport 15
+
+*Просмотр:*
+/testlist - список тестовых юзеров
+/stats - общая статистика
+
+*Проверка:*
+/testcron - запустить проверку подписок
+  (проверит первых 20 юзеров)
+
+*Очистка:*
+/testclear - удалить все тестовые данные
+
+━━━━━━━━━━━━━━━━━━━━
+
+*Полный цикл тестирования:*
+
+1️⃣ /testregister 50
+2️⃣ /testlist
+3️⃣ /stats
+4️⃣ Напишите сообщение
+5️⃣ Ответьте: /testreport 15
+6️⃣ /testcron
+7️⃣ /testclear
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Эти команды работают только для админов!
+`, { parse_mode: 'Markdown' });
+});
+
 bot.launch({
   dropPendingUpdates: true
 }).then(() => {
