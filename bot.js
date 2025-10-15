@@ -59,13 +59,295 @@ function isValidSolanaAddress(address) {
 }
 
 function containsBadContent(text) {
-  const patterns = [
-    /casino/i, /porn/i, /18\+/i, /xxx/i,
-    /buy.*get.*free/i, /send.*receive/i,
-    /seed\s*phrase/i, /private\s*key/i, /recovery\s*phrase/i,
-    /dm\s*me/i, /write\s*me/i, /contact\s*admin/i,
+  const textLower = text.toLowerCase();
+  
+  // ============================================================
+  // КАТЕГОРИЯ 1: КРИТИЧЕСКИЙ ФИШИНГ И СКАМ (МГНОВЕННЫЙ БАН)
+  // ============================================================
+  const criticalScam = [
+    // English - Seed phrases / Private keys
+    /seed\s*phrase/i,
+    /private\s*key/i,
+    /recovery\s*phrase/i,
+    /secret\s*phrase/i,
+    /mnemonic\s*phrase/i,
+    /12\s*word\s*phrase/i,
+    /24\s*word\s*phrase/i,
+    /wallet\s*password/i,
+    /backup\s*phrase/i,
+    
+    // Russian - Сид фразы / Приватные ключи
+    /сид\s*фраз/i,
+    /сидфраз/i,
+    /секретн[ауые]*\s*фраз/i,
+    /приватн[ыйому]*\s*ключ/i,
+    /восстановлени[яе]\s*фраз/i,
+    /12\s*слов/i,
+    /24\s*слов/i,
+    /мнемоник/i,
+    /пароль\s*кошельк/i,
+    
+    // Send & Receive scams
+    /send\s*\d+.*receive\s*\d+/i,
+    /send.*btc.*receive/i,
+    /send.*eth.*receive/i,
+    /send.*usdt.*receive/i,
+    /отправь.*получ[иш]/i,
+    /пришли.*верн[уе]/i,
   ];
-  return patterns.some(p => p.test(text));
+  
+  // ============================================================
+  // КАТЕГОРИЯ 2: ФЕЙКОВЫЕ АДМИНЫ И ЛИЧНЫЕ СООБЩЕНИЯ
+  // ============================================================
+  const fakeAdmins = [
+    // English
+    /dm\s*me/i,
+    /message\s*me\s*private/i,
+    /pm\s*me/i,
+    /write\s*me\s*direct/i,
+    /contact\s*admin/i,
+    /message\s*admin/i,
+    /i\s*am\s*admin/i,
+    /official\s*admin/i,
+    /support\s*team\s*dm/i,
+    /whatsapp.*admin/i,
+    /telegram.*admin/i,
+    
+    // Russian
+    /напиш[иу]\s*мне\s*в\s*личк/i,
+    /пиш[иу]\s*в\s*лс/i,
+    /свяж[ие]тесь\s*со\s*мной/i,
+    /обращайтесь\s*в\s*лс/i,
+    /я\s*админ/i,
+    /официальн[ыйая]\s*админ/i,
+    /поддержк[ауи]\s*в\s*лс/i,
+    /ватсап.*админ/i,
+    /телеграм.*админ/i,
+    /контакт.*админ/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 3: ГАРАНТИРОВАННАЯ ПРИБЫЛЬ И СКАМ-СХЕМЫ
+  // ============================================================
+  const guaranteedProfit = [
+    // English
+    /guaranteed\s*profit/i,
+    /risk\s*free\s*profit/i,
+    /100%\s*return/i,
+    /double\s*your\s*(money|coin|crypto)/i,
+    /multiply\s*your/i,
+    /instant\s*profit/i,
+    /easy\s*money/i,
+    /get\s*rich\s*quick/i,
+    /financial\s*freedom\s*now/i,
+    
+    // Russian
+    /гарантирован[ная]*\s*прибыл/i,
+    /без\s*риск[ауов]/i,
+    /100%\s*возврат/i,
+    /удво[ить]*\s*(деньг|монет|крипт)/i,
+    /умнож[ить]*\s*ваш/i,
+    /быстр[ые]*\s*деньг/i,
+    /легк[ие]*\s*деньг/i,
+    /разбогате[ть]*/i,
+    /финансов[ауая]\s*свобод/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 4: PUMP & DUMP ГРУППЫ
+  // ============================================================
+  const pumpDump = [
+    // English
+    /pump\s*group/i,
+    /pump\s*signal/i,
+    /pumping\s*now/i,
+    /pump\s*and\s*dump/i,
+    /insider\s*info/i,
+    /insider\s*trading/i,
+    /buy\s*before\s*pump/i,
+    /next\s*100x/i,
+    /moon\s*soon/i,
+    /to\s*the\s*moon/i,
+    /next\s*shiba/i,
+    /next\s*doge/i,
+    
+    // Russian
+    /памп\s*групп/i,
+    /памп\s*сигнал/i,
+    /пампим\s*сейчас/i,
+    /инсайдерск[ая]*\s*инф/i,
+    /покуп[ай]*\s*до\s*памп/i,
+    /следующ[ий]*\s*100x/i,
+    /на\s*луну/i,
+    /полет[им]*\s*на\s*луну/i,
+    /следующ[ий]*\s*(шиба|doge)/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 5: КАЗИНО, СТАВКИ, ГЭМБЛИНГ
+  // ============================================================
+  const gambling = [
+    // English
+    /casino/i,
+    /online\s*casino/i,
+    /betting\s*site/i,
+    /sports\s*bet/i,
+    /bet\s*now/i,
+    /poker\s*online/i,
+    /roulette/i,
+    /slot\s*machine/i,
+    /jackpot/i,
+    
+    // Russian
+    /казино/i,
+    /онлайн\s*казино/i,
+    /ставки\s*на\s*спорт/i,
+    /букмекер/i,
+    /ставь\s*сейчас/i,
+    /покер\s*онлайн/i,
+    /рулетка/i,
+    /игров[ые]*\s*автомат/i,
+    /джекпот/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 6: ВЗРОСЛЫЙ КОНТЕНТ (NSFW)
+  // ============================================================
+  const adultContent = [
+    // English
+    /porn/i,
+    /xxx/i,
+    /18\+/i,
+    /only\s*fans/i,
+    /onlyfans/i,
+    /escort\s*service/i,
+    /dating\s*site/i,
+    /meet\s*girls/i,
+    /hot\s*girls/i,
+    
+    // Russian
+    /порно/i,
+    /секс\s*знакомств/i,
+    /эскорт\s*услуг/i,
+    /сайт\s*знакомств/i,
+    /познакомлюсь/i,
+    /горяч[ие]*\s*девушк/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 7: РЕКЛАМНЫЙ СПАМ
+  // ============================================================
+  const advertisingSpam = [
+    // English
+    /buy\s*\d+\s*get\s*\d+\s*free/i,
+    /limited\s*time\s*offer/i,
+    /act\s*now/i,
+    /click\s*here.*win/i,
+    /congratulations.*won/i,
+    /claim\s*your\s*prize/i,
+    /free\s*bitcoin/i,
+    /free\s*money/i,
+    /earn\s*\$\d+\s*daily/i,
+    
+    // Russian
+    /купи\s*\d+\s*получи\s*\d+/i,
+    /ограниченн[ое]*\s*предложени/i,
+    /действуй\s*сейчас/i,
+    /жми\s*сюда/i,
+    /поздравля[ем]*.*выигр/i,
+    /забер[иу]*\s*приз/i,
+    /бесплатн[ые]*\s*биткоин/i,
+    /бесплатн[ые]*\s*деньг/i,
+    /заработ[ок]*\s*\d+.*в\s*день/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 8: РЕФЕРАЛЬНЫЙ СПАМ
+  // ============================================================
+  const referralSpam = [
+    // English
+    /use\s*my\s*ref/i,
+    /my\s*referral\s*code/i,
+    /register\s*with\s*my\s*link/i,
+    /join\s*using\s*my/i,
+    /sign\s*up\s*here/i,
+    
+    // Russian
+    /используй\s*мо[йюе]\s*реф/i,
+    /мо[йе]\s*рефераль/i,
+    /регистрир[уй]*.*по\s*моей/i,
+    /вступай\s*по\s*моей/i,
+    /регайся\s*тут/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 9: ТОКСИЧНОСТЬ И ОСКОРБЛЕНИЯ
+  // ============================================================
+  const toxicity = [
+    // English (умеренные, без крайностей)
+    /fuck\s*you/i,
+    /piece\s*of\s*shit/i,
+    /go\s*to\s*hell/i,
+    /stupid\s*team/i,
+    /scam\s*project/i,
+    /rug\s*pull/i,
+    /retard/i,
+    
+    // Russian (умеренные, без мата)
+    /иди\s*на\s*хрен/i,
+    /тупа[яе]\s*команд/i,
+    /лохотрон/i,
+    /кидалов/i,
+    /развод\s*проект/i,
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 10: КОНКУРЕНТЫ (добавь своих!)
+  // ============================================================
+  const competitors = [
+    // Примеры - замени на реальных конкурентов
+    /competitor_project/i,
+    /another_ai_coin/i,
+    // /binance.*better/i,  // осторожно с крупными биржами!
+  ];
+  
+  // ============================================================
+  // КАТЕГОРИЯ 11: ЗАПРЕЩЕННЫЕ АКТИВНОСТИ
+  // ============================================================
+  const illegalActivity = [
+    // Наркотики
+    /buy\s*drugs/i,
+    /selling\s*drugs/i,
+    /купить\s*нарко/i,
+    
+    // Оружие
+    /buy\s*gun/i,
+    /купить\s*оружи/i,
+    
+    // Отмывание денег
+    /money\s*laundering/i,
+    /отмывани[е]\s*денег/i,
+  ];
+  
+  // ============================================================
+  // ОБЪЕДИНЯЕМ ВСЕ ПАТТЕРНЫ
+  // ============================================================
+  const allPatterns = [
+    ...criticalScam,      // Самое опасное - фишинг
+    ...fakeAdmins,        // Фейковые админы
+    ...guaranteedProfit,  // Скам-схемы
+    ...pumpDump,          // Pump & Dump
+    ...gambling,          // Казино
+    ...adultContent,      // NSFW
+    ...advertisingSpam,   // Спам
+    ...referralSpam,      // Рефералки
+    ...toxicity,          // Токсичность
+    ...competitors,       // Конкуренты
+    ...illegalActivity,   // Нелегальное
+  ];
+  
+  // Проверяем текст на все паттерны
+  return allPatterns.some(pattern => pattern.test(textLower));
 }
 
 function containsSpamLinks(text) {
@@ -385,6 +667,9 @@ Unsubscribing = Automatic disqualification
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 Website: https://miningmai.com
+📢 @mai_news
+💬 @mai_chat
+🎨 t.me/addstickers/MAImining
 📱 Join the revolution. Build the future.
 
 Let's decentralize AI together! 🤖⚡`;
@@ -701,9 +986,10 @@ bot.command('help', async (ctx) => {
 
 🌐 *LINKS:*
 
-Website: https://miningmai.com
-News Channel: @mai_news
-Community Chat: Join via website
+🌐 Website: https://miningmai.com
+📢 @mai_news
+💬 @mai_chat
+🎨 t.me/addstickers/MAImining
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1142,7 +1428,7 @@ bot.on('new_chat_members', async (ctx) => {
       `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
       `⚠️ Requirements:\n` +
       `✅ Subscribe to @mai_news\n` +
-      `✅ Stay in this chat until listing\n` +
+      `✅ Stay in this chat @mai_chat until listing\n` +
       `✅ Register your Solana wallet\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `📋 Quick Start:\n` +
@@ -1434,8 +1720,10 @@ Admins NEVER DM first!
 - Issues: Ask admins in chat
 
 🔗 OFFICIAL LINKS
-🌐 https://miningmai.com
-📱 @mai_news
+🌐 Website: https://miningmai.com
+📢 @mai_news
+💬 @mai_chat
+🎨 t.me/addstickers/MAImining
 `;
 }
 
@@ -1503,8 +1791,10 @@ Use /help or ask admins
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🌐 https://miningmai.com
-📱 @mai_news`;
+🌐 Website: https://miningmai.com
+📢 @mai_news
+💬 @mai_chat
+`;
 }
 
 bot.on(message('text'), async (ctx) => {
