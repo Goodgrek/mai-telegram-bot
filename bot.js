@@ -1323,37 +1323,26 @@ bot.command('pin', async (ctx) => {
     caption: `🚀 WELCOME TO MAI!
 Decentralized AI Platform
 
-━━━━━━━━━━━━━━━━
-🎁 FREE AIRDROP
-━━━━━━━━━━━━━━━━
+🎁 COMMUNITY AIRDROP:
+✅ 5,000 MAI AIRDROP (~$10)
+✅ Subscribe @mai_news + @mainingmai_chat
+✅ Register: /airdrop  
+✅ STAY subscribed until listing
+✅ Get paid 10 days after listing
+⚠️ 20,000 spots | Daily check 00:00 UTC
+Unsubscribe = Position lost forever
+Claim now! 🚀
 
-💰 5,000 MAI (~$10)
-👥 First 20,000 only
-📅 10 days after listing
-
-✅ @mai_news • Stay • /airdrop
-⚠️ Check 00:00 UTC daily
-
-━━━━━━━━━━━━━━━━
-💎 PRESALE
-━━━━━━━━━━━━━━━━
-
+💎 PRESALE:
 🪙 7B • 14 stages • 🔥 80% OFF
 💵 $0.0005 → $0.0020
-
 🎨 NFT: +5-20% forever (min $50)
 
-━━━━━━━━━━━━━━━━
-🎯 EARN MORE
-━━━━━━━━━━━━━━━━
-
+🎯 EARN MORE:
 🏆 800M MAI • 🎨 1,400 NFTs • 💵 USDT
 /tasks • /nftairdrop • /referral
 
-━━━━━━━━━━━━━━━━
-🛡️ RULES
-━━━━━━━━━━━━━━━━
-
+🛡️ RULES:
 ✅ Discussions OK 
 ❌ Spam/Scams = Ban
 
@@ -1364,9 +1353,10 @@ Decentralized AI Platform
 • 30 reports → Perma ban
 📢 Report: Reply + /report
 
-━━━━━━━━━━━━━━━━
+🔗 OFFICIAL LINKS
 🌐 miningmai.com
 📢 @mai_news
+💬 @mainingmai_chat
 🤖 /start
 🎨 t.me/addstickers/MAImining
 
@@ -1622,7 +1612,7 @@ Telegram blocks Web3. Use real browser!
 - Up to 80% discount
 - Total: 7 billion MAI tokens
 - Payment: SOL, USDT, USDC
-- Listing: Q4 2025 on DEX/CEX
+- Listing: Q1 2026 on DEX/CEX
 
 🎁 COMMUNITY AIRDROP (5,000 MAI)
 - First 20,000 members only
@@ -1687,10 +1677,10 @@ Buy presale → Get permanent bonuses:
 - $300+: Platinum (+20% forever)
 
 ⛏️ MINING & STAKING
-- Launch: Q4 2026
+- Launch: Q2 2027
 - Earn MAI with computing power
 - NFT holders get bonus %
-- Mobile app: 2027-2028
+- Mobile app: Q3 2028
 
 💸 REFERRAL PROGRAM
 - Earn up to 7% in USDT
