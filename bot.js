@@ -947,7 +947,7 @@ bot.command('faq', async (ctx) => {
 
 bot.command('rules', async (ctx) => {
   try {
-    await sendToPrivate(ctx, getRulesText(), { parse_mode: 'Markdown' });
+    await sendToPrivate(ctx, getRulesText(), { parse_mode: 'HTML' });
   } catch (error) {
     console.error('❌ Ошибка /rules:', error.message);
   }
@@ -989,8 +989,8 @@ bot.command('help', async (ctx) => {
 🌐 *LINKS:*
 
 🌐 Website: https://miningmai.com
-📢 @mai\_news
-💬 @mainingmai\_chat
+📢 @mai_news
+💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -1001,7 +1001,7 @@ Make sure to stay subscribed to @mai_news and remain in the community chat to ma
 *Questions? Check /faq first!* 📚`;
   
   try {
-    await sendToPrivate(ctx, helpMsg, { parse_mode: 'Markdown' });
+    await sendToPrivate(ctx, helpMsg, { parse_mode: 'HTML' });
   } catch (error) {
     console.error('❌ Ошибка /help:', error.message);
   }
@@ -1771,8 +1771,8 @@ Breaking rules = Loss of rewards!
 
 To keep rewards:
 ✅ Follow rules
-✅ Stay in @mai\_news
-✅ Stay in this chat @mainingmai\_chat
+✅ Stay in @mai_news
+✅ Stay in this chat @mainingmai_chat
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1789,8 +1789,8 @@ Use /help or ask admins
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 Website: https://miningmai.com
-📢 @mai\_news
-💬 @mainingmai\_chat`;
+📢 @mai_news
+💬 @mainingmai_chat`;
 }
 
 bot.on(message('text'), async (ctx) => {
