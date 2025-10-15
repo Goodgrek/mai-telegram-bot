@@ -989,8 +989,8 @@ bot.command('help', async (ctx) => {
 🌐 *LINKS:*
 
 🌐 Website: https://miningmai.com
-📢 @mai_news
-💬 @mainingmai_chat
+📢 @mai\_news
+💬 @mainingmai\_chat
 🎨 t.me/addstickers/MAImining
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -1634,7 +1634,7 @@ Telegram blocks Web3. Use real browser!
 
 Requirements:
 ✅ Subscribe @mai_news
-✅ Stay in chat until listing
+✅ Stay in chat until listing @mainingmai_chat
 ✅ Register wallet: /airdrop
 
 🏆 PRESALE AIRDROP (Up to 1M MAI)
@@ -1771,8 +1771,8 @@ Breaking rules = Loss of rewards!
 
 To keep rewards:
 ✅ Follow rules
-✅ Stay in @mai_news
-✅ Stay in this chat
+✅ Stay in @mai\_news
+✅ Stay in this chat @mainingmai\_chat
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1789,8 +1789,8 @@ Use /help or ask admins
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 Website: https://miningmai.com
-📢 @mai_news
-💬 @mainingmai_chat`;
+📢 @mai\_news
+💬 @mainingmai\_chat`;
 }
 
 bot.on(message('text'), async (ctx) => {
