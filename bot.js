@@ -1257,12 +1257,13 @@ bot.command('admin', async (ctx) => {
   const userLink = username ? `@${username}` : `User ${userId}`;
   const adminNotification = 
     `📨 *NEW ADMIN MESSAGE*\n\n` +
-    `*From:* ${userLink} (ID: \`${userId}\`)\n` +
-    `*Time:* ${new Date().toLocaleString('en-GB', { timeZone: 'UTC' })} UTC\n\n` +
-    `*Message:*\n${messageText}\n\n` +
-    `━━━━━━━━━━━━━━━━━━━\n\n` +
-    `*Actions:*\n` +
-    `Block: /blockadmin ${userId}`;
+  `*From:* ${userLink} (ID: \`${userId}\`)\n` +
+  `*Time:* ${new Date().toLocaleString('en-GB', { timeZone: 'UTC' })} UTC\n\n` +
+  `*Message:*\n${messageText}\n\n` +
+  `━━━━━━━━━━━━━━━━━━━\n\n` +
+  `*Quick Actions:*\n` +
+  `Reply: /reply ${userId} Your message here\n` +
+  `Block: /blockadmin ${userId}`;
   
   // ============================================
   // УЛУЧШЕННАЯ ОТПРАВКА АДМИНАМ С ПРОВЕРКАМИ
@@ -1386,6 +1387,81 @@ bot.command('unblockadmin', async (ctx) => {
     await ctx.reply(`✅ User ${targetUserId} unblocked.`);
   } else {
     await ctx.reply('❌ Error unblocking.');
+  }
+});
+
+bot.command('reply', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  const args = ctx.message.text.split(' ');
+  const targetUserId = args[1] ? parseInt(args[1]) : null;
+  const replyText = ctx.message.text.replace('/reply', '').replace(args[1], '').trim();
+  
+  if (!targetUserId || !replyText) {
+    return ctx.reply(
+      `📨 *REPLY TO USER*\n\n` +
+      `Usage: /reply <user_id> <your message>\n\n` +
+      `Example:\n` +
+      `/reply 123456789 Hello! Regarding your question...\n\n` +
+      `You can find user_id in the admin message notification.`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  
+  if (replyText.length < 5) {
+    return ctx.reply('❌ Reply message is too short! Minimum 5 characters.');
+  }
+  
+  // Отправляем ответ пользователю
+  try {
+    await bot.telegram.sendMessage(
+      targetUserId,
+      `📨 *Response from MAI Administration*\n\n` +
+      `${replyText}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━\n\n` +
+      `If you have more questions, use /admin command.`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    // Помечаем сообщение как отвеченное
+    try {
+      await pool.query(
+        `UPDATE admin_messages SET replied = true WHERE user_id = $1 AND replied = false`,
+        [targetUserId]
+      );
+    } catch (err) {
+      console.error('⚠️ Failed to update replied status:', err.message);
+    }
+    
+    // Подтверждение админу
+    await ctx.reply(
+      `✅ *Reply sent successfully!*\n\n` +
+      `To: User ${targetUserId}\n` +
+      `Message: "${replyText.substring(0, 100)}${replyText.length > 100 ? '...' : ''}"`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    console.log(`✅ Admin replied to user ${targetUserId}: "${replyText.substring(0, 50)}..."`);
+  } catch (error) {
+    console.error('❌ Failed to send reply:', error.message);
+    
+    if (error.message.includes('blocked')) {
+      return ctx.reply(
+        `❌ *Cannot send reply!*\n\n` +
+        `User ${targetUserId} has blocked the bot.`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    await ctx.reply(
+      `❌ *Failed to send reply!*\n\n` +
+      `Possible reasons:\n` +
+      `• User hasn't started the bot\n` +
+      `• User blocked the bot\n` +
+      `• Invalid user ID\n\n` +
+      `Error: ${error.message}`,
+      { parse_mode: 'Markdown' }
+    );
   }
 });
 
