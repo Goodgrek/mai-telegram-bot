@@ -1140,44 +1140,40 @@ bot.command('admin', async (ctx) => {
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
   
-  // ============================================
-  // ПРОВЕРКА: Только в личных сообщениях!
-  // ============================================
   if (ctx.chat.type !== 'private') {
-    // Удаляем сообщение из чата (чтобы не было спама команд)
-    try {
-      await ctx.deleteMessage();
-    } catch (err) {
-      console.log('⚠️ Cannot delete message (bot needs admin rights)');
-    }
-    
-    // Отправляем в ЛС инструкцию
-    const keyboard = Markup.inlineKeyboard([
-      [Markup.button.url('📨 Open Bot', `https://t.me/${ctx.botInfo.username}?start=admin`)]
+  // Удаляем сообщение из чата
+  try {
+    await ctx.deleteMessage();
+  } catch (err) {
+    console.log('⚠️ Cannot delete message (bot needs admin rights)');
+  }
+  
+  // Пытаемся отправить в ЛС
+  try {
+    await ctx.telegram.sendMessage(
+      userId,
+      `📨 *Contact Admin*\n\n` +
+      `To contact administrators, use this command in private messages with the bot.\n\n` +
+      `Write here: /admin Your message\n\n` +
+      `Example:\n` +
+      `/admin I have a question about airdrop`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (err) {
+    // Если не получилось отправить в ЛС - значит бот не запущен
+    const startButton = Markup.inlineKeyboard([
+      [Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=admin`)]
     ]);
     
-    try {
-      await ctx.telegram.sendMessage(
-        userId,
-        `ℹ️ *Admin Contact*\n\n` +
-        `The /admin command only works in private messages with the bot.\n\n` +
-        `Click the button below to open the bot:`,
-        { parse_mode: 'Markdown', ...keyboard }
-      );
-    } catch (err) {
-      // Если не можем отправить в ЛС - значит юзер не запустил бота
-      const startButton = Markup.inlineKeyboard([
-        [Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=admin`)]
-      ]);
-      
-      await ctx.reply(
-        `⚠️ To contact admin, start the bot first:`,
-        { ...startButton, reply_to_message_id: ctx.message.message_id }
-      );
-    }
-    
-    return; // Прерываем выполнение команды
+    // Отправляем в чат кнопку старта
+    await ctx.reply(
+      `⚠️ To contact admin, start the bot first:`,
+      { ...startButton, reply_to_message_id: ctx.message.message_id }
+    );
   }
+  
+  return; // Прерываем выполнение
+}
   
   // ============================================
   // Дальше идет обычная логика (только для ЛС)
@@ -1300,16 +1296,6 @@ bot.command('admin', async (ctx) => {
   console.log(`📊 Sent to ${sentToAdmins}/${config.ADMIN_IDS.length} admins`);
   if (failedAdmins.length > 0) {
     console.warn(`⚠️ Failed admins: ${failedAdmins.join(', ')} - they need to /start the bot first!`);
-  }
-  
-  // Если ни одному админу не отправилось
-  if (sentToAdmins === 0) {
-    return ctx.reply(
-      '⚠️ Unable to deliver message to administrators.\n\n' +
-      'This usually means admins need to start the bot first.\n' +
-      'Your message has been saved and will be reviewed.\n\n' +
-      'Alternative: Ask in @mainingmai_chat'
-    );
   }
   
   await ctx.reply(
