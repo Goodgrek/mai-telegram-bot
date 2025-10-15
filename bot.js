@@ -668,7 +668,7 @@ Unsubscribing = Automatic disqualification
 
 🌐 Website: https://miningmai.com
 📢 @mai_news
-💬 @mai_chat
+💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 📱 Join the revolution. Build the future.
 
@@ -764,7 +764,7 @@ bot.command('airdrop', async (ctx) => {
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   
   `🔒 Keep Position:\n` +  // УБРАЛИ *
-  `Stay in @mai_news and this chat\n` +  // УБРАЛИ "+"
+  `Stay in @mai_news and @mainingmai_chat\n` +  // УБРАЛИ "+"
   `Daily check 00:00 UTC\n` +
   `Unsubscribe = Position lost!`
   // УБРАЛИ { parse_mode: 'Markdown' }
@@ -834,7 +834,9 @@ All decisions regarding winner eligibility and NFT allocation are final and at o
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 More info: https://miningmai.com
-📱 Stay connected: @mai_news`;
+📱 Stay connected: @mai_news
+💬 @mainingmai_chat
+`;
 
   try {
     await sendToPrivate(ctx, text);
@@ -988,7 +990,7 @@ bot.command('help', async (ctx) => {
 
 🌐 Website: https://miningmai.com
 📢 @mai_news
-💬 @mai_chat
+💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -996,8 +998,7 @@ bot.command('help', async (ctx) => {
 💡 *QUICK TIP:*
 Make sure to stay subscribed to @mai_news and remain in the community chat to maintain eligibility for ALL rewards!
 
-*Questions? Check /faq first!* 📚
-`;
+*Questions? Check /faq first!* 📚`;
   
   try {
     await sendToPrivate(ctx, helpMsg, { parse_mode: 'Markdown' });
@@ -1428,7 +1429,7 @@ bot.on('new_chat_members', async (ctx) => {
       `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
       `⚠️ Requirements:\n` +
       `✅ Subscribe to @mai_news\n` +
-      `✅ Stay in this chat @mai_chat until listing\n` +
+      `✅ Stay in this chat @mainingmai_chat until listing\n` +
       `✅ Register your Solana wallet\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `📋 Quick Start:\n` +
@@ -1603,22 +1604,18 @@ MAI is a decentralized AI platform owned by the community. Unlike corporate AI, 
 
 💼 HOW TO BUY MAI
 
-Q: How to buy from mobile?
-A: HOLD "Buy MAI" button
-   → Tap "Open in..."
-   → Choose Chrome/Safari
-   → Connect wallet & buy!
+📱 MOBILE:
+Hold "Buy MAI/link" → Open in Chrome/Safari
+→ Connect wallet → Choose amount → BUY!
 
-Q: Why doesn't work in Telegram?
-A: Telegram browser blocks Web3.
-   Must open in real browser!
-   Desktop: just click link
+🖥️ DESKTOP:
+Click link → Connect wallet → BUY!
 
-Q: Which wallets supported?
-A: Any Solana wallet:
-   Phantom, Solflare, Trust Wallet,
-   Backpack, Binance Web3, etc.
-   NO KYC required!
+⚠️ WHY NOT IN TELEGRAM?
+Telegram blocks Web3. Use real browser!
+
+✅ WALLETS: Phantom, Solflare, Trust Wallet
+❌ NO KYC needed!
 
 💰 PRESALE
 - 14 stages: $0.0005 → $0.0020
@@ -1722,7 +1719,7 @@ Admins NEVER DM first!
 🔗 OFFICIAL LINKS
 🌐 Website: https://miningmai.com
 📢 @mai_news
-💬 @mai_chat
+💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 `;
 }
@@ -1793,8 +1790,7 @@ Use /help or ask admins
 
 🌐 Website: https://miningmai.com
 📢 @mai_news
-💬 @mai_chat
-`;
+💬 @mainingmai_chat`;
 }
 
 bot.on(message('text'), async (ctx) => {
