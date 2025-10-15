@@ -23,6 +23,14 @@ const config = {
   CURRENT_PRESALE_STAGE: 1,
 };
 
+const ADMIN_MESSAGE_CONFIG = {
+  COOLDOWN_MINUTES: 30,
+  MAX_MESSAGES_PER_DAY: 3,
+  BLOCK_DURATION_HOURS: 24,
+  MIN_MESSAGE_LENGTH: 10,
+  MAX_MESSAGE_LENGTH: 1000
+};
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -532,6 +540,125 @@ async function getMuteCount(userId) {
   }
 }
 
+// ============================================================
+// ADMIN MESSAGE SYSTEM
+// ============================================================
+
+async function canSendAdminMessage(userId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM admin_message_cooldown WHERE user_id = $1`,
+      [userId]
+    );
+    
+    const now = new Date();
+    
+    if (result.rows.length === 0) {
+      return { canSend: true, reason: null };
+    }
+    
+    const userData = result.rows[0];
+    
+    if (userData.blocked_until && new Date(userData.blocked_until) > now) {
+      const unblockTime = new Date(userData.blocked_until).toLocaleString('en-GB', { timeZone: 'UTC' });
+      return { 
+        canSend: false, 
+        reason: `blocked`,
+        unblockTime: unblockTime
+      };
+    }
+    
+    if (userData.last_message_at) {
+      const lastMessage = new Date(userData.last_message_at);
+      const minutesSinceLastMessage = (now - lastMessage) / 1000 / 60;
+      
+      if (minutesSinceLastMessage < ADMIN_MESSAGE_CONFIG.COOLDOWN_MINUTES) {
+        const minutesLeft = Math.ceil(ADMIN_MESSAGE_CONFIG.COOLDOWN_MINUTES - minutesSinceLastMessage);
+        return { 
+          canSend: false, 
+          reason: 'cooldown',
+          minutesLeft: minutesLeft
+        };
+      }
+    }
+    
+    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
+    const messagesResult = await pool.query(
+      `SELECT COUNT(*) FROM admin_messages WHERE user_id = $1 AND created_at > $2`,
+      [userId, dayAgo]
+    );
+    
+    const messagesCount = parseInt(messagesResult.rows[0].count);
+    
+    if (messagesCount >= ADMIN_MESSAGE_CONFIG.MAX_MESSAGES_PER_DAY) {
+      return { 
+        canSend: false, 
+        reason: 'daily_limit',
+        limit: ADMIN_MESSAGE_CONFIG.MAX_MESSAGES_PER_DAY
+      };
+    }
+    
+    return { canSend: true, reason: null };
+  } catch (error) {
+    console.error('❌ Error checking admin message permission:', error);
+    return { canSend: false, reason: 'error' };
+  }
+}
+
+async function saveAdminMessage(userId, username, messageText) {
+  try {
+    await pool.query(
+      `INSERT INTO admin_messages (user_id, username, message_text) VALUES ($1, $2, $3)`,
+      [userId, username, messageText]
+    );
+    
+    await pool.query(
+      `INSERT INTO admin_message_cooldown (user_id, last_message_at, message_count)
+       VALUES ($1, NOW(), 1)
+       ON CONFLICT (user_id) 
+       DO UPDATE SET 
+         last_message_at = NOW(),
+         message_count = admin_message_cooldown.message_count + 1`,
+      [userId]
+    );
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving admin message:', error);
+    return false;
+  }
+}
+
+async function blockUserFromAdmin(userId, hours) {
+  try {
+    const blockUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+    await pool.query(
+      `INSERT INTO admin_message_cooldown (user_id, blocked_until)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id)
+       DO UPDATE SET blocked_until = $2`,
+      [userId, blockUntil]
+    );
+    return true;
+  } catch (error) {
+    console.error('❌ Error blocking user from admin:', error);
+    return false;
+  }
+}
+
+async function unblockUserFromAdmin(userId) {
+  try {
+    await pool.query(
+      `UPDATE admin_message_cooldown SET blocked_until = NULL WHERE user_id = $1`,
+      [userId]
+    );
+    return true;
+  } catch (error) {
+    console.error('❌ Error unblocking user from admin:', error);
+    return false;
+  }
+}
+
 async function unbanUser(userId) {
   try {
     await pool.query('UPDATE telegram_users SET banned = false WHERE telegram_id = $1', [userId]);
@@ -645,6 +772,7 @@ Referral Program: Earn USDT
 /status - Check your status
 /faq - Frequently asked questions
 /rules - Community rules
+/admin - Contact administrators (your message)
 /report - Report rule violations (reply to message)
 /help - Full command list
 
@@ -982,6 +1110,7 @@ bot.command('help', async (ctx) => {
 
 /start - Welcome message & overview
 /help - This command list
+/admin - Contact administrators (your message)
 /report - Report rule violations (reply to message)
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -1004,6 +1133,199 @@ Make sure to stay subscribed to @mai_news and remain in the community chat to ma
     await sendToPrivate(ctx, helpMsg, { parse_mode: 'HTML' });
   } catch (error) {
     console.error('❌ Ошибка /help:', error.message);
+  }
+});
+
+bot.command('admin', async (ctx) => {
+  const userId = ctx.from.id;
+  const username = ctx.from.username || 'no_username';
+  
+  if (config.ADMIN_IDS.includes(userId)) {
+    return ctx.reply('ℹ️ You are an admin. Use /adminstats to see messages.');
+  }
+  
+  const messageText = ctx.message.text.replace('/admin', '').trim();
+  
+  if (!messageText) {
+    return ctx.reply(
+      `📨 *CONTACT ADMIN*\n\n` +
+      `Send your message to project administrators.\n\n` +
+      `*Usage:*\n` +
+      `/admin Your message here\n\n` +
+      `*Example:*\n` +
+      `/admin I have a question about presale\n\n` +
+      `*Limits:*\n` +
+      `• Min ${ADMIN_MESSAGE_CONFIG.MIN_MESSAGE_LENGTH} characters\n` +
+      `• Max ${ADMIN_MESSAGE_CONFIG.MAX_MESSAGES_PER_DAY} messages per day\n` +
+      `• ${ADMIN_MESSAGE_CONFIG.COOLDOWN_MINUTES} min cooldown\n\n` +
+      `⚠️ Spam = 24h block`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+  
+  if (messageText.length < ADMIN_MESSAGE_CONFIG.MIN_MESSAGE_LENGTH) {
+    return ctx.reply(
+      `❌ Message too short!\n\n` +
+      `Minimum ${ADMIN_MESSAGE_CONFIG.MIN_MESSAGE_LENGTH} characters required.`
+    );
+  }
+  
+  if (messageText.length > ADMIN_MESSAGE_CONFIG.MAX_MESSAGE_LENGTH) {
+    return ctx.reply(
+      `❌ Message too long!\n\n` +
+      `Maximum ${ADMIN_MESSAGE_CONFIG.MAX_MESSAGE_LENGTH} characters.`
+    );
+  }
+  
+  const permission = await canSendAdminMessage(userId);
+  
+  if (!permission.canSend) {
+    if (permission.reason === 'blocked') {
+      return ctx.reply(
+        `🚫 *You are blocked!*\n\n` +
+        `Unblock: ${permission.unblockTime} UTC\n\n` +
+        `Reason: Spam or abuse.`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    if (permission.reason === 'cooldown') {
+      return ctx.reply(
+        `⏳ *Cooldown active!*\n\n` +
+        `Wait ${permission.minutesLeft} minutes.`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    if (permission.reason === 'daily_limit') {
+      return ctx.reply(
+        `⚠️ *Daily limit reached!*\n\n` +
+        `Max ${permission.limit} messages per day.\n` +
+        `Try again in 24 hours.`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    return ctx.reply('❌ Unable to send. Try later.');
+  }
+  
+  const saved = await saveAdminMessage(userId, username, messageText);
+  
+  if (!saved) {
+    return ctx.reply('❌ Error saving message.');
+  }
+  
+  const userLink = username ? `@${username}` : `User ${userId}`;
+  const adminNotification = 
+    `📨 *NEW ADMIN MESSAGE*\n\n` +
+    `*From:* ${userLink} (ID: \`${userId}\`)\n` +
+    `*Time:* ${new Date().toLocaleString('en-GB', { timeZone: 'UTC' })} UTC\n\n` +
+    `*Message:*\n${messageText}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━\n\n` +
+    `*Actions:*\n` +
+    `Block: /blockadmin ${userId}`;
+  
+  let sentToAdmins = 0;
+  for (const adminId of config.ADMIN_IDS) {
+    try {
+      await bot.telegram.sendMessage(adminId, adminNotification, { 
+        parse_mode: 'Markdown'
+      });
+      sentToAdmins++;
+    } catch (error) {
+      console.error(`❌ Failed to send to admin ${adminId}`);
+    }
+  }
+  
+  await ctx.reply(
+    `✅ *Message sent!*\n\n` +
+    `Delivered to ${sentToAdmins} admin(s).\n\n` +
+    `We'll respond ASAP.\n\n` +
+    `*Next message:* ${ADMIN_MESSAGE_CONFIG.COOLDOWN_MINUTES} min`,
+    { parse_mode: 'Markdown' }
+  );
+  
+  console.log(`📨 Admin message from ${userLink}: "${messageText.substring(0, 50)}..."`);
+});
+
+bot.command('adminstats', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  try {
+    const stats = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE replied = false) as unread,
+        COUNT(DISTINCT user_id) as unique_users
+      FROM admin_messages
+      WHERE created_at > NOW() - INTERVAL '7 days'
+    `);
+    
+    const recent = await pool.query(`
+      SELECT user_id, username, message_text, created_at, replied
+      FROM admin_messages
+      ORDER BY created_at DESC
+      LIMIT 10
+    `);
+    
+    const s = stats.rows[0];
+    
+    let message = `📊 *ADMIN MESSAGES (7 days)*\n\n`;
+    message += `📨 Total: ${s.total}\n`;
+    message += `📬 Unread: ${s.unread}\n`;
+    message += `👥 Users: ${s.unique_users}\n\n`;
+    message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `*Recent:*\n\n`;
+    
+    recent.rows.forEach((msg, i) => {
+      const status = msg.replied ? '✅' : '📬';
+      const username = msg.username ? `@${msg.username}` : `ID:${msg.user_id}`;
+      const preview = msg.message_text.substring(0, 40) + '...';
+      message += `${i + 1}. ${status} ${username}\n"${preview}"\n\n`;
+    });
+    
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    ctx.reply('❌ Error retrieving stats');
+  }
+});
+
+bot.command('blockadmin', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  const args = ctx.message.text.split(' ');
+  const targetUserId = args[1] ? parseInt(args[1]) : null;
+  const hours = args[2] ? parseInt(args[2]) : 24;
+  
+  if (!targetUserId) {
+    return ctx.reply('Usage: /blockadmin <user_id> [hours]');
+  }
+  
+  const blocked = await blockUserFromAdmin(targetUserId, hours);
+  
+  if (blocked) {
+    await ctx.reply(`✅ User ${targetUserId} blocked for ${hours}h.`);
+  } else {
+    await ctx.reply('❌ Error blocking user.');
+  }
+});
+
+bot.command('unblockadmin', async (ctx) => {
+  if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  const args = ctx.message.text.split(' ');
+  const targetUserId = args[1] ? parseInt(args[1]) : null;
+  
+  if (!targetUserId) {
+    return ctx.reply('Usage: /unblockadmin <user_id>');
+  }
+  
+  const unblocked = await unblockUserFromAdmin(targetUserId);
+  
+  if (unblocked) {
+    await ctx.reply(`✅ User ${targetUserId} unblocked.`);
+  } else {
+    await ctx.reply('❌ Error unblocking.');
   }
 });
 
@@ -1775,6 +2097,14 @@ To keep rewards:
 
 🆘 NEED HELP?
 Use /help or ask admins
+Q: How to contact admin?
+A: Use /admin command with your message
+   Example: /admin I need help with wallet
+
+   Limits:
+   • 3 messages per day
+   • 30 min cooldown between messages
+   • Minimum 10 characters
 
 ━━━━━━━━━━━━━━━━━━━━
 
