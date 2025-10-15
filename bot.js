@@ -1140,6 +1140,49 @@ bot.command('admin', async (ctx) => {
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
   
+  // ============================================
+  // ПРОВЕРКА: Только в личных сообщениях!
+  // ============================================
+  if (ctx.chat.type !== 'private') {
+    // Удаляем сообщение из чата (чтобы не было спама команд)
+    try {
+      await ctx.deleteMessage();
+    } catch (err) {
+      console.log('⚠️ Cannot delete message (bot needs admin rights)');
+    }
+    
+    // Отправляем в ЛС инструкцию
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.url('📨 Open Bot', `https://t.me/${ctx.botInfo.username}?start=admin`)]
+    ]);
+    
+    try {
+      await ctx.telegram.sendMessage(
+        userId,
+        `ℹ️ *Admin Contact*\n\n` +
+        `The /admin command only works in private messages with the bot.\n\n` +
+        `Click the button below to open the bot:`,
+        { parse_mode: 'Markdown', ...keyboard }
+      );
+    } catch (err) {
+      // Если не можем отправить в ЛС - значит юзер не запустил бота
+      const startButton = Markup.inlineKeyboard([
+        [Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=admin`)]
+      ]);
+      
+      await ctx.reply(
+        `⚠️ To contact admin, start the bot first:`,
+        { ...startButton, reply_to_message_id: ctx.message.message_id }
+      );
+    }
+    
+    return; // Прерываем выполнение команды
+  }
+  
+  // ============================================
+  // Дальше идет обычная логика (только для ЛС)
+  // ============================================
+  
   if (config.ADMIN_IDS.includes(userId)) {
     return ctx.reply('ℹ️ You are an admin. Use /adminstats to see messages.');
   }
@@ -1225,25 +1268,56 @@ bot.command('admin', async (ctx) => {
     `*Actions:*\n` +
     `Block: /blockadmin ${userId}`;
   
+  // ============================================
+  // УЛУЧШЕННАЯ ОТПРАВКА АДМИНАМ С ПРОВЕРКАМИ
+  // ============================================
   let sentToAdmins = 0;
+  let failedAdmins = [];
+  
+  // Проверка: есть ли админы вообще
+  if (config.ADMIN_IDS.length === 0) {
+    console.error('❌ ADMIN_IDS is empty! Check .env file');
+    return ctx.reply(
+      '❌ Admin contact system is not configured.\n' +
+      'Please contact support via community chat.'
+    );
+  }
+  
   for (const adminId of config.ADMIN_IDS) {
     try {
       await bot.telegram.sendMessage(adminId, adminNotification, { 
         parse_mode: 'Markdown'
       });
       sentToAdmins++;
+      console.log(`✅ Message sent to admin ${adminId}`);
     } catch (error) {
-      console.error(`❌ Failed to send to admin ${adminId}`);
+      console.error(`❌ Failed to send to admin ${adminId}:`, error.message);
+      failedAdmins.push(adminId);
     }
   }
   
+  // Логируем результат
+  console.log(`📊 Sent to ${sentToAdmins}/${config.ADMIN_IDS.length} admins`);
+  if (failedAdmins.length > 0) {
+    console.warn(`⚠️ Failed admins: ${failedAdmins.join(', ')} - they need to /start the bot first!`);
+  }
+  
+  // Если ни одному админу не отправилось
+  if (sentToAdmins === 0) {
+    return ctx.reply(
+      '⚠️ Unable to deliver message to administrators.\n\n' +
+      'This usually means admins need to start the bot first.\n' +
+      'Your message has been saved and will be reviewed.\n\n' +
+      'Alternative: Ask in @mainingmai_chat'
+    );
+  }
+  
   await ctx.reply(
-    `✅ *Message sent!*\n\n` +
-    `Delivered to ${sentToAdmins} admin(s).\n\n` +
-    `We'll respond ASAP.\n\n` +
-    `*Next message:* ${ADMIN_MESSAGE_CONFIG.COOLDOWN_MINUTES} min`,
-    { parse_mode: 'Markdown' }
-  );
+  `✅ *Message sent to administrators!*\n\n` +
+  `We'll respond as soon as possible.\n\n` +
+  `Next message available in ${ADMIN_MESSAGE_CONFIG.COOLDOWN_MINUTES} minutes.`,
+  { parse_mode: 'Markdown' }
+);
   
   console.log(`📨 Admin message from ${userLink}: "${messageText.substring(0, 50)}..."`);
 });
