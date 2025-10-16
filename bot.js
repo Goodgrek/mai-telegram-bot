@@ -744,7 +744,8 @@ View details: /presale
 🎁 MEGA REWARDS PROGRAM
 
 Community Airdrop: 5,000 MAI
-- First 20,000 members only!
+- First 20,000 positions get rewards!
+- Register after 20K? You're in queue - if someone loses their spot, you move up!
 - Command: /airdrop
 
 Presale Airdrop: Up to 1,000,000 MAI
@@ -864,38 +865,32 @@ bot.command('airdrop', async (ctx) => {
     
     await sendToPrivate(
   ctx,
-  `🎁 AIRDROP REGISTRATION\n\n` +  // УБРАЛИ *
-  `You are eligible!\n\n` +  // УБРАЛИ апостроф
-  
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
+  `🎁 AIRDROP REGISTRATION\n\n` +
+  `You are eligible!\n\n` +
+
   `🎯 Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI\n` +
-  `👥 Spots: ${config.AIRDROP_LIMIT.toLocaleString()} (limited)\n` +
+  `👥 First ${config.AIRDROP_LIMIT.toLocaleString()} positions get rewards\n` +
+  `💡 After 20K? You join the queue - if someone loses their spot, you move up!\n` +
   `💰 Cost: FREE\n` +
-  `📅 Distribution: 10 days after listing\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `📝 Next: Send Solana Wallet\n\n` +  // УБРАЛИ *
-  
+  `📅 Distribution: Within 10 days after listing\n\n` +
+
+  `📝 Next: Send Solana Wallet\n\n` +
+
   `Example:\n` +
   `7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...\n\n` +
-  
+
   `Supported wallets:\n` +
   `• Phantom, Solflare, Trust\n` +
   `• Binance Web3, MetaMask\n` +
   `• Any Solana wallet\n\n` +
-  
+
   `⚠️ Double-check address!\n` +
   `Wrong address = Lost tokens\n\n` +
-  
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  
-  `🔒 Keep Position:\n` +  // УБРАЛИ *
-  `Stay in @mai_news and @mainingmai_chat\n` +  // УБРАЛИ "+"
+
+  `🔒 Keep Position:\n` +
+  `Stay in @mai_news and @mainingmai_chat\n` +
   `Daily check 00:00 UTC\n` +
   `Unsubscribe = Position lost!`
-  // УБРАЛИ { parse_mode: 'Markdown' }
 );
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
@@ -998,15 +993,26 @@ bot.command('status', async (ctx) => {
     }
     
     const isActive = newsSubscribed && chatSubscribed && !userStatus.banned;
-    const rewardAmount = isActive ? config.AIRDROP_REWARD.toLocaleString() : '0';
+    const isInTop20K = userStatus.position <= config.AIRDROP_LIMIT;
+    const rewardAmount = (isActive && isInTop20K) ? config.AIRDROP_REWARD.toLocaleString() : '0';
     const statusEmoji = isActive ? '✅' : '❌';
     const statusText = isActive ? 'ACTIVE' : 'INACTIVE';
-    
+
     let warnings = '';
     if (!newsSubscribed) warnings += '\n⚠️ Subscribe to @mai_news';
     if (!chatSubscribed) warnings += '\n⚠️ Join community chat';
     if (!userStatus.wallet_address) warnings += '\n⚠️ Wallet not linked';
-    
+
+    let queueInfo = '';
+    if (!isInTop20K) {
+      const peopleAhead = userStatus.position - config.AIRDROP_LIMIT;
+      queueInfo = `\n\n💡 *YOU'RE IN THE QUEUE*\n` +
+        `You're currently at position #${userStatus.position}.\n` +
+        `${peopleAhead} people ahead of you in the top ${config.AIRDROP_LIMIT.toLocaleString()}.\n\n` +
+        `If ${peopleAhead} people unsubscribe, you'll move into the top ${config.AIRDROP_LIMIT.toLocaleString()} and get the ${config.AIRDROP_REWARD.toLocaleString()} MAI reward!\n\n` +
+        `Keep your subscriptions active to maintain your queue position!`;
+    }
+
     await sendToPrivate(
       ctx,
       `📊 *YOUR AIRDROP STATUS*\n\n` +
@@ -1023,7 +1029,7 @@ bot.command('status', async (ctx) => {
       `📊 Reports: ${userStatus.reports_received}\n` +
       `🚫 Status: ${statusEmoji} *${statusText}*\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 *Reward: ${rewardAmount} MAI*${warnings ? `\n\n*Action Required:*${warnings}` : ''}`,
+      `🎁 *Reward: ${rewardAmount} MAI*${warnings ? `\n\n*Action Required:*${warnings}` : ''}${queueInfo}`,
       { parse_mode: 'Markdown' }
     );
   } catch {
@@ -1090,6 +1096,7 @@ bot.command('help', async (ctx) => {
 💰 *REWARDS & AIRDROPS:*
 
 /airdrop - Register for community airdrop (5,000 MAI)
+  → First 20,000 get rewards. After 20K? Join the queue!
 /tasks - Presale airdrop program (up to 1M MAI)
 /nftairdrop - Airdrop NFT program (1,400 NFTs)
 /referral - Referral program ($500K USDT pool)
@@ -1782,11 +1789,11 @@ bot.command('pin', async (ctx) => {
 Decentralized AI Platform
 
 🎁 COMMUNITY AIRDROP:
-✅ 5,000 MAI AIRDROP (~$10)
+✅ 5,000 MAI AIRDROP
 ✅ Subscribe @mai_news + @mainingmai_chat
 ✅ Register: /airdrop  
 ✅ STAY subscribed until listing
-✅ Get paid 10 days after listing
+✅ Get paid within 10 days after listing
 ⚠️ 20,000 spots | Daily check 00:00 UTC
 Unsubscribe = Position lost forever
 Claim now! 🚀
@@ -1815,7 +1822,7 @@ Claim now! 🚀
 🌐 miningmai.com
 📢 @mai_news
 💬 @mainingmai_chat
-🤖 /start
+🤖 @mai_verify_bot
 🎨 t.me/addstickers/MAImining
 
 👇 Click buttons below!`,
@@ -1859,8 +1866,8 @@ bot.action(/cmd_(.+)/, async (ctx) => {
 // MILESTONE СИСТЕМА
 // ============================================================
 
-// ВАЖНО: Для теста стоит 1, для продакшена поменяйте на 500!
-const MILESTONE_STEP = 1; // Тест: каждые 1 человек | Продакшен: 500
+// Milestone каждые 500 участников
+const MILESTONE_STEP = 500;
 
 async function checkAndSendMilestone(chatId, botInfo) {
   try {
@@ -1895,12 +1902,11 @@ async function checkAndSendMilestone(chatId, botInfo) {
       const milestoneMsg =
         `🎉 MILESTONE ACHIEVED!\n\n` +
         `🚀 We've reached ${milestone.toLocaleString()} members in our community!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `🎁 Don't miss out:\n` +
-        `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} members get 5,000 MAI FREE\n` +
+        `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} positions get 5,000 MAI FREE\n` +
+        `✅ Register after 20K? You join the queue and can move up!\n` +
         `✅ Register now: /airdrop\n` +
         `✅ Subscribe: @mai_news\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `💪 Together we're building the future of decentralized AI!\n\n` +
         `🌐 https://miningmai.com`;
 
@@ -1938,14 +1944,14 @@ bot.on('new_chat_members', async (ctx) => {
       await bot.telegram.sendMessage(
         member.id,
         `👋 Welcome to MAI Project!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `🎁 Get 5,000 MAI Tokens FREE\n` +
-        `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
+        `First ${config.AIRDROP_LIMIT.toLocaleString()} positions get rewards!\n\n` +
+        `💡 Register even after 20K - you'll be in queue!\n` +
+        `If someone loses their spot, you move up automatically.\n\n` +
         `⚠️ Requirements:\n` +
         `✅ Subscribe to @mai_news\n` +
         `✅ Stay in chat @mainingmai_chat until listing\n` +
         `✅ Register your Solana wallet\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `📋 Quick Start:\n` +
         `• Use /airdrop to register\n` +
         `• Read /rules for community guidelines\n` +
@@ -2036,11 +2042,13 @@ Purchase: $300+ in Presale
 function getTasksText() {
   return `
 🎁 *PRESALE AIRDROP PROGRAM*
-*EARN UP TO 1,000,000 MAI!*
+
+*INDIVIDUAL REWARD:* Up to 1,000,000 MAI
+*TOTAL POOL:* 800,000,000 MAI
 
 ━━━━━━━━━━━━━━━━━━━━
 
-Complete tasks during presale to participate in our massive *800,000,000 MAI* airdrop!
+Complete tasks during presale to earn your share of the 800M MAI pool!
 
 *Available Tasks (5 Total):*
 
@@ -2142,12 +2150,13 @@ Telegram blocks Web3. Use real browser!
 - Listing: Q1 2026 on DEX/CEX
 
 🎁 COMMUNITY AIRDROP (5,000 MAI)
-- First 20,000 members only
+- First 20,000 positions get rewards
+- Can register after 20K? YES - you join the queue!
+- If someone unsubscribes, next in line moves up
 - FREE - just subscribe & register
 - Daily check at 00:00 UTC
 - Unsubscribe = Position lost
-- Spot goes to next person
-- Distribution: 10 days after listing
+- Distribution: Within 10 days after listing
 
 Requirements:
 ✅ Subscribe @mai_news
