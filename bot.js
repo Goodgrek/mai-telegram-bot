@@ -1855,43 +1855,113 @@ bot.action(/cmd_(.+)/, async (ctx) => {
   }
 });
 
+// ============================================================
+// MILESTONE СИСТЕМА
+// ============================================================
+
+// ВАЖНО: Для теста стоит 1, для продакшена поменяйте на 500!
+const MILESTONE_STEP = 1; // Тест: каждые 1 человек | Продакшен: 500
+
+async function checkAndSendMilestone(chatId, botInfo) {
+  try {
+    // Получаем количество участников чата
+    const chatMemberCount = await bot.telegram.getChatMemberCount(chatId);
+    console.log(`📊 Текущее количество участников: ${chatMemberCount}`);
+
+    // Проверяем, достигли ли мы milestone (кратное MILESTONE_STEP)
+    if (chatMemberCount % MILESTONE_STEP === 0) {
+      const milestone = chatMemberCount;
+
+      // Проверяем, отправляли ли уже это milestone
+      const existing = await pool.query(
+        `SELECT * FROM milestones WHERE milestone = $1 AND chat_id = $2`,
+        [milestone, chatId]
+      );
+
+      if (existing.rows.length > 0) {
+        console.log(`⚠️ Milestone ${milestone} уже был отправлен ранее`);
+        return;
+      }
+
+      // Сохраняем milestone в БД (чтобы не дублировать)
+      await pool.query(
+        `INSERT INTO milestones (milestone, chat_id, created_at) VALUES ($1, $2, NOW())`,
+        [milestone, chatId]
+      );
+
+      console.log(`🎉 MILESTONE ДОСТИГНУТ: ${milestone} участников!`);
+
+      // Отправляем красивое поздравление
+      const milestoneMsg =
+        `🎉 *MILESTONE ACHIEVED!*\n\n` +
+        `🚀 We've reached *${milestone.toLocaleString()} members* in our community!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎁 *Don't miss out:*\n` +
+        `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} members get 5,000 MAI FREE\n` +
+        `✅ Register now: /airdrop\n` +
+        `✅ Subscribe: @mai_news\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `💪 Together we're building the future of decentralized AI!\n\n` +
+        `🌐 https://miningmai.com`;
+
+      // Если есть картинка - отправляем с картинкой
+      try {
+        await bot.telegram.sendPhoto(
+          chatId,
+          { source: './images/milestone.webp' },
+          {
+            caption: milestoneMsg,
+            parse_mode: 'Markdown'
+          }
+        );
+        console.log(`✅ Milestone сообщение с картинкой отправлено`);
+      } catch (imgError) {
+        // Если картинки нет - отправляем просто текст
+        console.log(`⚠️ Картинка не найдена, отправляем текст`);
+        await bot.telegram.sendMessage(chatId, milestoneMsg, { parse_mode: 'Markdown' });
+      }
+    }
+  } catch (error) {
+    console.error('❌ Ошибка checkAndSendMilestone:', error.message);
+  }
+}
+
 bot.on('new_chat_members', async (ctx) => {
   const newMembers = ctx.message.new_chat_members.filter(m => !m.is_bot);
-  
+
   if (newMembers.length === 0) return;
-  
+
   console.log('👋 Новые участники:', newMembers.map(m => m.first_name).join(', '));
-  
-  const keyboard = Markup.inlineKeyboard([
-    [Markup.button.url('🎁 Register for Airdrop', `https://t.me/${ctx.botInfo.username}?start=airdrop`)],
-    [Markup.button.url('📱 Join News Channel', 'https://t.me/mai_news')]
-  ]);
-  
-  const names = newMembers.map(m => m.first_name).join(', ');
-  
-  try {
-    await ctx.reply(
-      `👋 Welcome to MAI Project, ${names}!\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 Get 5,000 MAI Tokens FREE\n` +
-      `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
-      `⚠️ Requirements:\n` +
-      `✅ Subscribe to @mai_news\n` +
-      `✅ Stay in this chat @mainingmai_chat until listing\n` +
-      `✅ Register your Solana wallet\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📋 Quick Start:\n` +
-      `• Click button below to register\n` +
-      `• Read /rules for community guidelines\n` +
-      `• Check /faq for answers\n` +
-      `• View /presale for token sale info\n\n` +
-      `Click the button below to register:`,
-      { ...keyboard }
-    );
-    console.log('✅ Приветствие отправлено');
-  } catch (error) {
-    console.error('❌ Ошибка приветствия:', error.message);
+
+  // Тихое подключение - приветствие отправляется только в ЛС
+  for (const member of newMembers) {
+    try {
+      await bot.telegram.sendMessage(
+        member.id,
+        `👋 Welcome to MAI Project!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎁 Get 5,000 MAI Tokens FREE\n` +
+        `First ${config.AIRDROP_LIMIT.toLocaleString()} members only!\n\n` +
+        `⚠️ Requirements:\n` +
+        `✅ Subscribe to @mai_news\n` +
+        `✅ Stay in chat @mainingmai_chat until listing\n` +
+        `✅ Register your Solana wallet\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `📋 Quick Start:\n` +
+        `• Use /airdrop to register\n` +
+        `• Read /rules for community guidelines\n` +
+        `• Check /faq for answers\n` +
+        `• View /presale for token sale info\n\n` +
+        `🌐 Website: https://miningmai.com`
+      );
+      console.log(`✅ Приветствие отправлено в ЛС: ${member.first_name}`);
+    } catch (error) {
+      console.log(`⚠️ Не удалось отправить приветствие ${member.first_name} (бот не запущен)`);
+    }
   }
+
+  // Проверяем milestone ПОСЛЕ обработки всех новых участников
+  await checkAndSendMilestone(ctx.chat.id, ctx.botInfo);
 });
 
 function getPresaleText() {
