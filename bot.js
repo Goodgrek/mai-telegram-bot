@@ -1893,10 +1893,10 @@ async function checkAndSendMilestone(chatId, botInfo) {
 
       // Отправляем красивое поздравление
       const milestoneMsg =
-        `🎉 *MILESTONE ACHIEVED!*\n\n` +
-        `🚀 We've reached *${milestone.toLocaleString()} members* in our community!\n\n` +
+        `🎉 MILESTONE ACHIEVED!\n\n` +
+        `🚀 We've reached ${milestone.toLocaleString()} members in our community!\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🎁 *Don't miss out:*\n` +
+        `🎁 Don't miss out:\n` +
         `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} members get 5,000 MAI FREE\n` +
         `✅ Register now: /airdrop\n` +
         `✅ Subscribe: @mai_news\n\n` +
@@ -1910,15 +1910,14 @@ async function checkAndSendMilestone(chatId, botInfo) {
           chatId,
           { source: './images/milestone.webp' },
           {
-            caption: milestoneMsg,
-            parse_mode: 'Markdown'
+            caption: milestoneMsg
           }
         );
         console.log(`✅ Milestone сообщение с картинкой отправлено`);
       } catch (imgError) {
         // Если картинки нет - отправляем просто текст
         console.log(`⚠️ Картинка не найдена, отправляем текст`);
-        await bot.telegram.sendMessage(chatId, milestoneMsg, { parse_mode: 'Markdown' });
+        await bot.telegram.sendMessage(chatId, milestoneMsg);
       }
     }
   } catch (error) {
