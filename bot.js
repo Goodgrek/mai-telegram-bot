@@ -813,8 +813,15 @@ Let's decentralize AI together! 🤖⚡`;
 });
 
 bot.command('airdrop', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   console.log('✅ /airdrop получен от:', ctx.from.id, ctx.from.username);
-  
+
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
   const firstName = ctx.from.first_name;
@@ -900,8 +907,15 @@ bot.command('airdrop', async (ctx) => {
 });
 
 bot.command('nftairdrop', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   console.log('✅ /nftairdrop получен от:', ctx.from.id);
-  
+
   const text = `🎨 AIRDROP NFT PROGRAM
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -970,8 +984,15 @@ All decisions regarding winner eligibility and NFT allocation are final and at o
 });
 
 bot.command('status', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   const userId = ctx.from.id;
-  
+
   try {
     const userStatus = await getUserStatus(userId);
     
@@ -1038,6 +1059,13 @@ bot.command('status', async (ctx) => {
 });
 
 bot.command('presale', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   try {
     await sendToPrivate(ctx, getPresaleText());
   } catch (error) {
@@ -1046,6 +1074,13 @@ bot.command('presale', async (ctx) => {
 });
 
 bot.command('nft', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   try {
     await sendToPrivate(ctx, getNftText(), { parse_mode: 'Markdown' });
   } catch (error) {
@@ -1054,6 +1089,13 @@ bot.command('nft', async (ctx) => {
 });
 
 bot.command('tasks', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   try {
     await sendToPrivate(ctx, getTasksText(), { parse_mode: 'Markdown' });
   } catch (error) {
@@ -1062,6 +1104,13 @@ bot.command('tasks', async (ctx) => {
 });
 
 bot.command('referral', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   try {
     await sendToPrivate(ctx, getReferralText(), { parse_mode: 'Markdown' });
   } catch (error) {
@@ -1070,6 +1119,13 @@ bot.command('referral', async (ctx) => {
 });
 
 bot.command('faq', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   console.log('✅ /faq получен от:', ctx.from.id);
   try {
     await sendToPrivate(ctx, getFaqText());
@@ -1080,6 +1136,13 @@ bot.command('faq', async (ctx) => {
 });
 
 bot.command('rules', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   try {
     await sendToPrivate(ctx, getRulesText(), { parse_mode: 'HTML' });
   } catch (error) {
@@ -1088,6 +1151,13 @@ bot.command('rules', async (ctx) => {
 });
 
 bot.command('help', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   const helpMsg = `
 🆘 *MAI BOT COMMAND LIST*
 
@@ -1144,17 +1214,17 @@ Make sure to stay subscribed to @mai_news and remain in the community chat to ma
 });
 
 bot.command('admin', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
-  
+
   if (ctx.chat.type !== 'private') {
-  // Удаляем сообщение из чата
-  try {
-    await ctx.deleteMessage();
-  } catch (err) {
-    console.log('⚠️ Cannot delete message (bot needs admin rights)');
-  }
-  
   // Пытаемся отправить в ЛС
   try {
     await ctx.telegram.sendMessage(
@@ -1317,8 +1387,15 @@ bot.command('admin', async (ctx) => {
 });
 
 bot.command('adminstats', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   try {
     const stats = await pool.query(`
       SELECT 
@@ -1359,8 +1436,15 @@ bot.command('adminstats', async (ctx) => {
 });
 
 bot.command('blockadmin', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   const args = ctx.message.text.split(' ');
   const targetUserId = args[1] ? parseInt(args[1]) : null;
   const hours = args[2] ? parseInt(args[2]) : 24;
@@ -1379,6 +1463,13 @@ bot.command('blockadmin', async (ctx) => {
 });
 
 bot.command('unblockadmin', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
   
   const args = ctx.message.text.split(' ');
@@ -1398,8 +1489,15 @@ bot.command('unblockadmin', async (ctx) => {
 });
 
 bot.command('reply', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   const args = ctx.message.text.split(' ');
   const targetUserId = args[1] ? parseInt(args[1]) : null;
   const replyText = ctx.message.text.replace('/reply', '').replace(args[1], '').trim();
@@ -1546,8 +1644,15 @@ bot.command('report', async (ctx) => {
 });
 
 bot.command('stats', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   try {
     const stats = await pool.query(`
       SELECT 
@@ -1575,8 +1680,15 @@ bot.command('stats', async (ctx) => {
 });
 
 bot.command('winners', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   try {
     const winners = await pool.query(`
       SELECT telegram_id, username, wallet_address, position
@@ -1611,8 +1723,15 @@ bot.command('winners', async (ctx) => {
 // ===== АДМИНСКИЕ КОМАНДЫ ДЛЯ УПРАВЛЕНИЯ =====
 
 bot.command('mute', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   if (!ctx.message.reply_to_message) {
     return ctx.reply('⚠️ Reply to user\'s message and type:\n/mute [hours]\n\nExample: /mute 48');
   }
@@ -1640,8 +1759,15 @@ bot.command('mute', async (ctx) => {
 });
 
 bot.command('unmute', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   if (!ctx.message.reply_to_message) {
     return ctx.reply('⚠️ Reply to user\'s message and type /unmute');
   }
@@ -1667,8 +1793,15 @@ bot.command('unmute', async (ctx) => {
 });
 
 bot.command('ban', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   if (!ctx.message.reply_to_message) {
     return ctx.reply('⚠️ Reply to user\'s message and type /ban [reason]');
   }
@@ -1687,8 +1820,15 @@ bot.command('ban', async (ctx) => {
 });
 
 bot.command('unban', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   if (!ctx.message.reply_to_message) {
     return ctx.reply('⚠️ Reply to user\'s message and type /unban');
   }
@@ -1706,8 +1846,15 @@ bot.command('unban', async (ctx) => {
 });
 
 bot.command('userinfo', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   if (!ctx.message.reply_to_message) {
     return ctx.reply('⚠️ Reply to user\'s message and type /userinfo');
   }
