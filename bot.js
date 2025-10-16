@@ -1732,29 +1732,55 @@ bot.command('mute', async (ctx) => {
   }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
 
-  if (!ctx.message.reply_to_message) {
+  const args = ctx.message.text.split(' ');
+  let targetUserId;
+  let hours = 24; // по умолчанию 24 часа
+
+  // Режим 1: В группе через Reply to message
+  if (ctx.message.reply_to_message) {
+    targetUserId = ctx.message.reply_to_message.from.id;
+    hours = args[1] ? parseInt(args[1]) : 24;
+  }
+  // Режим 2: В личке через user_id
+  else if (ctx.chat.type === 'private') {
+    if (!args[1]) {
+      return ctx.reply(
+        '⚠️ *MUTE USER*\n\n' +
+        'Usage: /mute <user_id> [hours]\n\n' +
+        'Examples:\n' +
+        '/mute 123456789 - mute for 24h (default)\n' +
+        '/mute 123456789 48 - mute for 48h',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    targetUserId = parseInt(args[1]);
+    hours = args[2] ? parseInt(args[2]) : 24;
+  }
+  // Ошибка: в группе без reply
+  else {
     return ctx.reply('⚠️ Reply to user\'s message and type:\n/mute [hours]\n\nExample: /mute 48');
   }
-  
-  const targetUserId = ctx.message.reply_to_message.from.id;
-  const args = ctx.message.text.split(' ');
-  const hours = args[1] ? parseInt(args[1]) : 24;
-  
+
   if (isNaN(hours) || hours < 1) {
-    return ctx.reply('❌ Invalid hours! Use: /mute 24');
+    return ctx.reply('❌ Invalid hours! Must be >= 1');
   }
-  
+
   await muteUser(targetUserId, hours);
   await incrementMuteCount(targetUserId);
-  
+
   try {
-    await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
-      until_date: Math.floor(Date.now() / 1000) + (hours * 3600),
-      permissions: { can_send_messages: false }
-    });
-    await ctx.reply(`✅ User muted for ${hours} hours by admin.`);
+    // Пытаемся замутить в группе (если есть ctx.chat.id группы)
+    if (ctx.chat.type !== 'private') {
+      await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
+        until_date: Math.floor(Date.now() / 1000) + (hours * 3600),
+        permissions: { can_send_messages: false }
+      });
+      await ctx.reply(`✅ User ${targetUserId} muted for ${hours} hours by admin.`);
+    } else {
+      await ctx.reply(`✅ User ${targetUserId} marked as muted in database for ${hours} hours.`);
+    }
   } catch (err) {
-    await ctx.reply(`✅ User marked as muted in database for ${hours} hours.`);
+    await ctx.reply(`✅ User ${targetUserId} marked as muted in database for ${hours} hours.`);
   }
 });
 
@@ -1768,27 +1794,50 @@ bot.command('unmute', async (ctx) => {
   }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
 
-  if (!ctx.message.reply_to_message) {
+  const args = ctx.message.text.split(' ');
+  let targetUserId;
+
+  // Режим 1: В группе через Reply to message
+  if (ctx.message.reply_to_message) {
+    targetUserId = ctx.message.reply_to_message.from.id;
+  }
+  // Режим 2: В личке через user_id
+  else if (ctx.chat.type === 'private') {
+    if (!args[1]) {
+      return ctx.reply(
+        '⚠️ *UNMUTE USER*\n\n' +
+        'Usage: /unmute <user_id>\n\n' +
+        'Example:\n' +
+        '/unmute 123456789',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    targetUserId = parseInt(args[1]);
+  }
+  // Ошибка: в группе без reply
+  else {
     return ctx.reply('⚠️ Reply to user\'s message and type /unmute');
   }
-  
-  const targetUserId = ctx.message.reply_to_message.from.id;
-  
+
   await unmuteUser(targetUserId);
-  
+
   try {
-    await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
-      permissions: {
-        can_send_messages: true,
-        can_send_media_messages: true,
-        can_send_polls: true,
-        can_send_other_messages: true,
-        can_add_web_page_previews: true
-      }
-    });
-    await ctx.reply('✅ User unmuted by admin.');
+    if (ctx.chat.type !== 'private') {
+      await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
+        permissions: {
+          can_send_messages: true,
+          can_send_media_messages: true,
+          can_send_polls: true,
+          can_send_other_messages: true,
+          can_add_web_page_previews: true
+        }
+      });
+      await ctx.reply(`✅ User ${targetUserId} unmuted by admin.`);
+    } else {
+      await ctx.reply(`✅ User ${targetUserId} unmarked as muted in database.`);
+    }
   } catch (err) {
-    await ctx.reply('✅ User unmarked as muted in database.');
+    await ctx.reply(`✅ User ${targetUserId} unmarked as muted in database.`);
   }
 });
 
@@ -1802,20 +1851,47 @@ bot.command('ban', async (ctx) => {
   }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
 
-  if (!ctx.message.reply_to_message) {
+  const args = ctx.message.text.split(' ');
+  let targetUserId;
+  let reason = 'Admin decision';
+
+  // Режим 1: В группе через Reply to message
+  if (ctx.message.reply_to_message) {
+    targetUserId = ctx.message.reply_to_message.from.id;
+    reason = ctx.message.text.replace('/ban', '').trim() || 'Admin decision';
+  }
+  // Режим 2: В личке через user_id
+  else if (ctx.chat.type === 'private') {
+    if (!args[1]) {
+      return ctx.reply(
+        '⚠️ *BAN USER*\n\n' +
+        'Usage: /ban <user_id> [reason]\n\n' +
+        'Examples:\n' +
+        '/ban 123456789 - ban (reason: Admin decision)\n' +
+        '/ban 123456789 спам - ban for spam',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    targetUserId = parseInt(args[1]);
+    // Причина - все что после user_id
+    reason = args.slice(2).join(' ') || 'Admin decision';
+  }
+  // Ошибка: в группе без reply
+  else {
     return ctx.reply('⚠️ Reply to user\'s message and type /ban [reason]');
   }
-  
-  const targetUserId = ctx.message.reply_to_message.from.id;
-  const reason = ctx.message.text.replace('/ban', '').trim() || 'Admin decision';
-  
+
   await banUser(targetUserId);
-  
+
   try {
-    await ctx.telegram.banChatMember(ctx.chat.id, targetUserId);
-    await ctx.reply(`🚫 User permanently banned by admin.\nReason: ${reason}`);
+    if (ctx.chat.type !== 'private') {
+      await ctx.telegram.banChatMember(ctx.chat.id, targetUserId);
+      await ctx.reply(`🚫 User ${targetUserId} permanently banned by admin.\nReason: ${reason}`);
+    } else {
+      await ctx.reply(`🚫 User ${targetUserId} marked as banned in database.\nReason: ${reason}`);
+    }
   } catch (err) {
-    await ctx.reply(`🚫 User marked as banned in database.\nReason: ${reason}`);
+    await ctx.reply(`🚫 User ${targetUserId} marked as banned in database.\nReason: ${reason}`);
   }
 });
 
@@ -1829,19 +1905,42 @@ bot.command('unban', async (ctx) => {
   }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
 
-  if (!ctx.message.reply_to_message) {
+  const args = ctx.message.text.split(' ');
+  let targetUserId;
+
+  // Режим 1: В группе через Reply to message
+  if (ctx.message.reply_to_message) {
+    targetUserId = ctx.message.reply_to_message.from.id;
+  }
+  // Режим 2: В личке через user_id
+  else if (ctx.chat.type === 'private') {
+    if (!args[1]) {
+      return ctx.reply(
+        '⚠️ *UNBAN USER*\n\n' +
+        'Usage: /unban <user_id>\n\n' +
+        'Example:\n' +
+        '/unban 123456789',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    targetUserId = parseInt(args[1]);
+  }
+  // Ошибка: в группе без reply
+  else {
     return ctx.reply('⚠️ Reply to user\'s message and type /unban');
   }
-  
-  const targetUserId = ctx.message.reply_to_message.from.id;
-  
+
   await unbanUser(targetUserId);
-  
+
   try {
-    await ctx.telegram.unbanChatMember(ctx.chat.id, targetUserId);
-    await ctx.reply('✅ User unbanned by admin.');
+    if (ctx.chat.type !== 'private') {
+      await ctx.telegram.unbanChatMember(ctx.chat.id, targetUserId);
+      await ctx.reply(`✅ User ${targetUserId} unbanned by admin.`);
+    } else {
+      await ctx.reply(`✅ User ${targetUserId} unmarked as banned in database.`);
+    }
   } catch (err) {
-    await ctx.reply('✅ User unmarked as banned in database.');
+    await ctx.reply(`✅ User ${targetUserId} unmarked as banned in database.`);
   }
 });
 
@@ -1855,12 +1954,31 @@ bot.command('userinfo', async (ctx) => {
   }
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
 
-  if (!ctx.message.reply_to_message) {
+  const args = ctx.message.text.split(' ');
+  let targetUserId;
+
+  // Режим 1: В группе через Reply to message
+  if (ctx.message.reply_to_message) {
+    targetUserId = ctx.message.reply_to_message.from.id;
+  }
+  // Режим 2: В личке через user_id
+  else if (ctx.chat.type === 'private') {
+    if (!args[1]) {
+      return ctx.reply(
+        '⚠️ *USER INFO*\n\n' +
+        'Usage: /userinfo <user_id>\n\n' +
+        'Example:\n' +
+        '/userinfo 123456789',
+        { parse_mode: 'Markdown' }
+      );
+    }
+    targetUserId = parseInt(args[1]);
+  }
+  // Ошибка: в группе без reply
+  else {
     return ctx.reply('⚠️ Reply to user\'s message and type /userinfo');
   }
-  
-  const targetUserId = ctx.message.reply_to_message.from.id;
-  
+
   try {
     const userStatus = await getUserStatus(targetUserId);
     const reportsResult = await pool.query(
@@ -1868,11 +1986,11 @@ bot.command('userinfo', async (ctx) => {
       [targetUserId]
     );
     const uniqueReports = parseInt(reportsResult.rows[0]?.unique_reports || 0);
-    
+
     if (!userStatus) {
       return ctx.reply('❌ User not found in database.');
     }
-    
+
     const info = `📊 *USER INFORMATION*\n\n` +
       `ID: \`${userStatus.telegram_id}\`\n` +
       `Username: @${userStatus.username || 'N/A'}\n` +
@@ -1887,7 +2005,7 @@ bot.command('userinfo', async (ctx) => {
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🎫 Airdrop Position: ${userStatus.position ? `#${userStatus.position}` : 'Not registered'}\n` +
       `💼 Wallet: ${userStatus.wallet_address ? `\`${userStatus.wallet_address.substring(0, 20)}...\`` : 'Not linked'}`;
-    
+
     await ctx.reply(info, { parse_mode: 'Markdown' });
   } catch (err) {
     console.error('❌ Error userinfo:', err);
