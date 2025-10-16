@@ -1865,7 +1865,7 @@ const MILESTONE_STEP = 1; // Тест: каждые 1 человек | Прод�
 async function checkAndSendMilestone(chatId, botInfo) {
   try {
     // Получаем количество участников чата
-    const chatMemberCount = await bot.telegram.getChatMemberCount(chatId);
+    const chatMemberCount = await bot.telegram.getChatMembersCount(chatId);
     console.log(`📊 Текущее количество участников: ${chatMemberCount}`);
 
     // Проверяем, достигли ли мы milestone (кратное MILESTONE_STEP)
