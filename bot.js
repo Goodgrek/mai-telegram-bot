@@ -2400,7 +2400,7 @@ Complete tasks during presale to earn your share of the 800M MAI pool!
 1️⃣ Stages 1-3: Buy 10,000+ MAI
 2️⃣ Stages 5-7: Buy 10,000+ MAI
 3️⃣ Stages 10-14: Buy 10,000+ MAI
-4️⃣ Earn Reward NFT
+4️⃣ Earn Gold or Platinum NFT
 5️⃣ Invite 2+ Friends
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -2528,7 +2528,7 @@ Q: What are the tasks?
 A: 1. Buy 10K+ MAI (stages 1-3)
    2. Buy 10K+ MAI (stages 5-7)
    3. Buy 10K+ MAI (stages 10-14)
-   4. Earn Reward NFT
+   4. Earn Gold or Platinum NFT
    5. Invite 2+ friends
    
    Track progress: /tasks
