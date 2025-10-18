@@ -809,23 +809,28 @@ View details: /presale
 
 🎁 MEGA REWARDS PROGRAM
 
-Community Airdrop: 5,000 MAI
-- First 20,000 participants get 5,000 MAI!
-- How to participate:
-  1️⃣ Subscribe to @mai_news
-  2️⃣ Subscribe to @mainingmai_chat
-  3️⃣ Register via command: /airdrop
-- Register after 20K? You're in queue - if someone loses their spot, you move up!
+🎁 COMMUNITY AIRDROP:
+✅ 5,000 MAI FREE for first 20,000 participants
+✅ How to participate:
+   1️⃣ Subscribe @mai_news
+   2️⃣ Subscribe @mainingmai_chat
+   3️⃣ Register: /airdrop
+✅ STAY subscribed until listing
+✅ Daily check 00:00 UTC
+✅ Distribution: Within 10 days after listing
+✅ Register after 20K? You're in queue - if someone loses their spot, you move up!
+❌ Unsubscribe = Position lost!
+Claim now! 🚀
 
-Presale Airdrop: Up to 1,000,000 MAI
+🎁Presale Airdrop: Up to 1,000,000 MAI
 - Complete tasks during presale
 - Command: /tasks
 
-Airdrop NFT program (1,400 NFTs)
+🎁Airdrop NFT program (1,400 NFTs)
 - Complete tasks during presale
 - Command: /nftairdrop
 
-Referral Program: Earn USDT
+🎁Referral Program: Earn USDT
 - $500,000 reward pool
 - Command: /referral
 
