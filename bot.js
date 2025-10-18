@@ -1247,8 +1247,8 @@ bot.command('help', async (ctx) => {
 
 💰 *REWARDS & AIRDROPS:*
 
-/airdrop - Register for community airdrop (5,000 MAI)
-  → First 20,000 get rewards. After 20K? Join the queue!
+/airdrop - Community airdrop (5,000 MAI FREE)
+  → First 20,000 participants. After 20K? Join the queue!
 /tasks - Presale airdrop program (up to 1M MAI)
 /nftairdrop - Airdrop NFT program (1,400 NFTs)
 /referral - Referral program ($500K USDT pool)
@@ -2150,13 +2150,15 @@ bot.command('pin', async (ctx) => {
 Decentralized AI Platform
 
 🎁 COMMUNITY AIRDROP:
-✅ 5,000 MAI AIRDROP
-✅ Subscribe @mai_news + @mainingmai_chat
-✅ Register: /airdrop  
+✅ 5,000 MAI FREE for first 20,000 participants
+✅ How to participate:
+   1️⃣ Subscribe @mai_news
+   2️⃣ Subscribe @mainingmai_chat
+   3️⃣ Register: /airdrop
 ✅ STAY subscribed until listing
-✅ Get paid within 10 days after listing
-⚠️ 20,000 spots | Daily check 00:00 UTC
-Unsubscribe = Position lost forever
+✅ Daily check 00:00 UTC
+✅ Distribution: Within 10 days after listing
+❌ Unsubscribe = Position lost!
 Claim now! 🚀
 
 💎 PRESALE:
@@ -2263,11 +2265,13 @@ async function checkAndSendMilestone(chatId, botInfo) {
       const milestoneMsg =
         `🎉 MILESTONE ACHIEVED!\n\n` +
         `🚀 We've reached ${milestone.toLocaleString()} members in our community!\n\n` +
-        `🎁 Don't miss out:\n` +
-        `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} positions get 5,000 MAI FREE\n` +
-        `✅ Register after 20K? You join the queue and can move up!\n` +
-        `✅ Register now: /airdrop\n` +
-        `✅ Subscribe: @mai_news\n\n` +
+        `🎁 COMMUNITY AIRDROP:\n` +
+        `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI FREE\n\n` +
+        `📋 How to participate:\n` +
+        `1️⃣ Subscribe to @mai_news\n` +
+        `2️⃣ Subscribe to @mainingmai_chat\n` +
+        `3️⃣ Register via command: /airdrop\n\n` +
+        `💡 Register after 20K? You're in queue and can move up!\n\n` +
         `💪 Together we're building the future of decentralized AI!\n\n` +
         `🌐 https://miningmai.com`;
 
@@ -2305,14 +2309,18 @@ bot.on('new_chat_members', async (ctx) => {
       await bot.telegram.sendMessage(
         member.id,
         `👋 Welcome to MAI Project!\n\n` +
-        `🎁 Get 5,000 MAI Tokens FREE\n` +
-        `First ${config.AIRDROP_LIMIT.toLocaleString()} positions get rewards!\n\n` +
-        `💡 Register even after 20K - you'll be in queue!\n` +
-        `If someone loses their spot, you move up automatically.\n\n` +
-        `⚠️ Requirements:\n` +
-        `✅ Subscribe to @mai_news\n` +
-        `✅ Stay in chat @mainingmai_chat until listing\n` +
-        `✅ Register your Solana wallet\n\n` +
+        `🎁 COMMUNITY AIRDROP: 5,000 MAI FREE\n` +
+        `First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI!\n\n` +
+        `📋 How to participate:\n` +
+        `1️⃣ Subscribe to @mai_news\n` +
+        `2️⃣ Subscribe to @mainingmai_chat\n` +
+        `3️⃣ Register via command: /airdrop\n\n` +
+        `💡 Register after 20K? You're in queue!\n` +
+        `If someone unsubscribes, you move up automatically.\n\n` +
+        `🔒 Keep your position:\n` +
+        `✅ Stay subscribed to both channels until listing\n` +
+        `✅ Daily check at 00:00 UTC\n` +
+        `❌ Unsubscribe = Position lost!\n\n` +
         `📋 Quick Start:\n` +
         `• Use /airdrop to register\n` +
         `• Read /rules for community guidelines\n` +
@@ -2511,17 +2519,22 @@ Telegram blocks Web3. Use real browser!
 - Listing: Q1 2026 on DEX/CEX
 
 🎁 COMMUNITY AIRDROP (5,000 MAI)
-- First 20,000 positions get rewards
-- Can register after 20K? YES - you join the queue!
-- If someone unsubscribes, next in line moves up
-- FREE - just subscribe & register
-- Daily check at 00:00 UTC
-- Unsubscribe = Position lost
+- First 20,000 participants get 5,000 MAI!
+- Absolutely FREE - just subscribe & register
 - Distribution: Within 10 days after listing
 
-Requirements:
-✅ Subscribe @mai_news
-✅ Stay in chat until listing @mainingmai_chat
+How to participate:
+1️⃣ Subscribe to @mai_news
+2️⃣ Subscribe to @mainingmai_chat
+3️⃣ Register via command: /airdrop
+
+Register after 20K? You're in queue!
+- If someone unsubscribes, you move up automatically
+
+Keep your position:
+✅ Stay subscribed to both channels until listing
+✅ Daily check at 00:00 UTC
+❌ Unsubscribe = Position lost immediately!
 ✅ Register wallet: /airdrop
 
 🏆 PRESALE AIRDROP (Up to 1M MAI)
