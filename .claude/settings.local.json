@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Алексей/Downloads/mai-presale/site/script/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
