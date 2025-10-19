@@ -1126,7 +1126,7 @@ bot.command('status', async (ctx) => {
       `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
       `📅 Registered: ${new Date(userStatus.registered_at).toLocaleDateString()}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🚫 <b>Registration Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
+      `⚠️ <b>Registration Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `📺 <b>Required Subscriptions:</b>\n` +
       `${newsSubscribed ? '✅' : '❌'} News Channel (@mai_news)\n` +
