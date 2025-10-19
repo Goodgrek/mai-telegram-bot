@@ -920,25 +920,24 @@ bot.command('airdrop', async (ctx) => {
       );
     }
     
+    // Проверяем ОБЕ подписки сразу
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+
     console.log('📺 Подписка на новости:', newsSubscribed);
-    
-    if (!newsSubscribed) {
+    console.log('💬 Подписка на чат:', chatSubscribed);
+
+    // Если НЕ подписан хотя бы на один канал - показываем статус ОБОИХ
+    if (!newsSubscribed || !chatSubscribed) {
       return sendToPrivate(
         ctx,
         `❌ <b>Subscription Required!</b>\n\n` +
-        `You must subscribe to our news channel first:\n` +
-        `👉 @mai_news\n\n` +
-        `After subscribing, run /airdrop again.`,
+        `You must subscribe to BOTH channels to participate:\n\n` +
+        `${newsSubscribed ? '✅' : '❌'} News Channel: @mai_news\n` +
+        `${chatSubscribed ? '✅' : '❌'} Community Chat: @mainingmai_chat\n\n` +
+        `After subscribing to ${!newsSubscribed && !chatSubscribed ? 'both channels' : 'the missing channel'}, run /airdrop again.`,
         { parse_mode: 'HTML' }
       );
-    }
-    
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
-    console.log('💬 Подписка на чат:', chatSubscribed);
-    
-    if (!chatSubscribed) {
-      return sendToPrivate(ctx, '❌ You must be a member of our community chat to participate!');
     }
     
     await setAwaitingWallet(userId, true);
