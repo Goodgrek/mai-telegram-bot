@@ -915,7 +915,11 @@ bot.command('airdrop', async (ctx) => {
         `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
         `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
         `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
-        `Use /status to check your participation details.`,
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `📊 <b>Check your status:</b>\n` +
+        `• Use /status command here\n` +
+        `• Connect wallet at https://miningmai.com\n\n` +
+        `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`,
         { parse_mode: 'HTML' }
       );
     }
@@ -1136,7 +1140,10 @@ bot.command('status', async (ctx) => {
       `⚠️ Warnings: ${userStatus.warnings}/${config.WARN_LIMIT}\n` +
       `📊 Reports: ${userStatus.reports_received}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\nYou must complete the actions above to activate your position and be eligible for the ${config.AIRDROP_REWARD.toLocaleString()} MAI reward!` : ''}`,
+      `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\n\nYou have until the next daily check at <b>00:00 UTC</b> to resubscribe to the required channels. If you don't resubscribe before then, you will permanently lose your position #${userStatus.position}!\n\nResubscribe NOW to keep your spot!` : ''}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🌐 <b>Check status on website:</b>\n` +
+      `Connect your wallet at https://miningmai.com`,
       { parse_mode: 'HTML' }
     );
   } catch (error) {
@@ -2342,6 +2349,63 @@ bot.on('new_chat_members', async (ctx) => {
 
   // Проверяем milestone ПОСЛЕ обработки всех новых участников
   await checkAndSendMilestone(ctx.chat.id, ctx.botInfo);
+});
+
+// ========================================
+// ОБРАБОТКА ВЫХОДА ИЗ ЧАТА (ОТПИСКА)
+// ========================================
+bot.on('left_chat_member', async (ctx) => {
+  const userId = ctx.message.left_chat_member.id;
+  const chatId = ctx.chat.id;
+
+  console.log(`👋 Пользователь ${userId} вышел из чата ${chatId}`);
+
+  try {
+    // Проверяем, зарегистрирован ли пользователь в аирдропе
+    const userStatus = await getUserStatus(userId);
+
+    if (!userStatus || !userStatus.position) {
+      console.log(`⚠️ Пользователь ${userId} не зарегистрирован в аирдропе`);
+      return;
+    }
+
+    // Определяем из какого канала вышел
+    let channelName = '';
+    if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
+      channelName = '@mai_news';
+    } else if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
+      channelName = '@mainingmai_chat';
+    } else {
+      // Не наш канал
+      return;
+    }
+
+    console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) вышел из ${channelName}`);
+
+    // Отправляем предупреждение в ЛС
+    await bot.telegram.sendMessage(
+      userId,
+      `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
+      `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
+      `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
+      `❌ Permanently lose your position #${userStatus.position}\n` +
+      `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
+      `❌ Your spot will go to the next person in queue\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
+      `1️⃣ Subscribe to @mai_news\n` +
+      `2️⃣ Join @mainingmai_chat\n` +
+      `3️⃣ Stay subscribed until listing\n\n` +
+      `Use /status to check your current status.`,
+      { parse_mode: 'HTML' }
+    );
+
+    console.log(`✅ Предупреждение об отписке отправлено пользователю ${userId}`);
+  } catch (error) {
+    console.error(`❌ Ошибка обработки выхода пользователя ${userId}:`, error.message);
+  }
 });
 
 function getPresaleText() {
