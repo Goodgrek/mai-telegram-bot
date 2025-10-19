@@ -2974,31 +2974,48 @@ bot.on(message('text'), async (ctx) => {
       }
 
       console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
-      return sendToPrivate(
-  ctx,
-  `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-  `Welcome to the MAI Community Airdrop!\n\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-  `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-  `💼 Wallet: <code>${text}</code>\n` +
-  `📅 Distribution: Within 10 days after listing\n\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-  `✅ Stay subscribed to @mai_news\n` +
-  `✅ Stay in community chat @mainingmai_chat\n` +
-  `✅ Follow all rules\n\n` +
-  `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
-  `If you unsubscribe, you will:\n` +
-  `❌ Lose your position #${registration.user.position}\n` +
-  `❌ Your spot goes to next person\n` +
-  `❌ Cannot restore old position\n\n` +
-  `Use /status anytime to verify your status.\n\n` +
-  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `<b>Thank you for joining MAI! 🚀</b>\n` +
-  `Tokens will be distributed after official listing.`,
-  { parse_mode: 'HTML' }
-);
+
+      // Формируем текст сообщения
+      const successMessage =
+        `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+        `Welcome to the MAI Community Airdrop!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+        `💼 Wallet: <code>${text}</code>\n` +
+        `📅 Distribution: Within 10 days after listing\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+        `✅ Stay subscribed to @mai_news\n` +
+        `✅ Stay in community chat @mainingmai_chat\n` +
+        `✅ Follow all rules\n\n` +
+        `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+        `If you unsubscribe, you will:\n` +
+        `❌ Lose your position #${registration.user.position}\n` +
+        `❌ Your spot goes to next person\n` +
+        `❌ Cannot restore old position\n\n` +
+        `Use /status anytime to verify your status.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `<b>Thank you for joining MAI! 🚀</b>\n` +
+        `Tokens will be distributed after official listing.`;
+
+      // Отправляем с картинкой
+      try {
+        await bot.telegram.sendPhoto(
+          userId,
+          { source: './images/milestone.webp' },
+          {
+            caption: successMessage,
+            parse_mode: 'HTML'
+          }
+        );
+        console.log(`✅ Registration success message with image sent to user ${userId}`);
+        return;
+      } catch (imgError) {
+        // Если картинка не найдена - отправляем просто текст
+        console.log(`⚠️ Image not found, sending text message`);
+        return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+      }
     } 
     
     // Если нет статуса или не ждет кошелек - выход
