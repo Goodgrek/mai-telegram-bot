@@ -469,25 +469,38 @@ async function addReport(reporterId, reportedUserId, chatId) {
 
 async function banUser(userId, reason = 'Violation of rules') {
   try {
+    // Проверяем, есть ли у юзера позиция в аирдропе
+    const userStatus = await getUserStatus(userId);
+    const hadPosition = userStatus?.position;
+
+    // Удаляем позицию в аирдропе (если есть)
+    if (hadPosition) {
+      await removePosition(userId);
+      console.log(`🚫 Удалена позиция #${hadPosition} у забаненного пользователя ${userId}`);
+    }
+
+    // Баним пользователя
     await pool.query('UPDATE telegram_users SET banned = true WHERE telegram_id = $1', [userId]);
 
     // Отправляем уведомление пользователю
     try {
       await bot.telegram.sendMessage(
         userId,
-        `🚫 *YOU HAVE BEEN BANNED*\n\n` +
-        `Status: *PERMANENTLY BANNED*\n\n` +
+        `🚫 <b>YOU HAVE BEEN BANNED</b>\n\n` +
+        `Status: <b>PERMANENTLY BANNED</b>\n\n` +
         `Reason: ${reason}\n\n` +
         `━━━━━━━━━━━━━━━━━━━\n\n` +
-        `You cannot participate in airdrops or other activities.\n\n` +
+        `You cannot participate in airdrops or other activities.${hadPosition ? `\n\nYour Community Airdrop position #${hadPosition} has been removed.` : ''}\n\n` +
         `If you believe this is a mistake, contact support.`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       console.log(`✅ Ban notification sent to user ${userId}`);
     } catch (err) {
       console.log(`⚠️ Cannot send ban notification to user ${userId}: ${err.message}`);
     }
-  } catch {}
+  } catch (error) {
+    console.error(`❌ Error in banUser for ${userId}:`, error.message);
+  }
 }
 
 async function muteUser(userId, hours = 24, reason = 'Violation of rules') {
@@ -2381,6 +2394,13 @@ bot.on('left_chat_member', async (ctx) => {
     }
 
     console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) вышел из ${channelName}`);
+
+    // Обновляем статус подписок в БД
+    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+
+    await updateSubscription(userId, newsSubscribed, chatSubscribed);
+    console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
     // Отправляем предупреждение в ЛС
     await bot.telegram.sendMessage(
