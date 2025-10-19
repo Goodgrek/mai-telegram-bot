@@ -2142,13 +2142,7 @@ bot.command('unban', async (ctx) => {
 });
 
 bot.command('userinfo', async (ctx) => {
-  if (ctx.chat.type !== 'private') {
-    try {
-      await ctx.deleteMessage();
-    } catch (e) {
-      console.log('Не удалось удалить сообщение команды');
-    }
-  }
+  // Проверка прав админа
   if (!config.ADMIN_IDS.includes(ctx.from.id)) return;
 
   const args = ctx.message.text.split(' ');
@@ -2162,11 +2156,11 @@ bot.command('userinfo', async (ctx) => {
   else if (ctx.chat.type === 'private') {
     if (!args[1]) {
       return ctx.reply(
-        '⚠️ *USER INFO*\n\n' +
+        '⚠️ <b>USER INFO</b>\n\n' +
         'Usage: /userinfo <user_id>\n\n' +
         'Example:\n' +
         '/userinfo 123456789',
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
     targetUserId = parseInt(args[1]);
@@ -2188,24 +2182,34 @@ bot.command('userinfo', async (ctx) => {
       return ctx.reply('❌ User not found in database.');
     }
 
-    const info = `📊 *USER INFORMATION*\n\n` +
-      `ID: \`${userStatus.telegram_id}\`\n` +
+    const info = `📊 <b>USER INFORMATION</b>\n\n` +
+      `ID: <code>${userStatus.telegram_id}</code>\n` +
       `Username: @${userStatus.username || 'N/A'}\n` +
-      `Name: ${userStatus.first_name}\n\n` +
+      `Name: ${userStatus.first_name || 'N/A'}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `⚠️ Warnings: ${userStatus.warnings}\n` +
-      `📊 Reports (total): ${userStatus.reports_received}\n` +
+      `⚠️ Warnings: ${userStatus.warnings || 0}\n` +
+      `📊 Reports (total): ${userStatus.reports_received || 0}\n` +
       `👥 Unique Reports: ${uniqueReports}\n` +
-      `🔇 Mute Count: ${userStatus.mute_count}\n` +
+      `🔇 Mute Count: ${userStatus.mute_count || 0}\n` +
       `🚫 Banned: ${userStatus.banned ? 'YES' : 'NO'}\n` +
       `🔇 Muted Until: ${userStatus.muted_until ? new Date(userStatus.muted_until).toLocaleString() : 'NO'}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🎫 Airdrop Position: ${userStatus.position ? `#${userStatus.position}` : 'Not registered'}\n` +
-      `💼 Wallet: ${userStatus.wallet_address ? `\`${userStatus.wallet_address.substring(0, 20)}...\`` : 'Not linked'}`;
+      `💼 Wallet: ${userStatus.wallet_address ? `<code>${userStatus.wallet_address.substring(0, 20)}...</code>` : 'Not linked'}`;
 
-    await ctx.reply(info, { parse_mode: 'Markdown' });
+    // Отправляем ответ (в чат если из чата, в PM если из PM)
+    await ctx.reply(info, { parse_mode: 'HTML' });
+
+    // Удаляем команду ПОСЛЕ отправки ответа (только в группе)
+    if (ctx.chat.type !== 'private') {
+      try {
+        await ctx.deleteMessage();
+      } catch (e) {
+        // Не критично если не удалось удалить
+      }
+    }
   } catch (err) {
-    console.error('❌ Error userinfo:', err);
+    console.error('❌ Error userinfo:', err.message);
     await ctx.reply('❌ Error fetching user info.');
   }
 });
