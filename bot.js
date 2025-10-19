@@ -467,7 +467,7 @@ async function addReport(reporterId, reportedUserId, chatId) {
   }
 }
 
-async function banUser(userId, reason = 'Violation of rules') {
+async function banUser(userId, reason = 'Violation of rules', chatId = null) {
   try {
     // Проверяем, есть ли у юзера позиция в аирдропе
     const userStatus = await getUserStatus(userId);
@@ -479,8 +479,18 @@ async function banUser(userId, reason = 'Violation of rules') {
       console.log(`🚫 Удалена позиция #${hadPosition} у забаненного пользователя ${userId}`);
     }
 
-    // Баним пользователя
+    // Баним пользователя в БД
     await pool.query('UPDATE telegram_users SET banned = true WHERE telegram_id = $1', [userId]);
+
+    // Баним в чате Telegram (если указан chatId)
+    if (chatId) {
+      try {
+        await bot.telegram.banChatMember(chatId, userId);
+        console.log(`✅ User ${userId} banned in chat ${chatId}`);
+      } catch (err) {
+        console.log(`⚠️ Cannot ban user ${userId} in chat ${chatId}: ${err.message}`);
+      }
+    }
 
     // Отправляем уведомление пользователю
     try {
@@ -503,23 +513,45 @@ async function banUser(userId, reason = 'Violation of rules') {
   }
 }
 
-async function muteUser(userId, hours = 24, reason = 'Violation of rules') {
+async function muteUser(userId, hours = 24, reason = 'Violation of rules', chatId = null) {
   try {
     const muteUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
     await pool.query('UPDATE telegram_users SET muted_until = $1 WHERE telegram_id = $2', [muteUntil, userId]);
+
+    // Мутим в чате Telegram (если указан chatId)
+    if (chatId) {
+      try {
+        await bot.telegram.restrictChatMember(chatId, userId, {
+          permissions: {
+            can_send_messages: false,
+            can_send_media_messages: false,
+            can_send_polls: false,
+            can_send_other_messages: false,
+            can_add_web_page_previews: false,
+            can_change_info: false,
+            can_invite_users: false,
+            can_pin_messages: false
+          },
+          until_date: Math.floor(muteUntil.getTime() / 1000) // Unix timestamp в секундах
+        });
+        console.log(`✅ User ${userId} muted in chat ${chatId} until ${muteUntil.toISOString()}`);
+      } catch (err) {
+        console.log(`⚠️ Cannot mute user ${userId} in chat ${chatId}: ${err.message}`);
+      }
+    }
 
     // Отправляем уведомление пользователю
     try {
       await bot.telegram.sendMessage(
         userId,
-        `⚠️ *YOU HAVE BEEN MUTED*\n\n` +
-        `Duration: *${hours} hours*\n` +
+        `⚠️ <b>YOU HAVE BEEN MUTED</b>\n\n` +
+        `Duration: <b>${hours} hours</b>\n` +
         `Until: ${muteUntil.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC\n\n` +
         `Reason: ${reason}\n\n` +
         `━━━━━━━━━━━━━━━━━━━\n\n` +
         `Please follow the community rules.\n` +
         `Review them: /rules`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       console.log(`✅ Mute notification sent to user ${userId}`);
     } catch (err) {
@@ -707,20 +739,30 @@ async function unblockUserFromAdmin(userId) {
   }
 }
 
-async function unbanUser(userId) {
+async function unbanUser(userId, chatId = null) {
   try {
     await pool.query('UPDATE telegram_users SET banned = false WHERE telegram_id = $1', [userId]);
+
+    // Разбаниваем в чате Telegram (если указан chatId)
+    if (chatId) {
+      try {
+        await bot.telegram.unbanChatMember(chatId, userId);
+        console.log(`✅ User ${userId} unbanned in chat ${chatId}`);
+      } catch (err) {
+        console.log(`⚠️ Cannot unban user ${userId} in chat ${chatId}: ${err.message}`);
+      }
+    }
 
     // Отправляем уведомление пользователю
     try {
       await bot.telegram.sendMessage(
         userId,
-        `✅ *YOU HAVE BEEN UNBANNED*\n\n` +
+        `✅ <b>YOU HAVE BEEN UNBANNED</b>\n\n` +
         `Your ban has been lifted.\n` +
         `You can now participate in activities again.\n\n` +
         `━━━━━━━━━━━━━━━━━━━\n\n` +
         `Please follow the community rules: /rules`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       console.log(`✅ Unban notification sent to user ${userId}`);
     } catch (err) {
@@ -729,19 +771,40 @@ async function unbanUser(userId) {
   } catch {}
 }
 
-async function unmuteUser(userId) {
+async function unmuteUser(userId, chatId = null) {
   try {
     await pool.query('UPDATE telegram_users SET muted_until = NULL WHERE telegram_id = $1', [userId]);
+
+    // Снимаем ограничения в чате Telegram (если указан chatId)
+    if (chatId) {
+      try {
+        await bot.telegram.restrictChatMember(chatId, userId, {
+          permissions: {
+            can_send_messages: true,
+            can_send_media_messages: true,
+            can_send_polls: true,
+            can_send_other_messages: true,
+            can_add_web_page_previews: true,
+            can_change_info: false,
+            can_invite_users: true,
+            can_pin_messages: false
+          }
+        });
+        console.log(`✅ User ${userId} unmuted in chat ${chatId}`);
+      } catch (err) {
+        console.log(`⚠️ Cannot unmute user ${userId} in chat ${chatId}: ${err.message}`);
+      }
+    }
 
     // Отправляем уведомление пользователю
     try {
       await bot.telegram.sendMessage(
         userId,
-        `✅ *YOUR MUTE HAS BEEN REMOVED*\n\n` +
+        `✅ <b>YOUR MUTE HAS BEEN REMOVED</b>\n\n` +
         `You can now send messages again.\n\n` +
         `━━━━━━━━━━━━━━━━━━━\n\n` +
         `Please follow the community rules: /rules`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       console.log(`✅ Unmute notification sent to user ${userId}`);
     } catch (err) {
@@ -1715,39 +1778,18 @@ bot.command('report', async (ctx) => {
   
   if (uniqueReports === 30) {
     // ТРЕТИЙ ПОРОГ - ПЕРМАБАН
-    await banUser(reportedUserId, `30 reports from community members`);
-    try {
-      await ctx.telegram.banChatMember(ctx.chat.id, reportedUserId);
-      await ctx.reply(`🚫 User permanently banned after ${uniqueReports} reports from community.`);
-    } catch (err) {
-      await ctx.reply(`🚫 User marked as banned in database (${uniqueReports} reports).`);
-    }
+    await banUser(reportedUserId, `30 reports from community members`, ctx.chat.id);
+    await ctx.reply(`🚫 User permanently banned after ${uniqueReports} reports from community.`);
   } else if (uniqueReports === 20 && muteCount === 1) {
     // ВТОРОЙ ПОРОГ - МУТ НА 7 ДНЕЙ
-    await muteUser(reportedUserId, 168, `20 reports from community (2nd offense)`); // 7 дней = 168 часов
+    await muteUser(reportedUserId, 168, `20 reports from community (2nd offense)`, ctx.chat.id); // 7 дней = 168 часов
     await incrementMuteCount(reportedUserId);
-    try {
-      await ctx.telegram.restrictChatMember(ctx.chat.id, reportedUserId, {
-        until_date: Math.floor(Date.now() / 1000) + (168 * 3600),
-        permissions: { can_send_messages: false }
-      });
-      await ctx.reply(`⚠️ User muted for 7 DAYS after ${uniqueReports} reports (2nd offense).`);
-    } catch (err) {
-      await ctx.reply(`⚠️ User marked as muted for 7 days in database (${uniqueReports} reports).`);
-    }
+    await ctx.reply(`⚠️ User muted for 7 DAYS after ${uniqueReports} reports (2nd offense).`);
   } else if (uniqueReports === 10 && muteCount === 0) {
     // ПЕРВЫЙ ПОРОГ - МУТ НА 24 ЧАСА
-    await muteUser(reportedUserId, 24, `10 reports from community (1st offense)`);
+    await muteUser(reportedUserId, 24, `10 reports from community (1st offense)`, ctx.chat.id);
     await incrementMuteCount(reportedUserId);
-    try {
-      await ctx.telegram.restrictChatMember(ctx.chat.id, reportedUserId, {
-        until_date: Math.floor(Date.now() / 1000) + 86400,
-        permissions: { can_send_messages: false }
-      });
-      await ctx.reply(`⚠️ User muted for 24 hours after ${uniqueReports} reports (1st offense).`);
-    } catch (err) {
-      await ctx.reply(`⚠️ User marked as muted for 24 hours in database (${uniqueReports} reports).`);
-    }
+    await ctx.reply(`⚠️ User muted for 24 hours after ${uniqueReports} reports (1st offense).`);
   }
 });
 
@@ -1887,23 +1929,12 @@ bot.command('mute', async (ctx) => {
     return ctx.reply('❌ Invalid hours! Must be >= 1');
   }
 
-  await muteUser(targetUserId, hours, reason);
+  // Передаем chatId только если это не приватный чат
+  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
+  await muteUser(targetUserId, hours, reason, chatId);
   await incrementMuteCount(targetUserId);
 
-  try {
-    // Пытаемся замутить в группе (если есть ctx.chat.id группы)
-    if (ctx.chat.type !== 'private') {
-      await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
-        until_date: Math.floor(Date.now() / 1000) + (hours * 3600),
-        permissions: { can_send_messages: false }
-      });
-      await ctx.reply(`✅ User ${targetUserId} muted for ${hours} hours by admin.`);
-    } else {
-      await ctx.reply(`✅ User ${targetUserId} marked as muted in database for ${hours} hours.`);
-    }
-  } catch (err) {
-    await ctx.reply(`✅ User ${targetUserId} marked as muted in database for ${hours} hours.`);
-  }
+  await ctx.reply(`✅ User ${targetUserId} muted for ${hours} hours by admin.`);
 });
 
 bot.command('unmute', async (ctx) => {
@@ -1941,26 +1972,11 @@ bot.command('unmute', async (ctx) => {
     return ctx.reply('⚠️ Reply to user\'s message and type /unmute');
   }
 
-  await unmuteUser(targetUserId);
+  // Передаем chatId только если это не приватный чат
+  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
+  await unmuteUser(targetUserId, chatId);
 
-  try {
-    if (ctx.chat.type !== 'private') {
-      await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
-        permissions: {
-          can_send_messages: true,
-          can_send_media_messages: true,
-          can_send_polls: true,
-          can_send_other_messages: true,
-          can_add_web_page_previews: true
-        }
-      });
-      await ctx.reply(`✅ User ${targetUserId} unmuted by admin.`);
-    } else {
-      await ctx.reply(`✅ User ${targetUserId} unmarked as muted in database.`);
-    }
-  } catch (err) {
-    await ctx.reply(`✅ User ${targetUserId} unmarked as muted in database.`);
-  }
+  await ctx.reply(`✅ User ${targetUserId} unmuted by admin.`);
 });
 
 bot.command('ban', async (ctx) => {
@@ -2003,18 +2019,11 @@ bot.command('ban', async (ctx) => {
     return ctx.reply('⚠️ Reply to user\'s message and type /ban [reason]');
   }
 
-  await banUser(targetUserId, reason);
+  // Передаем chatId только если это не приватный чат
+  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
+  await banUser(targetUserId, reason, chatId);
 
-  try {
-    if (ctx.chat.type !== 'private') {
-      await ctx.telegram.banChatMember(ctx.chat.id, targetUserId);
-      await ctx.reply(`🚫 User ${targetUserId} permanently banned by admin.\nReason: ${reason}`);
-    } else {
-      await ctx.reply(`🚫 User ${targetUserId} marked as banned in database.\nReason: ${reason}`);
-    }
-  } catch (err) {
-    await ctx.reply(`🚫 User ${targetUserId} marked as banned in database.\nReason: ${reason}`);
-  }
+  await ctx.reply(`🚫 User ${targetUserId} permanently banned by admin.\nReason: ${reason}`);
 });
 
 bot.command('unban', async (ctx) => {
@@ -2052,18 +2061,11 @@ bot.command('unban', async (ctx) => {
     return ctx.reply('⚠️ Reply to user\'s message and type /unban');
   }
 
-  await unbanUser(targetUserId);
+  // Передаем chatId только если это не приватный чат
+  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
+  await unbanUser(targetUserId, chatId);
 
-  try {
-    if (ctx.chat.type !== 'private') {
-      await ctx.telegram.unbanChatMember(ctx.chat.id, targetUserId);
-      await ctx.reply(`✅ User ${targetUserId} unbanned by admin.`);
-    } else {
-      await ctx.reply(`✅ User ${targetUserId} unmarked as banned in database.`);
-    }
-  } catch (err) {
-    await ctx.reply(`✅ User ${targetUserId} unmarked as banned in database.`);
-  }
+  await ctx.reply(`✅ User ${targetUserId} unbanned by admin.`);
 });
 
 bot.command('userinfo', async (ctx) => {
@@ -2946,10 +2948,9 @@ bot.on(message('text'), async (ctx) => {
     if (containsBadContent(text)) {
       await ctx.deleteMessage();
       const warnings = await addWarning(userId);
-      
+
       if (warnings >= config.WARN_LIMIT) {
-        await banUser(userId, `Reached ${config.WARN_LIMIT} warnings for forbidden content`);
-        await ctx.telegram.banChatMember(ctx.chat.id, userId);
+        await banUser(userId, `Reached ${config.WARN_LIMIT} warnings for forbidden content`, ctx.chat.id);
         return;
       }
 
@@ -2961,11 +2962,10 @@ bot.on(message('text'), async (ctx) => {
       const warnings = await addWarning(userId);
 
       if (warnings >= config.WARN_LIMIT) {
-        await banUser(userId, `Reached ${config.WARN_LIMIT} warnings for spam links`);
-        await ctx.telegram.banChatMember(ctx.chat.id, userId);
+        await banUser(userId, `Reached ${config.WARN_LIMIT} warnings for spam links`, ctx.chat.id);
         return;
       }
-      
+
       return ctx.reply(`⚠️ Unauthorized links forbidden! Warning ${warnings}/${config.WARN_LIMIT}. Next violation = BAN.`);
     }
   } catch (error) {
