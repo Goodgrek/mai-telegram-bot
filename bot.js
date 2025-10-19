@@ -56,7 +56,8 @@ const PRESALE_STAGES = [
 async function checkSubscription(bot, channelId, userId) {
   try {
     const member = await bot.telegram.getChatMember(channelId, userId);
-    return ['member', 'administrator', 'creator'].includes(member.status);
+    // Включаем 'restricted' - замьюченный пользователь всё ещё подписан, просто не может писать
+    return ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
   } catch {
     return false;
   }
