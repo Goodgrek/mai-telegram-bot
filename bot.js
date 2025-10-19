@@ -986,6 +986,40 @@ bot.command('airdrop', async (ctx) => {
     }
     
     if (userStatus?.position && userStatus?.wallet_address) {
+      // Проверяем актуальность подписок ИЗ БД
+      const newsSubscribed = userStatus.is_subscribed_news;
+      const chatSubscribed = userStatus.is_subscribed_chat;
+      const isActive = newsSubscribed && chatSubscribed;
+
+      // Если отписался от хотя бы одного канала - показываем предупреждение
+      if (!isActive) {
+        let warningMessage = `⚠️ <b>You're Already Registered, BUT...</b>\n\n` +
+          `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+          `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+          `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🚫 <b>STATUS: INACTIVE</b>\n\n` +
+          `You unsubscribed from:\n`;
+
+        if (!newsSubscribed) warningMessage += `❌ @mai_news\n`;
+        if (!chatSubscribed) warningMessage += `❌ @mainingmai_chat\n`;
+
+        warningMessage += `\n⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
+          `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
+          `❌ Permanently lose your position #${userStatus.position}\n` +
+          `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
+          `❌ Your spot will go to the next person in queue\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
+          `1️⃣ Subscribe to @mai_news\n` +
+          `2️⃣ Join @mainingmai_chat\n` +
+          `3️⃣ Use /status to verify\n\n` +
+          `📊 Check status at https://miningmai.com`;
+
+        return sendToPrivate(ctx, warningMessage, { parse_mode: 'HTML' });
+      }
+
+      // Если всё ОК - показываем обычное сообщение
       return sendToPrivate(
         ctx,
         `✅ <b>You're Already Registered!</b>\n\n` +
@@ -993,6 +1027,7 @@ bot.command('airdrop', async (ctx) => {
         `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
         `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🚫 Status: ✅ <b>ACTIVE</b>\n\n` +
         `📊 <b>Check your status:</b>\n` +
         `• Use /status command here\n` +
         `• Connect wallet at https://miningmai.com\n\n` +
@@ -2458,9 +2493,16 @@ bot.on('chat_member', async (ctx) => {
     if (wasSubscribed && !isSubscribed) {
       console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) отписался от ${channelName}`);
 
-      // Обновляем статус подписок в БД
-      const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-      const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+      // Обновляем статус подписок в БД - берём текущие значения из БД и обновляем только нужный канал
+      let newsSubscribed = userStatus.is_subscribed_news;
+      let chatSubscribed = userStatus.is_subscribed_chat;
+
+      // Обновляем только тот канал, от которого пришло событие отписки
+      if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
+        newsSubscribed = false; // Отписался от NEWS
+      } else if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
+        chatSubscribed = false; // Отписался от CHAT
+      }
 
       await updateSubscription(userId, newsSubscribed, chatSubscribed);
       console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
@@ -2492,9 +2534,16 @@ bot.on('chat_member', async (ctx) => {
     if (!wasSubscribed && isSubscribed) {
       console.log(`✅ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) подписался на ${channelName}`);
 
-      // Обновляем статус подписок в БД
-      const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-      const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+      // Обновляем статус подписок в БД - берём текущие значения из БД и обновляем только нужный канал
+      let newsSubscribed = userStatus.is_subscribed_news;
+      let chatSubscribed = userStatus.is_subscribed_chat;
+
+      // Обновляем только тот канал, на который подписался
+      if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
+        newsSubscribed = true; // Подписался на NEWS
+      } else if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
+        chatSubscribed = true; // Подписался на CHAT
+      }
 
       await updateSubscription(userId, newsSubscribed, chatSubscribed);
       console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
@@ -2557,9 +2606,9 @@ bot.on('message', async (ctx) => {
         if (userStatus && userStatus.position) {
           console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) вышел из @mainingmai_chat`);
 
-          // Обновляем статус подписок в БД
-          const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-          const chatSubscribed = false; // Точно НЕ подписан, раз вышел
+          // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
+          const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
+          const chatSubscribed = false; // Вышел из чата
 
           await updateSubscription(userId, newsSubscribed, chatSubscribed);
           console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=false`);
@@ -2602,9 +2651,9 @@ bot.on('message', async (ctx) => {
           if (userStatus && userStatus.position) {
             console.log(`✅ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) присоединился к @mainingmai_chat`);
 
-            // Обновляем статус подписок в БД
-            const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-            const chatSubscribed = true; // Точно подписан, раз присоединился
+            // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
+            const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
+            const chatSubscribed = true; // Присоединился к чату
 
             await updateSubscription(userId, newsSubscribed, chatSubscribed);
             console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
