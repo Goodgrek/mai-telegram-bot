@@ -2365,13 +2365,26 @@ bot.on('new_chat_members', async (ctx) => {
 });
 
 // ========================================
-// ОБРАБОТКА ВЫХОДА ИЗ ЧАТА (ОТПИСКА)
+// ОБРАБОТКА ИЗМЕНЕНИЙ ПОДПИСКИ (ОТПИСКА И ПОДПИСКА)
 // ========================================
-bot.on('left_chat_member', async (ctx) => {
-  const userId = ctx.message.left_chat_member.id;
+bot.on('chat_member', async (ctx) => {
+  const userId = ctx.chatMember.new_chat_member.user.id;
   const chatId = ctx.chat.id;
+  const oldStatus = ctx.chatMember.old_chat_member.status;
+  const newStatus = ctx.chatMember.new_chat_member.status;
 
-  console.log(`👋 Пользователь ${userId} вышел из чата ${chatId}`);
+  console.log(`👤 Изменение статуса пользователя ${userId} в чате ${chatId}: ${oldStatus} → ${newStatus}`);
+
+  // Определяем из какого канала изменение
+  let channelName = '';
+  if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
+    channelName = '@mai_news';
+  } else if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
+    channelName = '@mainingmai_chat';
+  } else {
+    // Не наш канал
+    return;
+  }
 
   try {
     // Проверяем, зарегистрирован ли пользователь в аирдропе
@@ -2382,49 +2395,93 @@ bot.on('left_chat_member', async (ctx) => {
       return;
     }
 
-    // Определяем из какого канала вышел
-    let channelName = '';
-    if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
-      channelName = '@mai_news';
-    } else if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
-      channelName = '@mainingmai_chat';
-    } else {
-      // Не наш канал
-      return;
+    // Определяем тип изменения
+    const wasSubscribed = ['member', 'administrator', 'creator'].includes(oldStatus);
+    const isSubscribed = ['member', 'administrator', 'creator'].includes(newStatus);
+
+    // ОТПИСАЛСЯ
+    if (wasSubscribed && !isSubscribed) {
+      console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) отписался от ${channelName}`);
+
+      // Обновляем статус подписок в БД
+      const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+      const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+
+      await updateSubscription(userId, newsSubscribed, chatSubscribed);
+      console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
+
+      // Отправляем предупреждение в ЛС
+      await bot.telegram.sendMessage(
+        userId,
+        `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
+        `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
+        `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
+        `❌ Permanently lose your position #${userStatus.position}\n` +
+        `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
+        `❌ Your spot will go to the next person in queue\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
+        `1️⃣ Subscribe to @mai_news\n` +
+        `2️⃣ Join @mainingmai_chat\n` +
+        `3️⃣ Stay subscribed until listing\n\n` +
+        `Use /status to check your current status.`,
+        { parse_mode: 'HTML' }
+      );
+
+      console.log(`✅ Предупреждение об отписке отправлено пользователю ${userId}`);
     }
 
-    console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) вышел из ${channelName}`);
+    // ПОДПИСАЛСЯ ОБРАТНО
+    if (!wasSubscribed && isSubscribed) {
+      console.log(`✅ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) подписался на ${channelName}`);
 
-    // Обновляем статус подписок в БД
-    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+      // Обновляем статус подписок в БД
+      const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+      const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
 
-    await updateSubscription(userId, newsSubscribed, chatSubscribed);
-    console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
+      await updateSubscription(userId, newsSubscribed, chatSubscribed);
+      console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
-    // Отправляем предупреждение в ЛС
-    await bot.telegram.sendMessage(
-      userId,
-      `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
-      `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
-      `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
-      `❌ Permanently lose your position #${userStatus.position}\n` +
-      `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
-      `❌ Your spot will go to the next person in queue\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
-      `1️⃣ Subscribe to @mai_news\n` +
-      `2️⃣ Join @mainingmai_chat\n` +
-      `3️⃣ Stay subscribed until listing\n\n` +
-      `Use /status to check your current status.`,
-      { parse_mode: 'HTML' }
-    );
+      // Проверяем, восстановился ли статус ACTIVE
+      const isNowActive = newsSubscribed && chatSubscribed;
 
-    console.log(`✅ Предупреждение об отписке отправлено пользователю ${userId}`);
+      if (isNowActive) {
+        // Отправляем подтверждение восстановления статуса
+        await bot.telegram.sendMessage(
+          userId,
+          `✅ <b>Welcome Back!</b>\n\n` +
+          `You resubscribed to ${channelName}!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
+          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+          `🚫 Status: ✅ <b>ACTIVE</b>\n\n` +
+          `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
+          `Use /status to check your details.`,
+          { parse_mode: 'HTML' }
+        );
+
+        console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
+      } else {
+        // Подписался только на один канал, нужен второй
+        const missingChannel = newsSubscribed ? '@mainingmai_chat' : '@mai_news';
+        await bot.telegram.sendMessage(
+          userId,
+          `✅ <b>You Resubscribed to ${channelName}!</b>\n\n` +
+          `But your position is still INACTIVE.\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ <b>Action Required:</b>\n` +
+          `Subscribe to ${missingChannel} to activate your position.\n\n` +
+          `You have until 00:00 UTC!`,
+          { parse_mode: 'HTML' }
+        );
+
+        console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
+      }
+    }
   } catch (error) {
-    console.error(`❌ Ошибка обработки выхода пользователя ${userId}:`, error.message);
+    console.error(`❌ Ошибка обработки изменения подписки пользователя ${userId}:`, error.message);
   }
 });
 
@@ -3053,10 +3110,11 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 bot.launch({
-  dropPendingUpdates: true
+  dropPendingUpdates: true,
+  allowedUpdates: ['message', 'chat_member', 'callback_query', 'my_chat_member']
 }).then(() => {
   if (config.ADMIN_IDS[0]) {
-    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active!').catch(() => {});
+    bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active with chat_member tracking!').catch(() => {});
   }
 }).catch(() => {
   process.exit(1);
