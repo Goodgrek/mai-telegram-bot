@@ -2561,24 +2561,40 @@ bot.on('chat_member', async (ctx) => {
       console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
       // Отправляем предупреждение в ЛС
-      await bot.telegram.sendMessage(
-        userId,
-        `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
-        `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
-        `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
-        `❌ Permanently lose your position #${userStatus.position}\n` +
-        `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
-        `❌ Your spot will go to the next person in queue\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
-        `1️⃣ Subscribe to @mai_news\n` +
-        `2️⃣ Join @mainingmai_chat\n` +
-        `3️⃣ Stay subscribed until listing\n\n` +
-        `Use /status to check your current status.`,
-        { parse_mode: 'HTML' }
-      );
+      let warningText = '';
+      let actionText = '';
+
+      if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
+        // Отписался от новостного канала
+        warningText = `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
+          `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
+          `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
+          `❌ Permanently lose your position #${userStatus.position}\n` +
+          `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
+          `❌ Your spot will go to the next person in queue\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
+          `Subscribe to ${channelName} and stay subscribed!\n\n` +
+          `Use /status to check your current status.`;
+      } else {
+        // Отписался от чата
+        warningText = `⚠️ <b>WARNING: You Left ${channelName}!</b>\n\n` +
+          `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⏰ <b>You have until 00:00 UTC to rejoin!</b>\n\n` +
+          `If you don't rejoin before the daily check at 00:00 UTC, you will:\n` +
+          `❌ Permanently lose your position #${userStatus.position}\n` +
+          `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
+          `❌ Your spot will go to the next person in queue\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🔔 <b>REJOIN NOW:</b>\n` +
+          `Join ${channelName} and stay subscribed!\n\n` +
+          `Use /status to check your current status.`;
+      }
+
+      await bot.telegram.sendMessage(userId, warningText, { parse_mode: 'HTML' });
 
       console.log(`✅ Предупреждение об отписке отправлено пользователю ${userId}`);
     }
