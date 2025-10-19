@@ -818,7 +818,7 @@ View details: /presale
 ✅ STAY subscribed until listing
 ✅ Daily check 00:00 UTC
 ✅ Distribution: Within 10 days after listing
-✅ Register after 20K? You're in queue - if someone loses their spot, you move up!
+💡 Register after 20K? You're in queue - if someone loses their spot, you move up!
 ❌ Unsubscribe = Position lost!
 Claim now! 🚀
 
@@ -911,12 +911,12 @@ bot.command('airdrop', async (ctx) => {
     if (userStatus?.position && userStatus?.wallet_address) {
       return sendToPrivate(
         ctx,
-        `✅ *You're Already Registered!*\n\n` +
-        `🎫 Position: *#${userStatus.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-        `🎁 Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
-        `💼 Wallet: \`${userStatus.wallet_address}\`\n\n` +
+        `✅ <b>You're Already Registered!</b>\n\n` +
+        `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+        `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
         `Use /status to check your participation details.`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
     
@@ -926,11 +926,11 @@ bot.command('airdrop', async (ctx) => {
     if (!newsSubscribed) {
       return sendToPrivate(
         ctx,
-        `❌ *Subscription Required!*\n\n` +
+        `❌ <b>Subscription Required!</b>\n\n` +
         `You must subscribe to our news channel first:\n` +
         `👉 @mai_news\n\n` +
         `After subscribing, run /airdrop again.`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
     
@@ -946,44 +946,44 @@ bot.command('airdrop', async (ctx) => {
     
     await sendToPrivate(
   ctx,
-  `🎁 *COMMUNITY AIRDROP REGISTRATION*\n\n` +
+  `🎁 <b>COMMUNITY AIRDROP REGISTRATION</b>\n\n` +
   `✅ You are eligible!\n\n` +
 
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
 
-  `🎯 *Your Reward:* ${config.AIRDROP_REWARD.toLocaleString()} MAI\n` +
-  `👥 *Limited Spots:* First ${config.AIRDROP_LIMIT.toLocaleString()} participants\n` +
-  `💰 *Cost:* Absolutely FREE\n` +
-  `📅 *Distribution:* Within 10 days after listing\n\n` +
+  `🎯 <b>Your Reward:</b> ${config.AIRDROP_REWARD.toLocaleString()} MAI\n` +
+  `👥 <b>Limited Spots:</b> First ${config.AIRDROP_LIMIT.toLocaleString()} participants\n` +
+  `💰 <b>Cost:</b> Absolutely FREE\n` +
+  `📅 <b>Distribution:</b> Within 10 days after listing\n\n` +
 
-  `💡 *Register after 20K?*\n` +
+  `💡 <b>Register after 20K?</b>\n` +
   `You join the waiting queue. If someone unsubscribes from channels and loses their spot, you automatically move up!\n\n` +
 
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
 
-  `📝 *NEXT STEP: Send Your Solana Wallet Address*\n\n` +
+  `📝 <b>NEXT STEP: Send Your Solana Wallet Address</b>\n\n` +
 
   `Example format:\n` +
-  `\`7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...\`\n\n` +
+  `<code>7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...</code>\n\n` +
 
   `✅ Supported wallets:\n` +
   `• Phantom, Solflare, Trust Wallet\n` +
   `• Binance Web3, MetaMask\n` +
   `• Any Solana-compatible wallet\n\n` +
 
-  `⚠️ *IMPORTANT:* Double-check your address!\n` +
+  `⚠️ <b>IMPORTANT:</b> Double-check your address!\n` +
   `Wrong address = Lost tokens forever!\n\n` +
 
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
 
-  `🔒 *How to Keep Your Position:*\n\n` +
+  `🔒 <b>How to Keep Your Position:</b>\n\n` +
 
   `1️⃣ Stay subscribed to @mai_news\n` +
   `2️⃣ Stay subscribed to @mainingmai_chat\n` +
   `3️⃣ Daily verification at 00:00 UTC\n\n` +
 
   `❌ Unsubscribe from any channel = Position lost immediately!`,
-  { parse_mode: 'Markdown' }
+  { parse_mode: 'HTML' }
 );
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
@@ -1085,10 +1085,10 @@ bot.command('status', async (ctx) => {
     if (!userStatus?.position) {
       return sendToPrivate(
         ctx,
-        `❌ *Not Registered*\n\n` +
+        `❌ <b>Not Registered</b>\n\n` +
         `You haven't registered for the community airdrop yet.\n\n` +
         `Use /airdrop to register and claim your ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens!`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
     
@@ -1122,23 +1122,23 @@ bot.command('status', async (ctx) => {
 
     await sendToPrivate(
       ctx,
-      `📊 *YOUR COMMUNITY AIRDROP STATUS*\n\n` +
+      `📊 <b>YOUR COMMUNITY AIRDROP STATUS</b>\n\n` +
       `👤 Username: @${userStatus.username}\n` +
-      `🎫 Position: *#${userStatus.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+      `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
       `📅 Registered: ${new Date(userStatus.registered_at).toLocaleDateString()}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🚫 *Registration Status:* ${statusEmoji} *${statusText}*\n\n` +
+      `🚫 <b>Registration Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📺 *Required Subscriptions:*\n` +
+      `📺 <b>Required Subscriptions:</b>\n` +
       `${newsSubscribed ? '✅' : '❌'} News Channel (@mai_news)\n` +
       `${chatSubscribed ? '✅' : '❌'} Community Chat (@mainingmai_chat)\n\n` +
-      `💼 *Wallet:* ${userStatus.wallet_address ? `\`${userStatus.wallet_address}\`` : '❌ Not linked'}\n\n` +
+      `💼 <b>Wallet:</b> ${userStatus.wallet_address ? `<code>${userStatus.wallet_address}</code>` : '❌ Not linked'}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `⚠️ Warnings: ${userStatus.warnings}/${config.WARN_LIMIT}\n` +
       `📊 Reports: ${userStatus.reports_received}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 *Expected Reward: ${rewardAmount} MAI*${warnings ? `\n\n🚨 *ACTION REQUIRED:*${warnings}` : ''}${queueInfo}${!isActive ? `\n\n⚠️ *Your position is INACTIVE!*\nYou must complete the actions above to activate your position and be eligible for the ${config.AIRDROP_REWARD.toLocaleString()} MAI reward!` : ''}`,
-      { parse_mode: 'Markdown' }
+      `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\nYou must complete the actions above to activate your position and be eligible for the ${config.AIRDROP_REWARD.toLocaleString()} MAI reward!` : ''}`,
+      { parse_mode: 'HTML' }
     );
   } catch {
     sendToPrivate(ctx, '❌ Error checking status. Try again later.');
@@ -2533,7 +2533,7 @@ How to participate:
 2️⃣ Subscribe to @mainingmai_chat
 3️⃣ Register via command: /airdrop
 
-Register after 20K? You're in queue!
+💡Register after 20K? You're in queue!
 - If someone unsubscribes, you move up automatically
 
 Keep your position:
@@ -2744,40 +2744,40 @@ bot.on(message('text'), async (ctx) => {
       if (!registration.success) {
         if (registration.reason === 'limit_reached') {
           return ctx.reply(
-            `❌ *Airdrop Full!*\n\n` +
+            `❌ <b>Airdrop Full!</b>\n\n` +
             `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
             `Follow @mai_news for future airdrop opportunities!`,
-            { parse_mode: 'Markdown' }
+            { parse_mode: 'HTML' }
           );
         }
         console.error('❌ Ошибка регистрации:', registration.reason);
         return ctx.reply('❌ Registration error. Please try /airdrop again.');
       }
-      
+
       console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
       return ctx.reply(
-  `🎉 *REGISTRATION SUCCESSFUL!*\n\n` +
+  `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
   `Welcome to the MAI Community Airdrop!\n\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `🎫 Your Position: *#${registration.user.position}* of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-  `🎁 Your Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI*\n` +
-  `💼 Wallet: \`${text}\`\n` +
+  `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+  `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+  `💼 Wallet: <code>${text}</code>\n` +
   `📅 Distribution: Within 10 days after listing\n\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `⚠️ *HOW TO KEEP YOUR POSITION:*\n\n` +
+  `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
   `✅ Stay subscribed to @mai_news\n` +
-  `✅ Remain in community chat\n` +
+  `✅ Stay in community chat @mainingmai_chat\n` +
   `✅ Follow all rules\n\n` +
-  `🔍 *Daily Check: 00:00 UTC*\n` +
+  `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
   `If you unsubscribe, you will:\n` +
   `❌ Lose your position #${registration.user.position}\n` +
   `❌ Your spot goes to next person\n` +
   `❌ Cannot restore old position\n\n` +
   `Use /status anytime to verify your status.\n\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-  `*Thank you for joining MAI! 🚀*\n` +
+  `<b>Thank you for joining MAI! 🚀</b>\n` +
   `Tokens will be distributed after official listing.`,
-  { parse_mode: 'Markdown' }
+  { parse_mode: 'HTML' }
 );
     } 
     
@@ -2888,19 +2888,19 @@ cron.schedule('0 0 * * *', async () => {
       try {
         await bot.telegram.sendMessage(
           removed.userId,
-          `🚨 *AIRDROP POSITION LOST!*\n\n` +
+          `🚨 <b>AIRDROP POSITION LOST!</b>\n\n` +
           `You lost your position #${removed.position} in the airdrop queue.\n\n` +
-          `*Reason:* Unsubscribed from required channels\n` +
+          `<b>Reason:</b> Unsubscribed from required channels\n` +
           `${!removed.newsSubscribed ? '❌ Not subscribed to @mai_news\n' : ''}` +
-          `${!removed.chatSubscribed ? '❌ Not in community chat\n' : ''}\n\n` +
+          `${!removed.chatSubscribed ? '❌ Not in community chat @mainingmai_chat\n' : ''}\n\n` +
           `Your spot was given to the next person in line.\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `*Want to register again?*\n` +
+          `<b>Want to register again?</b>\n` +
           `1️⃣ Subscribe to @mai_news\n` +
-          `2️⃣ Join community chat\n` +
+          `2️⃣ Join community chat @mainingmai_chat\n` +
           `3️⃣ Use /airdrop command\n\n` +
           `⚠️ You'll get a NEW position at the end of the queue.`,
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'HTML' }
         );
         console.log(`✉️ Уведомление отправлено юзеру ${removed.userId} (потерял #${removed.position})`);
       } catch (err) {
@@ -2932,16 +2932,16 @@ cron.schedule('0 0 * * *', async () => {
           try {
             await bot.telegram.sendMessage(
               winner.userId,
-              `🎉 *CONGRATULATIONS!*\n\n` +
-              `You're now in position *#${winner.position}*!\n\n` +
+              `🎉 <b>CONGRATULATIONS!</b>\n\n` +
+              `You're now in position <b>#${winner.position}</b>!\n\n` +
               `Someone lost their spot and you moved up into the top ${config.AIRDROP_LIMIT.toLocaleString()}.\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `✅ *You're now eligible for the airdrop!*\n` +
-              `🎁 Reward: *${config.AIRDROP_REWARD.toLocaleString()} MAI tokens*\n\n` +
-              `⚠️ *IMPORTANT:*\n` +
-              `Stay subscribed to @mai_news and remain in the community chat until listing to keep your reward!\n\n` +
+              `✅ <b>You're now eligible for the airdrop!</b>\n` +
+              `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI tokens</b>\n\n` +
+              `⚠️ <b>IMPORTANT:</b>\n` +
+              `Stay subscribed to @mai_news and @mainingmai_chat until listing to keep your reward!\n\n` +
               `Use /status to check your details.`,
-              { parse_mode: 'Markdown' }
+              { parse_mode: 'HTML' }
             );
             console.log(`✉️ Поздравление отправлено юзеру ${winner.telegram_id} (позиция #${winner.position})`);
           } catch (err) {
