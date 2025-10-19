@@ -1140,8 +1140,10 @@ bot.command('status', async (ctx) => {
       `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\nYou must complete the actions above to activate your position and be eligible for the ${config.AIRDROP_REWARD.toLocaleString()} MAI reward!` : ''}`,
       { parse_mode: 'HTML' }
     );
-  } catch {
-    sendToPrivate(ctx, '❌ Error checking status. Try again later.');
+  } catch (error) {
+    console.error('❌ Ошибка /status:', error.message);
+    console.error('Stack:', error.stack);
+    await sendToPrivate(ctx, '❌ Error checking status. Try again later.');
   }
 });
 
@@ -2726,11 +2728,12 @@ bot.on(message('text'), async (ctx) => {
       
       if (!isValidSolanaAddress(text)) {
         console.log('❌ Невалидный адрес Solana');
-        return ctx.reply(
-          `❌ *Invalid Solana Address!*\n\n` +
+        return sendToPrivate(
+          ctx,
+          `❌ <b>Invalid Solana Address!</b>\n\n` +
           `Solana addresses must be 32-44 characters (base58 format).\n\n` +
           `Please send a valid address or use /airdrop to start over.`,
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'HTML' }
         );
       }
       
@@ -2743,7 +2746,8 @@ bot.on(message('text'), async (ctx) => {
       
       if (!registration.success) {
         if (registration.reason === 'limit_reached') {
-          return ctx.reply(
+          return sendToPrivate(
+            ctx,
             `❌ <b>Airdrop Full!</b>\n\n` +
             `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
             `Follow @mai_news for future airdrop opportunities!`,
@@ -2751,11 +2755,12 @@ bot.on(message('text'), async (ctx) => {
           );
         }
         console.error('❌ Ошибка регистрации:', registration.reason);
-        return ctx.reply('❌ Registration error. Please try /airdrop again.');
+        return sendToPrivate(ctx, '❌ Registration error. Please try /airdrop again.');
       }
 
       console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
-      return ctx.reply(
+      return sendToPrivate(
+  ctx,
   `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
   `Welcome to the MAI Community Airdrop!\n\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
