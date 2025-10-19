@@ -2197,16 +2197,18 @@ bot.command('userinfo', async (ctx) => {
       `🎫 Airdrop Position: ${userStatus.position ? `#${userStatus.position}` : 'Not registered'}\n` +
       `💼 Wallet: ${userStatus.wallet_address ? `<code>${userStatus.wallet_address.substring(0, 20)}...</code>` : 'Not linked'}`;
 
-    // Отправляем ответ (в чат если из чата, в PM если из PM)
-    await ctx.reply(info, { parse_mode: 'HTML' });
-
-    // Удаляем команду ПОСЛЕ отправки ответа (только в группе)
+    // Если команда из чата - отправляем в личку админу
     if (ctx.chat.type !== 'private') {
+      await bot.telegram.sendMessage(ctx.from.id, info, { parse_mode: 'HTML' });
+      // Удаляем команду из чата
       try {
         await ctx.deleteMessage();
       } catch (e) {
         // Не критично если не удалось удалить
       }
+    } else {
+      // Если команда из личных сообщений - отправляем туда же
+      await ctx.reply(info, { parse_mode: 'HTML' });
     }
   } catch (err) {
     console.error('❌ Error userinfo:', err.message);
