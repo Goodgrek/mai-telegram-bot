@@ -2414,16 +2414,69 @@ async function checkAndSendMilestone(chatId, botInfo) {
 
 bot.on('new_chat_members', async (ctx) => {
   const newMembers = ctx.message.new_chat_members.filter(m => !m.is_bot);
+  const chatId = ctx.chat.id;
 
   if (newMembers.length === 0) return;
 
   console.log('👋 Новые участники:', newMembers.map(m => m.first_name).join(', '));
 
-  // Тихое подключение - приветствие отправляется только в ЛС
+  // Обрабатываем каждого нового участника
   for (const member of newMembers) {
     try {
+      const userId = member.id;
+
+      // Проверяем, зарегистрирован ли пользователь в аирдропе
+      const userStatus = await getUserStatus(userId);
+
+      // ЗАРЕГИСТРИРОВАННЫЙ ПОЛЬЗОВАТЕЛЬ ВЕРНУЛСЯ
+      if (userStatus && userStatus.position && chatId === parseInt(config.CHAT_CHANNEL_ID)) {
+        console.log(`✅ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) вернулся в @mainingmai_chat`);
+
+        // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
+        const newsSubscribed = userStatus.is_subscribed_news;
+        const chatSubscribed = true; // Присоединился к чату
+
+        await updateSubscription(userId, newsSubscribed, chatSubscribed);
+        console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
+
+        // Проверяем, восстановился ли статус ACTIVE
+        const isNowActive = newsSubscribed && chatSubscribed;
+
+        if (isNowActive) {
+          // Отправляем подтверждение восстановления
+          await bot.telegram.sendMessage(
+            userId,
+            `✅ <b>Welcome Back to @mainingmai_chat!</b>\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
+            `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+            `🚫 Status: ✅ <b>ACTIVE</b>\n\n` +
+            `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
+            `Use /status to check your details.`,
+            { parse_mode: 'HTML' }
+          );
+          console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
+        } else {
+          // Нужно подписаться на NEWS канал
+          await bot.telegram.sendMessage(
+            userId,
+            `✅ <b>You Joined @mainingmai_chat!</b>\n\n` +
+            `But your position is still INACTIVE.\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `⚠️ <b>Action Required:</b>\n` +
+            `Subscribe to @mai_news to activate your position.\n\n` +
+            `You have until 00:00 UTC!`,
+            { parse_mode: 'HTML' }
+          );
+          console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
+        }
+
+        continue; // Пропускаем общее приветствие для зарегистрированных
+      }
+
+      // НОВЫЙ ПОЛЬЗОВАТЕЛЬ (не зарегистрирован) - отправляем общее приветствие
       await bot.telegram.sendMessage(
-        member.id,
+        userId,
         `👋 Welcome to MAI Project!\n\n` +
         `🎁 COMMUNITY AIRDROP: 5,000 MAI FREE\n` +
         `First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI!\n\n` +
@@ -2632,66 +2685,6 @@ bot.on('message', async (ctx) => {
           );
 
           console.log(`✅ Предупреждение о выходе из чата отправлено пользователю ${userId}`);
-        }
-      }
-    }
-
-    // ПРИСОЕДИНЕНИЕ К ГРУППЕ
-    if (ctx.message?.new_chat_members) {
-      for (const member of ctx.message.new_chat_members) {
-        const userId = member.id;
-        const chatId = ctx.chat.id;
-
-        console.log(`\n👋 JOIN EVENT: User ${userId} joined chat ${chatId}`);
-
-        // Проверяем, это наш чат?
-        if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
-          const userStatus = await getUserStatus(userId);
-
-          if (userStatus && userStatus.position) {
-            console.log(`✅ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) присоединился к @mainingmai_chat`);
-
-            // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
-            const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
-            const chatSubscribed = true; // Присоединился к чату
-
-            await updateSubscription(userId, newsSubscribed, chatSubscribed);
-            console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
-
-            // Проверяем, восстановился ли статус ACTIVE
-            const isNowActive = newsSubscribed && chatSubscribed;
-
-            if (isNowActive) {
-              // Отправляем подтверждение
-              await bot.telegram.sendMessage(
-                userId,
-                `✅ <b>Welcome Back to @mainingmai_chat!</b>\n\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
-                `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-                `🚫 Status: ✅ <b>ACTIVE</b>\n\n` +
-                `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
-                `Use /status to check your details.`,
-                { parse_mode: 'HTML' }
-              );
-
-              console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
-            } else {
-              // Нужно подписаться на NEWS канал
-              await bot.telegram.sendMessage(
-                userId,
-                `✅ <b>You Joined @mainingmai_chat!</b>\n\n` +
-                `But your position is still INACTIVE.\n\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                `⚠️ <b>Action Required:</b>\n` +
-                `Subscribe to @mai_news to activate your position.\n\n` +
-                `You have until 00:00 UTC!`,
-                { parse_mode: 'HTML' }
-              );
-
-              console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
-            }
-          }
         }
       }
     }
