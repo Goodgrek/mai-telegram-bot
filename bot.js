@@ -1929,9 +1929,35 @@ bot.command('mute', async (ctx) => {
     return ctx.reply('❌ Invalid hours! Must be >= 1');
   }
 
-  // Передаем chatId только если это не приватный чат
-  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
-  await muteUser(targetUserId, hours, reason, chatId);
+  // Мутим пользователя в обоих каналах (и в текущем чате если не PM)
+  if (ctx.chat.type !== 'private') {
+    // Если команда вызвана в чате - мутим там
+    await muteUser(targetUserId, hours, reason, ctx.chat.id);
+  } else {
+    // Если команда вызвана в PM - мутим в обоих каналах
+    await muteUser(targetUserId, hours, reason, config.CHAT_CHANNEL_ID);
+    // Также пытаемся замутить в новостном канале
+    try {
+      const muteUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+      await bot.telegram.restrictChatMember(config.NEWS_CHANNEL_ID, targetUserId, {
+        permissions: {
+          can_send_messages: false,
+          can_send_media_messages: false,
+          can_send_polls: false,
+          can_send_other_messages: false,
+          can_add_web_page_previews: false,
+          can_change_info: false,
+          can_invite_users: false,
+          can_pin_messages: false
+        },
+        until_date: Math.floor(muteUntil.getTime() / 1000)
+      });
+      console.log(`✅ User ${targetUserId} also muted in NEWS channel`);
+    } catch (err) {
+      console.log(`⚠️ Cannot mute in NEWS channel: ${err.message}`);
+    }
+  }
+
   await incrementMuteCount(targetUserId);
 
   await ctx.reply(`✅ User ${targetUserId} muted for ${hours} hours by admin.`);
@@ -1972,9 +1998,32 @@ bot.command('unmute', async (ctx) => {
     return ctx.reply('⚠️ Reply to user\'s message and type /unmute');
   }
 
-  // Передаем chatId только если это не приватный чат
-  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
-  await unmuteUser(targetUserId, chatId);
+  // Размутиваем пользователя в обоих каналах (и в текущем чате если не PM)
+  if (ctx.chat.type !== 'private') {
+    // Если команда вызвана в чате - размутиваем там
+    await unmuteUser(targetUserId, ctx.chat.id);
+  } else {
+    // Если команда вызвана в PM - размутиваем в обоих каналах
+    await unmuteUser(targetUserId, config.CHAT_CHANNEL_ID);
+    // Также пытаемся размутить в новостном канале
+    try {
+      await bot.telegram.restrictChatMember(config.NEWS_CHANNEL_ID, targetUserId, {
+        permissions: {
+          can_send_messages: true,
+          can_send_media_messages: true,
+          can_send_polls: true,
+          can_send_other_messages: true,
+          can_add_web_page_previews: true,
+          can_change_info: false,
+          can_invite_users: true,
+          can_pin_messages: false
+        }
+      });
+      console.log(`✅ User ${targetUserId} also unmuted in NEWS channel`);
+    } catch (err) {
+      console.log(`⚠️ Cannot unmute in NEWS channel: ${err.message}`);
+    }
+  }
 
   await ctx.reply(`✅ User ${targetUserId} unmuted by admin.`);
 });
@@ -2019,9 +2068,21 @@ bot.command('ban', async (ctx) => {
     return ctx.reply('⚠️ Reply to user\'s message and type /ban [reason]');
   }
 
-  // Передаем chatId только если это не приватный чат
-  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
-  await banUser(targetUserId, reason, chatId);
+  // Баним пользователя в обоих каналах (и в текущем чате если не PM)
+  if (ctx.chat.type !== 'private') {
+    // Если команда вызвана в чате - баним там
+    await banUser(targetUserId, reason, ctx.chat.id);
+  } else {
+    // Если команда вызвана в PM - баним в обоих каналах
+    await banUser(targetUserId, reason, config.CHAT_CHANNEL_ID);
+    // Также пытаемся забанить в новостном канале
+    try {
+      await bot.telegram.banChatMember(config.NEWS_CHANNEL_ID, targetUserId);
+      console.log(`✅ User ${targetUserId} also banned in NEWS channel`);
+    } catch (err) {
+      console.log(`⚠️ Cannot ban in NEWS channel: ${err.message}`);
+    }
+  }
 
   await ctx.reply(`🚫 User ${targetUserId} permanently banned by admin.\nReason: ${reason}`);
 });
@@ -2061,9 +2122,21 @@ bot.command('unban', async (ctx) => {
     return ctx.reply('⚠️ Reply to user\'s message and type /unban');
   }
 
-  // Передаем chatId только если это не приватный чат
-  const chatId = ctx.chat.type !== 'private' ? ctx.chat.id : null;
-  await unbanUser(targetUserId, chatId);
+  // Разбаниваем пользователя в обоих каналах (и в текущем чате если не PM)
+  if (ctx.chat.type !== 'private') {
+    // Если команда вызвана в чате - разбаниваем там
+    await unbanUser(targetUserId, ctx.chat.id);
+  } else {
+    // Если команда вызвана в PM - разбаниваем в обоих каналах
+    await unbanUser(targetUserId, config.CHAT_CHANNEL_ID);
+    // Также пытаемся разбанить в новостном канале
+    try {
+      await bot.telegram.unbanChatMember(config.NEWS_CHANNEL_ID, targetUserId);
+      console.log(`✅ User ${targetUserId} also unbanned in NEWS channel`);
+    } catch (err) {
+      console.log(`⚠️ Cannot unban in NEWS channel: ${err.message}`);
+    }
+  }
 
   await ctx.reply(`✅ User ${targetUserId} unbanned by admin.`);
 });
