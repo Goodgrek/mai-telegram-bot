@@ -1172,12 +1172,10 @@ bot.command('status', async (ctx) => {
       );
     }
     
-    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
-    
-    if (newsSubscribed !== userStatus.is_subscribed_news || chatSubscribed !== userStatus.is_subscribed_chat) {
-      await updateSubscription(userId, newsSubscribed, chatSubscribed);
-    }
+    // Используем данные ИЗ БД (без проверки через API и без обновления)
+    // БД обновляется автоматически через события chat_member/left_chat_member и CRON в 00:00 UTC
+    const newsSubscribed = userStatus.is_subscribed_news;
+    const chatSubscribed = userStatus.is_subscribed_chat;
     
     const isActive = newsSubscribed && chatSubscribed && !userStatus.banned;
     const isInTop20K = userStatus.position <= config.AIRDROP_LIMIT;
