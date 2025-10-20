@@ -996,8 +996,8 @@ Let's decentralize AI together! 🤖⚡`;
     const firstName = ctx.from.first_name || 'User';
 
     await pool.query(
-      `INSERT INTO telegram_users (telegram_id, username, first_name, created_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO telegram_users (telegram_id, username, first_name)
+       VALUES ($1, $2, $3)
        ON CONFLICT (telegram_id)
        DO UPDATE SET
          username = $2,
@@ -1092,28 +1092,12 @@ bot.command('airdrop', async (ctx) => {
       );
     }
     
-    // Проверяем подписки через БД или API
-    let newsSubscribed, chatSubscribed;
+    // Проверяем ОБЕ подписки сразу
+    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
 
-    const existingUser = await getUserStatus(userId);
-
-    if (existingUser && (existingUser.is_subscribed_news !== null || existingUser.is_subscribed_chat !== null)) {
-      // Юзер есть в БД и статусы подписок уже установлены - используем БД
-      newsSubscribed = existingUser.is_subscribed_news || false;
-      chatSubscribed = existingUser.is_subscribed_chat || false;
-      console.log('📊 Проверка подписок ИЗ БД:', { newsSubscribed, chatSubscribed });
-    } else {
-      // Юзера нет в БД или статусы ещё не установлены - проверяем через API и обновляем БД
-      newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-      chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
-      console.log('📊 Проверка подписок через API:', { newsSubscribed, chatSubscribed });
-
-      // Обновляем статусы в БД
-      if (existingUser) {
-        await updateSubscription(userId, newsSubscribed, chatSubscribed);
-        console.log('✅ Статусы подписок обновлены в БД');
-      }
-    }
+    console.log('📺 Подписка на новости:', newsSubscribed);
+    console.log('💬 Подписка на чат:', chatSubscribed);
 
     // Если НЕ подписан хотя бы на один канал - показываем статус ОБОИХ
     if (!newsSubscribed || !chatSubscribed) {
