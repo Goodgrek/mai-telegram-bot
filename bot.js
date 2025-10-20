@@ -371,34 +371,34 @@ function containsSpamLinks(text) {
 async function registerUser(userId, username, firstName, walletAddress) {
   try {
     console.log('🔍 registerUser вызван:', { userId, username, firstName, walletAddress: walletAddress.substring(0, 20) });
-
+    
     const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const currentCount = parseInt(countResult.rows[0].count);
-
+    
     console.log('📊 Текущее количество:', currentCount, 'Лимит:', config.AIRDROP_LIMIT);
-
+    
     if (currentCount >= config.AIRDROP_LIMIT) {
       return { success: false, reason: 'limit_reached' };
     }
-
+    
     // ОБНОВЛЯЕМ ИЛИ СОЗДАЕМ
     const result = await pool.query(
       `INSERT INTO telegram_users (telegram_id, username, first_name, wallet_address, position, awaiting_wallet, registered_at)
        VALUES ($1, $2, $3, $4, $5, false, NOW())
-       ON CONFLICT (telegram_id)
-       DO UPDATE SET
-         username = $2,
-         first_name = $3,
-         wallet_address = $4,
-         position = $5,
+       ON CONFLICT (telegram_id) 
+       DO UPDATE SET 
+         username = $2, 
+         first_name = $3, 
+         wallet_address = $4, 
+         position = $5, 
          awaiting_wallet = false,
          registered_at = COALESCE(telegram_users.registered_at, NOW())
        RETURNING *`,
       [userId, username, firstName, walletAddress, currentCount + 1]
     );
-
+    
     console.log('✅ registerUser результат:', result.rows[0]);
-
+    
     return { success: true, user: result.rows[0] };
   } catch (error) {
     console.error('❌ registerUser ОШИБКА:', error.message);
@@ -1014,8 +1014,6 @@ bot.command('airdrop', async (ctx) => {
           `1️⃣ Subscribe to @mai_news\n` +
           `2️⃣ Join @mainingmai_chat\n` +
           `3️⃣ Use /status to verify\n\n` +
-          `💰 <b>Want to change your wallet?</b>\n` +
-          `Just send me your new Solana wallet address.\n\n` +
           `📊 Check status at https://miningmai.com`;
 
         return sendToPrivate(ctx, warningMessage, { parse_mode: 'HTML' });
@@ -1033,8 +1031,6 @@ bot.command('airdrop', async (ctx) => {
         `📊 <b>Check your status:</b>\n` +
         `• Use /status command here\n` +
         `• Connect wallet at https://miningmai.com\n\n` +
-        `💰 <b>Want to change your wallet?</b>\n` +
-        `Just send me your new Solana wallet address and I'll update it.\n\n` +
         `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`,
         { parse_mode: 'HTML' }
       );
@@ -3093,7 +3089,7 @@ bot.on(message('text'), async (ctx) => {
     // ОБРАБОТКА КОШЕЛЬКА - ГЛАВНОЕ!
     if (userStatus && userStatus.awaiting_wallet === true) {
       console.log('💼 НАЧАЛО ОБРАБОТКИ КОШЕЛЬКА:', text);
-
+      
       if (!isValidSolanaAddress(text)) {
         console.log('❌ Невалидный адрес Solana');
         return sendToPrivate(
@@ -3104,120 +3100,70 @@ bot.on(message('text'), async (ctx) => {
           { parse_mode: 'HTML' }
         );
       }
-
-      // ПРОВЕРЯЕМ: это новая регистрация или смена кошелька?
-      if (userStatus.position) {
-        // ЭТО СМЕНА КОШЕЛЬКА для уже зарегистрированного пользователя
-        console.log(`💰 СМЕНА КОШЕЛЬКА для пользователя ${userId}, позиция #${userStatus.position}`);
-
-        const oldWallet = userStatus.wallet_address;
-
-        // Обновляем кошелёк в БД
-        try {
-          await pool.query(
-            'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = false WHERE telegram_id = $2',
-            [text, userId]
-          );
-
-          const shortOld = `${oldWallet.slice(0, 6)}...${oldWallet.slice(-4)}`;
-          const shortNew = `${text.slice(0, 6)}...${text.slice(-4)}`;
-
-          await sendToPrivate(
+      
+      const username = ctx.from.username || 'no_username';
+      const firstName = ctx.from.first_name;
+      
+      console.log('📝 Вызов registerUser для:', userId);
+      const registration = await registerUser(userId, username, firstName, text);
+      console.log('📊 Результат регистрации:', JSON.stringify(registration));
+      
+      if (!registration.success) {
+        if (registration.reason === 'limit_reached') {
+          return sendToPrivate(
             ctx,
-            `✅ <b>Wallet Updated Successfully!</b>\n\n` +
-            `Old wallet: <code>${shortOld}</code>\n` +
-            `New wallet: <code>${shortNew}</code>\n\n` +
-            `Your Community Airdrop position <b>#${userStatus.position}</b> is now linked to your new wallet.\n\n` +
-            `Use /status to verify your details.`,
+            `❌ <b>Airdrop Full!</b>\n\n` +
+            `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
+            `Follow @mai_news for future airdrop opportunities!`,
             { parse_mode: 'HTML' }
           );
+        }
+        console.error('❌ Ошибка регистрации:', registration.reason);
+        return sendToPrivate(ctx, '❌ Registration error. Please try /airdrop again.');
+      }
 
-          // Логирование для админа
-          if (config.ADMIN_IDS[0]) {
-            await bot.telegram.sendMessage(
-              config.ADMIN_IDS[0],
-              `🔄 <b>Wallet Changed</b>\n\n` +
-              `User: ${ctx.from.first_name} (${userId})\n` +
-              `Position: #${userStatus.position}\n` +
-              `Old: <code>${oldWallet}</code>\n` +
-              `New: <code>${text}</code>`,
-              { parse_mode: 'HTML' }
-            );
+      console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
+
+      // Формируем текст сообщения
+      const successMessage =
+        `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+        `Welcome to the MAI Community Airdrop!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+        `💼 Wallet: <code>${text}</code>\n` +
+        `📅 Distribution: Within 10 days after listing\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+        `✅ Stay subscribed to @mai_news\n` +
+        `✅ Stay in community chat @mainingmai_chat\n` +
+        `✅ Follow all rules\n\n` +
+        `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+        `If you unsubscribe, you will:\n` +
+        `❌ Lose your position #${registration.user.position}\n` +
+        `❌ Your spot goes to next person\n` +
+        `❌ Cannot restore old position\n\n` +
+        `Use /status anytime to verify your status.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `<b>Thank you for joining MAI! 🚀</b>\n` +
+        `Tokens will be distributed after official listing.`;
+
+      // Отправляем с картинкой
+      try {
+        await bot.telegram.sendPhoto(
+          userId,
+          { source: './images/milestone.webp' },
+          {
+            caption: successMessage,
+            parse_mode: 'HTML'
           }
-
-          console.log(`✅ Кошелёк успешно обновлён для пользователя ${userId}`);
-          return;
-        } catch (error) {
-          console.error('❌ Ошибка обновления кошелька:', error);
-          return sendToPrivate(ctx, '❌ Error updating wallet. Please try again later.');
-        }
-      } else {
-        // ЭТО НОВАЯ РЕГИСТРАЦИЯ
-        console.log('📝 НОВАЯ РЕГИСТРАЦИЯ для:', userId);
-
-        const username = ctx.from.username || 'no_username';
-        const firstName = ctx.from.first_name;
-
-        const registration = await registerUser(userId, username, firstName, text);
-        console.log('📊 Результат регистрации:', JSON.stringify(registration));
-
-        if (!registration.success) {
-          if (registration.reason === 'limit_reached') {
-            return sendToPrivate(
-              ctx,
-              `❌ <b>Airdrop Full!</b>\n\n` +
-              `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
-              `Follow @mai_news for future airdrop opportunities!`,
-              { parse_mode: 'HTML' }
-            );
-          }
-          console.error('❌ Ошибка регистрации:', registration.reason);
-          return sendToPrivate(ctx, '❌ Registration error. Please try /airdrop again.');
-        }
-
-        console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
-
-        // Формируем текст сообщения
-        const successMessage =
-          `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-          `Welcome to the MAI Community Airdrop!\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-          `💼 Wallet: <code>${text}</code>\n` +
-          `📅 Distribution: Within 10 days after listing\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-          `✅ Stay subscribed to @mai_news\n` +
-          `✅ Stay in community chat @mainingmai_chat\n` +
-          `✅ Follow all rules\n\n` +
-          `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
-          `If you unsubscribe, you will:\n` +
-          `❌ Lose your position #${registration.user.position}\n` +
-          `❌ Your spot goes to next person\n` +
-          `❌ Cannot restore old position\n\n` +
-          `Use /status anytime to verify your status.\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `<b>Thank you for joining MAI! 🚀</b>\n` +
-          `Tokens will be distributed after official listing.`;
-
-        // Отправляем с картинкой
-        try {
-          await bot.telegram.sendPhoto(
-            userId,
-            { source: './images/milestone.webp' },
-            {
-              caption: successMessage,
-              parse_mode: 'HTML'
-            }
-          );
-          console.log(`✅ Registration success message with image sent to user ${userId}`);
-          return;
-        } catch (imgError) {
-          // Если картинка не найдена - отправляем просто текст
-          console.log(`⚠️ Image not found, sending text message`);
-          return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
-        }
+        );
+        console.log(`✅ Registration success message with image sent to user ${userId}`);
+        return;
+      } catch (imgError) {
+        // Если картинка не найдена - отправляем просто текст
+        console.log(`⚠️ Image not found, sending text message`);
+        return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
       }
     } 
     
