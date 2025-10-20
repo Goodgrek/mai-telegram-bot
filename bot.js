@@ -990,22 +990,30 @@ Unsubscribing = Automatic disqualification
 Let's decentralize AI together! 🤖⚡`;
 
   try {
-    // Создаём или обновляем запись пользователя в БД
     const userId = ctx.from.id;
     const username = ctx.from.username || 'no_username';
     const firstName = ctx.from.first_name || 'User';
 
+    // Проверяем реальные подписки через API
+    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+
+    console.log(`📊 Реальные подписки пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
+
+    // Создаём или обновляем запись пользователя в БД с реальными статусами подписок
     await pool.query(
-      `INSERT INTO telegram_users (telegram_id, username, first_name)
-       VALUES ($1, $2, $3)
+      `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (telegram_id)
        DO UPDATE SET
          username = $2,
-         first_name = $3`,
-      [userId, username, firstName]
+         first_name = $3,
+         is_subscribed_news = $4,
+         is_subscribed_chat = $5`,
+      [userId, username, firstName, newsSubscribed, chatSubscribed]
     );
 
-    console.log(`✅ Пользователь ${userId} добавлен/обновлён в БД`);
+    console.log(`✅ Пользователь ${userId} добавлен/обновлён в БД со статусами подписок`);
 
     // ВСЕГДА отправляем в ЛС, независимо от типа чата
     await sendToPrivate(ctx, welcomeMsg);
@@ -1092,12 +1100,24 @@ bot.command('airdrop', async (ctx) => {
       );
     }
     
-    // Проверяем ОБЕ подписки сразу
-    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+    // Проверяем подписки ИЗ БД (не через API!)
+    const currentUser = await getUserStatus(userId);
 
-    console.log('📺 Подписка на новости:', newsSubscribed);
-    console.log('💬 Подписка на чат:', chatSubscribed);
+    if (!currentUser) {
+      // Пользователя нет в БД - значит не выполнил /start
+      return sendToPrivate(
+        ctx,
+        `⚠️ <b>Please start the bot first!</b>\n\n` +
+        `Use /start command to begin.`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    const newsSubscribed = currentUser.is_subscribed_news || false;
+    const chatSubscribed = currentUser.is_subscribed_chat || false;
+
+    console.log('📺 Подписка на новости (из БД):', newsSubscribed);
+    console.log('💬 Подписка на чат (из БД):', chatSubscribed);
 
     // Если НЕ подписан хотя бы на один канал - показываем статус ОБОИХ
     if (!newsSubscribed || !chatSubscribed) {
@@ -2586,11 +2606,11 @@ bot.on('chat_member', async (ctx) => {
   }
 
   try {
-    // Проверяем, зарегистрирован ли пользователь в аирдропе
+    // Проверяем, есть ли пользователь в БД
     const userStatus = await getUserStatus(userId);
 
-    if (!userStatus || !userStatus.position) {
-      console.log(`⚠️ Пользователь ${userId} не зарегистрирован в аирдропе`);
+    if (!userStatus) {
+      console.log(`⚠️ Пользователь ${userId} не найден в БД`);
       return;
     }
 
@@ -2600,7 +2620,7 @@ bot.on('chat_member', async (ctx) => {
 
     // ОТПИСАЛСЯ
     if (wasSubscribed && !isSubscribed) {
-      console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) отписался от ${channelName}`);
+      console.log(`⚠️ Пользователь ${userId} отписался от ${channelName}`);
 
       // Обновляем статус подписок в БД - берём текущие значения из БД и обновляем только нужный канал
       let newsSubscribed = userStatus.is_subscribed_news;
@@ -2616,14 +2636,14 @@ bot.on('chat_member', async (ctx) => {
       await updateSubscription(userId, newsSubscribed, chatSubscribed);
       console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
-      // Отправляем предупреждение в ЛС
-      let warningText = '';
-      let actionText = '';
+      // Отправляем предупреждение в ЛС ТОЛЬКО если зарегистрирован в аирдропе
+      if (userStatus.position) {
+        let warningText = '';
 
-      if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
-        // Отписался от новостного канала
-        warningText = `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
-          `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
+        if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
+          // Отписался от новостного канала
+          warningText = `⚠️ <b>WARNING: You Unsubscribed from ${channelName}!</b>\n\n` +
+            `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
           `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
@@ -2648,16 +2668,17 @@ bot.on('chat_member', async (ctx) => {
           `🔔 <b>REJOIN NOW:</b>\n` +
           `Join ${channelName} and stay subscribed!\n\n` +
           `Use /status to check your current status.`;
+        }
+
+        await bot.telegram.sendMessage(userId, warningText, { parse_mode: 'HTML' });
+
+        console.log(`✅ Предупреждение об отписке отправлено пользователю ${userId}`);
       }
-
-      await bot.telegram.sendMessage(userId, warningText, { parse_mode: 'HTML' });
-
-      console.log(`✅ Предупреждение об отписке отправлено пользователю ${userId}`);
     }
 
     // ПОДПИСАЛСЯ ОБРАТНО
     if (!wasSubscribed && isSubscribed) {
-      console.log(`✅ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) подписался на ${channelName}`);
+      console.log(`✅ Пользователь ${userId} подписался на ${channelName}`);
 
       // Обновляем статус подписок в БД - берём текущие значения из БД и обновляем только нужный канал
       let newsSubscribed = userStatus.is_subscribed_news;
@@ -2673,40 +2694,43 @@ bot.on('chat_member', async (ctx) => {
       await updateSubscription(userId, newsSubscribed, chatSubscribed);
       console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
-      // Проверяем, восстановился ли статус ACTIVE
-      const isNowActive = newsSubscribed && chatSubscribed;
+      // Отправляем уведомление ТОЛЬКО если зарегистрирован в аирдропе
+      if (userStatus.position) {
+        // Проверяем, восстановился ли статус ACTIVE
+        const isNowActive = newsSubscribed && chatSubscribed;
 
-      if (isNowActive) {
-        // Отправляем подтверждение восстановления статуса
-        await bot.telegram.sendMessage(
-          userId,
-          `✅ <b>Welcome Back!</b>\n\n` +
-          `You resubscribed to ${channelName}!\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
-          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-          `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
-          `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
-          `Use /status to check your details.`,
-          { parse_mode: 'HTML' }
-        );
+        if (isNowActive) {
+          // Отправляем подтверждение восстановления статуса
+          await bot.telegram.sendMessage(
+            userId,
+            `✅ <b>Welcome Back!</b>\n\n` +
+            `You resubscribed to ${channelName}!\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
+            `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+            `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
+            `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
+            `Use /status to check your details.`,
+            { parse_mode: 'HTML' }
+          );
 
-        console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
-      } else {
-        // Подписался только на один канал, нужен второй
-        const missingChannel = newsSubscribed ? '@mainingmai_chat' : '@mai_news';
-        await bot.telegram.sendMessage(
-          userId,
-          `✅ <b>You Resubscribed to ${channelName}!</b>\n\n` +
-          `But your position is still INACTIVE.\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `⚠️ <b>Action Required:</b>\n` +
-          `Subscribe to ${missingChannel} to activate your position.\n\n` +
-          `You have until 00:00 UTC!`,
-          { parse_mode: 'HTML' }
-        );
+          console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
+        } else {
+          // Подписался только на один канал, нужен второй
+          const missingChannel = newsSubscribed ? '@mainingmai_chat' : '@mai_news';
+          await bot.telegram.sendMessage(
+            userId,
+            `✅ <b>You Resubscribed to ${channelName}!</b>\n\n` +
+            `But your position is still INACTIVE.\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `⚠️ <b>Action Required:</b>\n` +
+            `Subscribe to ${missingChannel} to activate your position.\n\n` +
+            `You have until 00:00 UTC!`,
+            { parse_mode: 'HTML' }
+          );
 
-        console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
+          console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
+        }
       }
     }
   } catch (error) {
