@@ -368,10 +368,45 @@ function containsSpamLinks(text) {
   return false;
 }
 
+// Функция проверки уникальности кошелька
+async function checkWalletUniqueness(walletAddress, excludeUserId = null) {
+  try {
+    let query = 'SELECT telegram_id, first_name, position FROM telegram_users WHERE wallet_address = $1 AND position IS NOT NULL';
+    let params = [walletAddress];
+
+    // Если указан excludeUserId, исключаем этого пользователя из проверки
+    if (excludeUserId) {
+      query += ' AND telegram_id != $2';
+      params.push(excludeUserId);
+    }
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length > 0) {
+      return { isUnique: false, existingUser: result.rows[0] };
+    }
+    return { isUnique: true };
+  } catch (error) {
+    console.error('❌ Ошибка проверки уникальности кошелька:', error);
+    return { isUnique: true }; // В случае ошибки разрешаем, чтобы не блокировать пользователя
+  }
+}
+
 async function registerUser(userId, username, firstName, walletAddress) {
   try {
     console.log('🔍 registerUser вызван:', { userId, username, firstName, walletAddress: walletAddress.substring(0, 20) });
-    
+
+    // ПРОВЕРКА УНИКАЛЬНОСТИ КОШЕЛЬКА
+    const uniqueCheck = await checkWalletUniqueness(walletAddress, null);
+    if (!uniqueCheck.isUnique) {
+      console.log(`⚠️ Кошелёк уже используется пользователем ${uniqueCheck.existingUser.telegram_id}`);
+      return {
+        success: false,
+        reason: 'wallet_duplicate',
+        existingPosition: uniqueCheck.existingUser.position
+      };
+    }
+
     const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const currentCount = parseInt(countResult.rows[0].count);
     
@@ -939,7 +974,7 @@ Express yourself with MAI stickers
 ⚠️ CRITICAL REQUIREMENTS
 To qualify for ANY rewards, you MUST:
 ✅ Subscribe to @mai_news
-✅ Stay in community chat until listing
+✅ Subscribe to @mainingmai_chat
 ✅ Follow all community rules
 
 Unsubscribing = Automatic disqualification
@@ -953,8 +988,25 @@ Unsubscribing = Automatic disqualification
 📱 Join the revolution. Build the future.
 
 Let's decentralize AI together! 🤖⚡`;
-  
+
   try {
+    // Создаём или обновляем запись пользователя в БД
+    const userId = ctx.from.id;
+    const username = ctx.from.username || 'no_username';
+    const firstName = ctx.from.first_name || 'User';
+
+    await pool.query(
+      `INSERT INTO telegram_users (telegram_id, username, first_name, created_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (telegram_id)
+       DO UPDATE SET
+         username = $2,
+         first_name = $3`,
+      [userId, username, firstName]
+    );
+
+    console.log(`✅ Пользователь ${userId} добавлен/обновлён в БД`);
+
     // ВСЕГДА отправляем в ЛС, независимо от типа чата
     await sendToPrivate(ctx, welcomeMsg);
     console.log('✅ /start отправлен успешно');
@@ -1014,6 +1066,8 @@ bot.command('airdrop', async (ctx) => {
           `1️⃣ Subscribe to @mai_news\n` +
           `2️⃣ Join @mainingmai_chat\n` +
           `3️⃣ Use /status to verify\n\n` +
+          `💰 <b>Want to change your wallet?</b>\n` +
+          `Just send me your new Solana wallet address.\n\n` +
           `📊 Check status at https://miningmai.com`;
 
         return sendToPrivate(ctx, warningMessage, { parse_mode: 'HTML' });
@@ -1031,17 +1085,35 @@ bot.command('airdrop', async (ctx) => {
         `📊 <b>Check your status:</b>\n` +
         `• Use /status command here\n` +
         `• Connect wallet at https://miningmai.com\n\n` +
+        `💰 <b>Want to change your wallet?</b>\n` +
+        `Just send me your new Solana wallet address and I'll update it.\n\n` +
         `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`,
         { parse_mode: 'HTML' }
       );
     }
     
-    // Проверяем ОБЕ подписки сразу
-    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+    // Проверяем подписки через БД или API
+    let newsSubscribed, chatSubscribed;
 
-    console.log('📺 Подписка на новости:', newsSubscribed);
-    console.log('💬 Подписка на чат:', chatSubscribed);
+    const existingUser = await getUserStatus(userId);
+
+    if (existingUser && (existingUser.is_subscribed_news !== null || existingUser.is_subscribed_chat !== null)) {
+      // Юзер есть в БД и статусы подписок уже установлены - используем БД
+      newsSubscribed = existingUser.is_subscribed_news || false;
+      chatSubscribed = existingUser.is_subscribed_chat || false;
+      console.log('📊 Проверка подписок ИЗ БД:', { newsSubscribed, chatSubscribed });
+    } else {
+      // Юзера нет в БД или статусы ещё не установлены - проверяем через API и обновляем БД
+      newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+      chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+      console.log('📊 Проверка подписок через API:', { newsSubscribed, chatSubscribed });
+
+      // Обновляем статусы в БД
+      if (existingUser) {
+        await updateSubscription(userId, newsSubscribed, chatSubscribed);
+        console.log('✅ Статусы подписок обновлены в БД');
+      }
+    }
 
     // Если НЕ подписан хотя бы на один канал - показываем статус ОБОИХ
     if (!newsSubscribed || !chatSubscribed) {
@@ -3089,7 +3161,7 @@ bot.on(message('text'), async (ctx) => {
     // ОБРАБОТКА КОШЕЛЬКА - ГЛАВНОЕ!
     if (userStatus && userStatus.awaiting_wallet === true) {
       console.log('💼 НАЧАЛО ОБРАБОТКИ КОШЕЛЬКА:', text);
-      
+
       if (!isValidSolanaAddress(text)) {
         console.log('❌ Невалидный адрес Solana');
         return sendToPrivate(
@@ -3100,14 +3172,84 @@ bot.on(message('text'), async (ctx) => {
           { parse_mode: 'HTML' }
         );
       }
-      
+
+      // ПРОВЕРЯЕМ: это новая регистрация или смена кошелька?
+      if (userStatus.position) {
+        // ЭТО СМЕНА КОШЕЛЬКА (пользователь уже зарегистрирован)
+        console.log(`💰 СМЕНА КОШЕЛЬКА для пользователя ${userId}, позиция #${userStatus.position}`);
+
+        const oldWallet = userStatus.wallet_address;
+
+        // ПРОВЕРКА УНИКАЛЬНОСТИ КОШЕЛЬКА (исключая текущего пользователя)
+        const uniqueCheck = await checkWalletUniqueness(text, userId);
+        if (!uniqueCheck.isUnique) {
+          console.log(`⚠️ Кошелёк уже используется пользователем ${uniqueCheck.existingUser.telegram_id}`);
+          return sendToPrivate(
+            ctx,
+            `❌ <b>Wallet Already Registered!</b>\n\n` +
+            `This wallet address is already registered by another user (Position #${uniqueCheck.existingUser.position}).\n\n` +
+            `Each wallet can only be used once.\n\n` +
+            `Please send a different Solana wallet address.`,
+            { parse_mode: 'HTML' }
+          );
+        }
+
+        try {
+          // Обновляем только wallet_address и сбрасываем awaiting_wallet
+          await pool.query(
+            'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = false WHERE telegram_id = $2',
+            [text, userId]
+          );
+
+          const shortOld = `${oldWallet.slice(0, 6)}...${oldWallet.slice(-4)}`;
+          const shortNew = `${text.slice(0, 6)}...${text.slice(-4)}`;
+
+          await sendToPrivate(
+            ctx,
+            `✅ <b>Wallet Updated Successfully!</b>\n\n` +
+            `Old wallet: <code>${shortOld}</code>\n` +
+            `New wallet: <code>${shortNew}</code>\n\n` +
+            `Your Community Airdrop position <b>#${userStatus.position}</b> is now linked to your new wallet.\n\n` +
+            `Use /status to verify your details.`,
+            { parse_mode: 'HTML' }
+          );
+
+          // Логирование для админа
+          if (config.ADMIN_IDS[0]) {
+            await bot.telegram.sendMessage(
+              config.ADMIN_IDS[0],
+              `🔄 <b>Wallet Changed</b>\n\n` +
+              `User: ${ctx.from.first_name} (${userId})\n` +
+              `Position: #${userStatus.position}\n` +
+              `Old: <code>${oldWallet}</code>\n` +
+              `New: <code>${text}</code>`,
+              { parse_mode: 'HTML' }
+            );
+          }
+
+          console.log(`✅ Кошелёк успешно обновлён для пользователя ${userId}`);
+          return;
+        } catch (error) {
+          console.error('❌ Ошибка обновления кошелька:', error);
+          return sendToPrivate(
+            ctx,
+            `❌ <b>Error Updating Wallet</b>\n\n` +
+            `Something went wrong while updating your wallet.\n\n` +
+            `Please try again later or contact support using /admin.`,
+            { parse_mode: 'HTML' }
+          );
+        }
+      }
+
+      // ЭТО НОВАЯ РЕГИСТРАЦИЯ (у пользователя нет position)
+      console.log('📝 НОВАЯ РЕГИСТРАЦИЯ для:', userId);
+
       const username = ctx.from.username || 'no_username';
       const firstName = ctx.from.first_name;
-      
-      console.log('📝 Вызов registerUser для:', userId);
+
       const registration = await registerUser(userId, username, firstName, text);
       console.log('📊 Результат регистрации:', JSON.stringify(registration));
-      
+
       if (!registration.success) {
         if (registration.reason === 'limit_reached') {
           return sendToPrivate(
@@ -3115,6 +3257,16 @@ bot.on(message('text'), async (ctx) => {
             `❌ <b>Airdrop Full!</b>\n\n` +
             `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
             `Follow @mai_news for future airdrop opportunities!`,
+            { parse_mode: 'HTML' }
+          );
+        }
+        if (registration.reason === 'wallet_duplicate') {
+          return sendToPrivate(
+            ctx,
+            `❌ <b>Wallet Already Registered!</b>\n\n` +
+            `This wallet address is already registered by another user (Position #${registration.existingPosition}).\n\n` +
+            `Each wallet can only be used once.\n\n` +
+            `Please send a different Solana wallet address or use /airdrop to start over.`,
             { parse_mode: 'HTML' }
           );
         }
