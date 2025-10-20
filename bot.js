@@ -1002,39 +1002,51 @@ Let's decentralize AI together! 🤖⚡`;
     const username = ctx.from.username || 'no_username';
     const firstName = ctx.from.first_name || 'User';
 
-    // Проверяем ОБА канала через API
-    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+    // Проверяем есть ли пользователь в БД
+    const existingUser = await getUserStatus(userId);
 
-    // Для чата пробуем проверить через API
-    // Если бот - админ в супергруппе, это сработает
-    let chatSubscribed = false;
-    try {
-      const member = await bot.telegram.getChatMember(config.CHAT_CHANNEL_ID, userId);
-      chatSubscribed = ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
-      console.log(`✅ Проверка чата через API успешна: статус=${member.status}, подписан=${chatSubscribed}`);
-    } catch (error) {
-      // Если не удалось проверить (нет прав или пользователь не в чате)
-      console.log(`⚠️ Не удалось проверить чат через API: ${error.message}`);
-      // Оставляем false, обновится событиями
+    let newsSubscribed, chatSubscribed;
+
+    if (existingUser) {
+      // Пользователь УЖЕ ЕСТЬ в БД - НЕ перезаписываем подписки!
+      // Подписки обновляются только через события
+      console.log(`ℹ️ Пользователь ${userId} уже в БД, подписки НЕ перезаписываются`);
+
+      // Обновляем только имя и username
+      await pool.query(
+        `UPDATE telegram_users
+         SET username = $2, first_name = $3
+         WHERE telegram_id = $1`,
+        [userId, username, firstName]
+      );
+
+      console.log(`✅ Обновлены username и first_name для ${userId}`);
+    } else {
+      // НОВЫЙ пользователь - проверяем подписки через API
+      newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+
+      // Для чата пробуем проверить через API
       chatSubscribed = false;
+      try {
+        const member = await bot.telegram.getChatMember(config.CHAT_CHANNEL_ID, userId);
+        chatSubscribed = ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
+        console.log(`✅ Проверка чата: статус=${member.status}, подписан=${chatSubscribed}`);
+      } catch (error) {
+        console.log(`⚠️ Не удалось проверить чат: ${error.message}`);
+        chatSubscribed = false;
+      }
+
+      console.log(`📊 НОВЫЙ пользователь ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
+
+      // Создаём запись в БД
+      await pool.query(
+        `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, username, firstName, newsSubscribed, chatSubscribed]
+      );
+
+      console.log(`✅ Пользователь ${userId} добавлен в БД`);
     }
-
-    console.log(`📊 Итоговые подписки пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
-
-    // Создаём или обновляем запись пользователя в БД с реальными статусами подписок
-    await pool.query(
-      `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (telegram_id)
-       DO UPDATE SET
-         username = $2,
-         first_name = $3,
-         is_subscribed_news = $4,
-         is_subscribed_chat = $5`,
-      [userId, username, firstName, newsSubscribed, chatSubscribed]
-    );
-
-    console.log(`✅ Пользователь ${userId} добавлен/обновлён в БД со статусами подписок`);
 
     // ВСЕГДА отправляем в ЛС, независимо от типа чата
     await sendToPrivate(ctx, welcomeMsg);
@@ -1157,7 +1169,16 @@ bot.command('airdrop', async (ctx) => {
       );
     }
     
-    await setAwaitingWallet(userId, true);
+    const result = await setAwaitingWallet(userId, true);
+    if (!result) {
+      console.error('❌ Не удалось установить awaiting_wallet - пользователь не найден в БД!');
+      return sendToPrivate(
+        ctx,
+        `❌ <b>Database Error!</b>\n\n` +
+        `Please use /start command first, then try /airdrop again.`,
+        { parse_mode: 'HTML' }
+      );
+    }
     console.log('✅ Установлен awaiting_wallet для:', userId);
     
     await sendToPrivate(
