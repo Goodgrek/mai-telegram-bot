@@ -2806,7 +2806,7 @@ bot.on('message', async (ctx) => {
 
             // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
             const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
-            const chatSubscribed = true; // Присоединился к чату
+            const chatSubscribed = userStatus.is_subscribed_chat; // Присоединился к чату
 
             await updateSubscription(userId, newsSubscribed, chatSubscribed);
             console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
