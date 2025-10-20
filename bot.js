@@ -2752,8 +2752,8 @@ bot.on('message', async (ctx) => {
       if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
         const userStatus = await getUserStatus(userId);
 
-        if (userStatus && userStatus.position) {
-          console.log(`⚠️ Зарегистрированный пользователь ${userId} (позиция #${userStatus.position}) вышел из @mainingmai_chat`);
+        if (userStatus) {
+          console.log(`⚠️ Пользователь ${userId} вышел из @mainingmai_chat`);
 
           // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
           const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
@@ -2762,25 +2762,89 @@ bot.on('message', async (ctx) => {
           await updateSubscription(userId, newsSubscribed, chatSubscribed);
           console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=false`);
 
-          // Отправляем предупреждение
-          await bot.telegram.sendMessage(
-            userId,
-            `⚠️ <b>WARNING: You Left @mainingmai_chat!</b>\n\n` +
-            `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `⏰ <b>You have until 00:00 UTC to rejoin!</b>\n\n` +
-            `If you don't rejoin before the daily check at 00:00 UTC, you will:\n` +
-            `❌ Permanently lose your position #${userStatus.position}\n` +
-            `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
-            `❌ Your spot will go to the next person in queue\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `🔔 <b>REJOIN NOW:</b>\n` +
-            `Join @mainingmai_chat and stay subscribed!\n\n` +
-            `Use /status to check your current status.`,
-            { parse_mode: 'HTML' }
-          );
+          // Отправляем предупреждение ТОЛЬКО если зарегистрирован в аирдропе
+          if (userStatus.position) {
+            await bot.telegram.sendMessage(
+              userId,
+              `⚠️ <b>WARNING: You Left @mainingmai_chat!</b>\n\n` +
+              `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `⏰ <b>You have until 00:00 UTC to rejoin!</b>\n\n` +
+              `If you don't rejoin before the daily check at 00:00 UTC, you will:\n` +
+              `❌ Permanently lose your position #${userStatus.position}\n` +
+              `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
+              `❌ Your spot will go to the next person in queue\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `🔔 <b>REJOIN NOW:</b>\n` +
+              `Join @mainingmai_chat and stay subscribed!\n\n` +
+              `Use /status to check your current status.`,
+              { parse_mode: 'HTML' }
+            );
 
-          console.log(`✅ Предупреждение о выходе из чата отправлено пользователю ${userId}`);
+            console.log(`✅ Предупреждение о выходе из чата отправлено пользователю ${userId}`);
+          }
+        }
+      }
+    }
+
+    // ПРИСОЕДИНЕНИЕ К ГРУППЕ
+    if (ctx.message?.new_chat_members) {
+      const chatId = ctx.chat.id;
+
+      // Проверяем, это наш чат?
+      if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
+        for (const member of ctx.message.new_chat_members) {
+          if (member.is_bot) continue; // Пропускаем ботов
+
+          const userId = member.id;
+          console.log(`\n👋 JOIN EVENT: User ${userId} joined chat ${chatId}`);
+
+          const userStatus = await getUserStatus(userId);
+
+          if (userStatus) {
+            console.log(`✅ Пользователь ${userId} присоединился к @mainingmai_chat`);
+
+            // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
+            const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
+            const chatSubscribed = true; // Присоединился к чату
+
+            await updateSubscription(userId, newsSubscribed, chatSubscribed);
+            console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
+
+            // Отправляем уведомление ТОЛЬКО если зарегистрирован в аирдропе
+            if (userStatus.position) {
+              const isNowActive = newsSubscribed && chatSubscribed;
+
+              if (isNowActive) {
+                await bot.telegram.sendMessage(
+                  userId,
+                  `✅ <b>Welcome Back to @mainingmai_chat!</b>\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
+                  `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+                  `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
+                  `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
+                  `Use /status to check your details.`,
+                  { parse_mode: 'HTML' }
+                );
+
+                console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
+              } else {
+                await bot.telegram.sendMessage(
+                  userId,
+                  `✅ <b>You Joined @mainingmai_chat!</b>\n\n` +
+                  `But your position is still INACTIVE.\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `⚠️ <b>Action Required:</b>\n` +
+                  `Subscribe to @mai_news to activate your position.\n\n` +
+                  `You have until 00:00 UTC!`,
+                  { parse_mode: 'HTML' }
+                );
+
+                console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
+              }
+            }
+          }
         }
       }
     }
