@@ -991,8 +991,7 @@ Let's decentralize AI together! 🤖⚡`;
 
   try {
     const userId = ctx.from.id;
-    const username = ctx.from.username || 'no_username';
-    const firstName = ctx.from.first_name || 'User';
+
 
     // Проверяем реальные подписки через API
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
