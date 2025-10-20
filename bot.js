@@ -368,37 +368,68 @@ function containsSpamLinks(text) {
   return false;
 }
 
+async function isWalletAlreadyUsed(walletAddress, excludeUserId = null) {
+  try {
+    let query = 'SELECT telegram_id, first_name, position FROM telegram_users WHERE wallet_address = $1 AND position IS NOT NULL';
+    let params = [walletAddress];
+
+    // Если указан userId, исключаем его из проверки (для смены кошелька)
+    if (excludeUserId) {
+      query += ' AND telegram_id != $2';
+      params.push(excludeUserId);
+    }
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length > 0) {
+      return { used: true, user: result.rows[0] };
+    }
+    return { used: false };
+  } catch (error) {
+    console.error('❌ Ошибка проверки кошелька:', error);
+    return { used: false };
+  }
+}
+
 async function registerUser(userId, username, firstName, walletAddress) {
   try {
     console.log('🔍 registerUser вызван:', { userId, username, firstName, walletAddress: walletAddress.substring(0, 20) });
-    
+
+    // ПРОВЕРКА: не используется ли уже этот кошелёк?
+    // Передаём null, потому что это новая регистрация (у пользователя ещё нет position)
+    const walletCheck = await isWalletAlreadyUsed(walletAddress, null);
+    if (walletCheck.used) {
+      console.log(`⚠️ Кошелёк уже используется пользователем ${walletCheck.user.telegram_id}`);
+      return { success: false, reason: 'wallet_already_used', existingUser: walletCheck.user };
+    }
+
     const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const currentCount = parseInt(countResult.rows[0].count);
-    
+
     console.log('📊 Текущее количество:', currentCount, 'Лимит:', config.AIRDROP_LIMIT);
-    
+
     if (currentCount >= config.AIRDROP_LIMIT) {
       return { success: false, reason: 'limit_reached' };
     }
-    
+
     // ОБНОВЛЯЕМ ИЛИ СОЗДАЕМ
     const result = await pool.query(
       `INSERT INTO telegram_users (telegram_id, username, first_name, wallet_address, position, awaiting_wallet, registered_at)
        VALUES ($1, $2, $3, $4, $5, false, NOW())
-       ON CONFLICT (telegram_id) 
-       DO UPDATE SET 
-         username = $2, 
-         first_name = $3, 
-         wallet_address = $4, 
-         position = $5, 
+       ON CONFLICT (telegram_id)
+       DO UPDATE SET
+         username = $2,
+         first_name = $3,
+         wallet_address = $4,
+         position = $5,
          awaiting_wallet = false,
          registered_at = COALESCE(telegram_users.registered_at, NOW())
        RETURNING *`,
       [userId, username, firstName, walletAddress, currentCount + 1]
     );
-    
+
     console.log('✅ registerUser результат:', result.rows[0]);
-    
+
     return { success: true, user: result.rows[0] };
   } catch (error) {
     console.error('❌ registerUser ОШИБКА:', error.message);
@@ -3112,6 +3143,20 @@ bot.on(message('text'), async (ctx) => {
 
         const oldWallet = userStatus.wallet_address;
 
+        // ПРОВЕРКА: не используется ли уже этот кошелёк другим пользователем?
+        const walletCheck = await isWalletAlreadyUsed(text, userId);
+        if (walletCheck.used) {
+          console.log(`⚠️ Кошелёк уже используется пользователем ${walletCheck.user.telegram_id}`);
+          return sendToPrivate(
+            ctx,
+            `❌ <b>Wallet Already in Use!</b>\n\n` +
+            `This wallet address is already registered by another user (Position #${walletCheck.user.position}).\n\n` +
+            `Each wallet can only be used for one airdrop registration.\n\n` +
+            `Please provide a different Solana wallet address.`,
+            { parse_mode: 'HTML' }
+          );
+        }
+
         // Обновляем кошелёк в БД
         try {
           await pool.query(
@@ -3168,6 +3213,16 @@ bot.on(message('text'), async (ctx) => {
               `❌ <b>Airdrop Full!</b>\n\n` +
               `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
               `Follow @mai_news for future airdrop opportunities!`,
+              { parse_mode: 'HTML' }
+            );
+          }
+          if (registration.reason === 'wallet_already_used') {
+            return sendToPrivate(
+              ctx,
+              `❌ <b>Wallet Already in Use!</b>\n\n` +
+              `This wallet address is already registered by another user (Position #${registration.existingUser.position}).\n\n` +
+              `Each wallet can only be used for one airdrop registration.\n\n` +
+              `Please send a different Solana wallet address or use /airdrop to start over.`,
               { parse_mode: 'HTML' }
             );
           }
