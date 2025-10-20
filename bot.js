@@ -1002,14 +1002,24 @@ Let's decentralize AI together! 🤖⚡`;
     const username = ctx.from.username || 'no_username';
     const firstName = ctx.from.first_name || 'User';
 
-    // Проверяем ТОЛЬКО новостной канал через API (надежно работает для каналов)
+    // Проверяем ОБА канала через API
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
 
-    // Для чата (группы) НЕ проверяем через API - ненадежно!
-    // Статус будет обновлен автоматически при входе/выходе из группы через события
-    const chatSubscribed = false;
+    // Для чата пробуем проверить через API
+    // Если бот - админ в супергруппе, это сработает
+    let chatSubscribed = false;
+    try {
+      const member = await bot.telegram.getChatMember(config.CHAT_CHANNEL_ID, userId);
+      chatSubscribed = ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
+      console.log(`✅ Проверка чата через API успешна: статус=${member.status}, подписан=${chatSubscribed}`);
+    } catch (error) {
+      // Если не удалось проверить (нет прав или пользователь не в чате)
+      console.log(`⚠️ Не удалось проверить чат через API: ${error.message}`);
+      // Оставляем false, обновится событиями
+      chatSubscribed = false;
+    }
 
-    console.log(`📊 Проверка подписок пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed} (чат обновится событиями)`);
+    console.log(`📊 Итоговые подписки пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
     // Создаём или обновляем запись пользователя в БД с реальными статусами подписок
     await pool.query(
