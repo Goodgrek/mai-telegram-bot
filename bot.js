@@ -1017,7 +1017,7 @@ Let's decentralize AI together! 🤖⚡`;
 
     // ВСЕГДА отправляем в ЛС, независимо от типа чата
     await sendToPrivate(ctx, welcomeMsg);
-    console.log('✅ /start отправлен успешно');
+    console.log('✅ /start1 отправлен успешно');
   } catch (error) {
     console.error('❌ Ошибка /start:', error.message);
   }
