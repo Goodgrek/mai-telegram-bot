@@ -2765,6 +2765,11 @@ bot.on('chat_member', async (ctx) => {
 // Дополнительный обработчик для отслеживания выхода/присоединения к группе
 bot.on('message', async (ctx) => {
   try {
+    // Пропускаем обычные текстовые сообщения - они обрабатываются в bot.on(message('text'))
+    if (ctx.message.text && !ctx.message.left_chat_member && !ctx.message.new_chat_members) {
+      return; // Пропускаем, чтобы другой обработчик сработал
+    }
+
     // ВЫХОД ИЗ ГРУППЫ
     if (ctx.message?.left_chat_member) {
       const userId = ctx.message.left_chat_member.id;
