@@ -851,7 +851,7 @@ async function unmuteUser(userId, chatId = null) {
 
 async function setAwaitingWallet(userId, awaiting) {
   try {
-    // Просто обновляем awaiting_wallet, НЕ ТРОГАЯ остальные поля
+    // Обновляем awaiting_wallet, НЕ ТРОГАЯ остальные поля
     const result = await pool.query(
       `UPDATE telegram_users
        SET awaiting_wallet = $2
@@ -861,14 +861,16 @@ async function setAwaitingWallet(userId, awaiting) {
     );
 
     if (result.rows.length === 0) {
-      console.error(`❌ Пользователь ${userId} не найден в БД для setAwaitingWallet`);
+      console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Пользователь ${userId} не найден в БД для setAwaitingWallet!`);
+      console.error(`   Это значит что /start не был вызван перед /airdrop`);
       return null;
     }
 
-    console.log('✅ setAwaitingWallet результат:', result.rows[0]);
+    console.log('✅ setAwaitingWallet результат: awaiting_wallet =', result.rows[0].awaiting_wallet);
     return result.rows[0];
   } catch (error) {
     console.error('❌ Ошибка setAwaitingWallet:', error.message);
+    console.error('   Stack:', error.stack);
     throw error;
   }
 }
@@ -1003,16 +1005,11 @@ Let's decentralize AI together! 🤖⚡`;
     // Проверяем ТОЛЬКО новостной канал через API (надежно работает для каналов)
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
 
-    // Для чата (группы) проверяем через API тоже, но с fallback
-    let chatSubscribed = false;
-    try {
-      chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
-    } catch (error) {
-      console.log(`⚠️ Не удалось проверить чат через API для ${userId}, будет обновлено событиями`);
-      chatSubscribed = false;
-    }
+    // Для чата (группы) НЕ проверяем через API - ненадежно!
+    // Статус будет обновлен автоматически при входе/выходе из группы через события
+    const chatSubscribed = false;
 
-    console.log(`📊 Проверка подписок пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
+    console.log(`📊 Проверка подписок пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed} (чат обновится событиями)`);
 
     // Создаём или обновляем запись пользователя в БД с реальными статусами подписок
     await pool.query(
@@ -1060,10 +1057,14 @@ bot.command('airdrop', async (ctx) => {
     }
     
     if (userStatus?.position && userStatus?.wallet_address) {
-      // Проверяем актуальность подписок ИЗ БД
+      // УЖЕ ЗАРЕГИСТРИРОВАН - предлагаем сменить кошелек
       const newsSubscribed = userStatus.is_subscribed_news;
       const chatSubscribed = userStatus.is_subscribed_chat;
       const isActive = newsSubscribed && chatSubscribed;
+
+      // Устанавливаем awaiting_wallet для смены кошелька
+      await setAwaitingWallet(userId, true);
+      console.log('✅ Установлен awaiting_wallet для смены кошелька:', userId);
 
       // Если отписался от хотя бы одного канала - показываем предупреждение
       if (!isActive) {
@@ -1089,26 +1090,26 @@ bot.command('airdrop', async (ctx) => {
           `2️⃣ Join @mainingmai_chat\n` +
           `3️⃣ Use /status to verify\n\n` +
           `💰 <b>Want to change your wallet?</b>\n` +
-          `Just send me your new Solana wallet address.\n\n` +
+          `Just send me your new Solana wallet address (32-44 characters).\n\n` +
           `📊 Check status at https://miningmai.com`;
 
         return sendToPrivate(ctx, warningMessage, { parse_mode: 'HTML' });
       }
 
-      // Если всё ОК - показываем обычное сообщение
+      // Если всё ОК - показываем обычное сообщение с предложением сменить кошелек
       return sendToPrivate(
         ctx,
         `✅ <b>You're Already Registered!</b>\n\n` +
         `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
         `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-        `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
+        `💼 Current Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
         `📊 <b>Check your status:</b>\n` +
         `• Use /status command here\n` +
         `• Connect wallet at https://miningmai.com\n\n` +
         `💰 <b>Want to change your wallet?</b>\n` +
-        `Just send me your new Solana wallet address and I'll update it.\n\n` +
+        `Just send me your new Solana wallet address (32-44 characters) and I'll update it.\n\n` +
         `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`,
         { parse_mode: 'HTML' }
       );
@@ -2564,30 +2565,8 @@ bot.on('new_chat_members', async (ctx) => {
         continue; // Пропускаем общее приветствие для зарегистрированных
       }
 
-      // НОВЫЙ ПОЛЬЗОВАТЕЛЬ (не зарегистрирован) - отправляем общее приветствие
-      await bot.telegram.sendMessage(
-        userId,
-        `👋 Welcome to MAI Project!\n\n` +
-        `🎁 COMMUNITY AIRDROP: 5,000 MAI FREE\n` +
-        `First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI!\n\n` +
-        `📋 How to participate:\n` +
-        `1️⃣ Subscribe to @mai_news\n` +
-        `2️⃣ Subscribe to @mainingmai_chat\n` +
-        `3️⃣ Register via command: /airdrop\n\n` +
-        `💡 Register after 20K? You're in queue!\n` +
-        `If someone unsubscribes, you move up automatically.\n\n` +
-        `🔒 Keep your position:\n` +
-        `✅ Stay subscribed to both channels until listing\n` +
-        `✅ Daily check at 00:00 UTC\n` +
-        `❌ Unsubscribe = Position lost!\n\n` +
-        `📋 Quick Start:\n` +
-        `• Use /airdrop to register\n` +
-        `• Read /rules for community guidelines\n` +
-        `• Check /faq for answers\n` +
-        `• View /presale for token sale info\n\n` +
-        `🌐 Website: https://miningmai.com`
-      );
-      console.log(`✅ Приветствие отправлено в ЛС: ${member.first_name}`);
+      // НОВЫЙ ПОЛЬЗОВАТЕЛЬ (не зарегистрирован) - НЕ отправляем сообщение (есть /start)
+      console.log(`ℹ️ Новый пользователь ${member.first_name}, приветствие при /start`);
     } catch (error) {
       console.log(`⚠️ Не удалось отправить приветствие ${member.first_name} (бот не запущен)`);
     }
