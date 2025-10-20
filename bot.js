@@ -851,14 +851,20 @@ async function unmuteUser(userId, chatId = null) {
 
 async function setAwaitingWallet(userId, awaiting) {
   try {
+    // Просто обновляем awaiting_wallet, НЕ ТРОГАЯ остальные поля
     const result = await pool.query(
-      `INSERT INTO telegram_users (telegram_id, awaiting_wallet) 
-       VALUES ($1, $2) 
-       ON CONFLICT (telegram_id) 
-       DO UPDATE SET awaiting_wallet = $2
+      `UPDATE telegram_users
+       SET awaiting_wallet = $2
+       WHERE telegram_id = $1
        RETURNING *`,
       [userId, awaiting]
     );
+
+    if (result.rows.length === 0) {
+      console.error(`❌ Пользователь ${userId} не найден в БД для setAwaitingWallet`);
+      return null;
+    }
+
     console.log('✅ setAwaitingWallet результат:', result.rows[0]);
     return result.rows[0];
   } catch (error) {
@@ -994,11 +1000,19 @@ Let's decentralize AI together! 🤖⚡`;
     const username = ctx.from.username || 'no_username';
     const firstName = ctx.from.first_name || 'User';
 
-    // Проверяем реальные подписки через API
+    // Проверяем ТОЛЬКО новостной канал через API (надежно работает для каналов)
     const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
 
-    console.log(`📊 Реальные подписки пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
+    // Для чата (группы) проверяем через API тоже, но с fallback
+    let chatSubscribed = false;
+    try {
+      chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+    } catch (error) {
+      console.log(`⚠️ Не удалось проверить чат через API для ${userId}, будет обновлено событиями`);
+      chatSubscribed = false;
+    }
+
+    console.log(`📊 Проверка подписок пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
 
     // Создаём или обновляем запись пользователя в БД с реальными статусами подписок
     await pool.query(
@@ -1017,7 +1031,7 @@ Let's decentralize AI together! 🤖⚡`;
 
     // ВСЕГДА отправляем в ЛС, независимо от типа чата
     await sendToPrivate(ctx, welcomeMsg);
-    console.log('✅ /start1 отправлен успешно');
+    console.log('✅ /start отправлен успешно');
   } catch (error) {
     console.error('❌ Ошибка /start:', error.message);
   }
@@ -2806,7 +2820,7 @@ bot.on('message', async (ctx) => {
 
             // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
             const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
-            const chatSubscribed = userStatus.is_subscribed_chat; // Присоединился к чату
+            const chatSubscribed = true; // Присоединился к чату
 
             await updateSubscription(userId, newsSubscribed, chatSubscribed);
             console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
