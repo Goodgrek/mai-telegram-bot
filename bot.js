@@ -1002,26 +1002,38 @@ Let's decentralize AI together! 🤖⚡`;
     const username = ctx.from.username || 'no_username';
     const firstName = ctx.from.first_name || 'User';
 
-    // Проверяем реальные подписки через API
-    const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
-    const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
+    // Проверяем существует ли пользователь в БД
+    const existingUser = await getUserStatus(userId);
 
-    console.log(`📊 Реальные подписки пользователя ${userId}: news=${newsSubscribed}, chat=${chatSubscribed}`);
+    if (!existingUser) {
+      // НОВЫЙ пользователь - проверяем подписки через API
+      const newsSubscribed = await checkSubscription(bot, config.NEWS_CHANNEL_ID, userId);
+      const chatSubscribed = await checkSubscription(bot, config.CHAT_CHANNEL_ID, userId);
 
-    // Создаём или обновляем запись пользователя в БД с реальными статусами подписок
-    await pool.query(
-      `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (telegram_id)
-       DO UPDATE SET
-         username = $2,
-         first_name = $3,
-         is_subscribed_news = $4,
-         is_subscribed_chat = $5`,
-      [userId, username, firstName, newsSubscribed, chatSubscribed]
-    );
+      console.log(`🆕 НОВЫЙ пользователь ${userId}: API проверка - news=${newsSubscribed}, chat=${chatSubscribed}`);
 
-    console.log(`✅ Пользователь ${userId} добавлен/обновлён в БД со статусами подписок`);
+      // Создаём запись с проверенными подписками
+      await pool.query(
+        `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, username, firstName, newsSubscribed, chatSubscribed]
+      );
+
+      console.log(`✅ Новый пользователь ${userId} добавлен в БД с подписками из API`);
+    } else {
+      // СУЩЕСТВУЮЩИЙ пользователь - НЕ перезаписываем подписки!
+      // Подписки обновляются только через события chat_member/new_chat_members/left_chat_member
+      console.log(`🔄 СУЩЕСТВУЮЩИЙ пользователь ${userId}: сохраняем подписки из БД - news=${existingUser.is_subscribed_news}, chat=${existingUser.is_subscribed_chat}`);
+
+      await pool.query(
+        `UPDATE telegram_users
+         SET username = $2, first_name = $3
+         WHERE telegram_id = $1`,
+        [userId, username, firstName]
+      );
+
+      console.log(`✅ Пользователь ${userId} обновлён (только имя/username, подписки НЕ тронуты)`);
+    }
 
     // ВСЕГДА отправляем в ЛС, независимо от типа чата
     await sendToPrivate(ctx, welcomeMsg);
