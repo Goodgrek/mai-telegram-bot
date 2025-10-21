@@ -31,6 +31,11 @@ const ADMIN_MESSAGE_CONFIG = {
   MAX_MESSAGE_LENGTH: 1000
 };
 
+// Функция экранирования специальных символов Markdown
+function escapeMarkdown(text) {
+  return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -1752,10 +1757,10 @@ bot.command('admin', async (ctx) => {
     return ctx.reply('❌ Error saving message.');
   }
   
-  const userLink = username ? `@${username}` : `User ${userId}`;
+  const firstName = escapeMarkdown(ctx.from.first_name || 'Unknown');
   const adminNotification =
     `📨 *NEW ADMIN MESSAGE*\n\n` +
-  `*From:* ${userLink} (ID: \`${userId}\`)\n` +
+  `*From:* ${firstName} (ID: \`${userId}\`)\n` +
   `*Time:* ${new Date().toLocaleString('en-GB', { timeZone: 'UTC' })} UTC\n\n` +
   `*Message:*\n\`\`\`\n${messageText}\n\`\`\`\n\n` +
   `━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -1804,7 +1809,7 @@ bot.command('admin', async (ctx) => {
   { parse_mode: 'Markdown' }
 );
   
-  console.log(`📨 Admin message from ${userLink}: "${messageText.substring(0, 50)}..."`);
+  console.log(`📨 Admin message from ${firstName} (ID: ${userId}): "${messageText.substring(0, 50)}..."`);
 });
 
 bot.command('adminstats', async (ctx) => {
