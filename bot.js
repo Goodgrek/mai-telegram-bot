@@ -1648,7 +1648,7 @@ bot.command('admin', async (ctx) => {
     }
   }
   const userId = ctx.from.id;
-  const username = ctx.from.username || 'no_username';
+  const userFirstName = ctx.from.first_name || 'Unknown';
 
   if (ctx.chat.type !== 'private') {
   // Пытаемся отправить в ЛС
@@ -1751,7 +1751,7 @@ bot.command('admin', async (ctx) => {
     return ctx.reply('❌ Unable to send. Try later.');
   }
   
-  const saved = await saveAdminMessage(userId, username, messageText);
+  const saved = await saveAdminMessage(userId, userFirstName, messageText);
   
   if (!saved) {
     return ctx.reply('❌ Error saving message.');
