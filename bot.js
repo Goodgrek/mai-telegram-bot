@@ -992,6 +992,7 @@ Claim now! 🚀
 /changewallet - Change your wallet address
 /faq - Frequently asked questions
 /rules - Community rules
+/problems - Troubleshooting & solutions
 /admin - Contact administrators (your message)
 /report - Report rule violations (reply to message)
 /help - Full command list
@@ -1416,7 +1417,8 @@ bot.command('status', async (ctx) => {
       `📺 <b>Required Subscriptions:</b>\n` +
       `${newsSubscribed ? '✅' : '❌'} News Channel (@mai_news)\n` +
       `${chatSubscribed ? '✅' : '❌'} Community Chat (@mainingmai_chat)\n\n` +
-      `💼 <b>Wallet:</b> ${userStatus.wallet_address ? `<code>${userStatus.wallet_address}</code>` : '❌ Not linked'}\n\n` +
+      `💼 <b>Wallet:</b> ${userStatus.wallet_address ? `<code>${userStatus.wallet_address}</code>` : '❌ Not linked'}\n` +
+      `${userStatus.wallet_address ? `   Use /changewallet to update your wallet address\n` : ``}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `⚠️ Warnings: ${userStatus.warnings}/${config.WARN_LIMIT}\n` +
       `📊 Reports: ${userStatus.reports_received}\n\n` +
@@ -1564,6 +1566,7 @@ bot.command('help', async (ctx) => {
 
 /start - Welcome message & overview
 /help - This command list
+/problems - Troubleshooting & solutions
 /admin - Contact administrators (your message)
 /report - Report rule violations (reply to message)
 
@@ -1587,6 +1590,45 @@ Make sure to stay subscribed to @mai_news and remain in the community chat to ma
     await sendToPrivate(ctx, helpMsg, { parse_mode: 'HTML' });
   } catch (error) {
     console.error('❌ Ошибка /help:', error.message);
+  }
+});
+
+bot.command('problems', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
+
+  const mainMenu = Markup.inlineKeyboard([
+    [Markup.button.callback('📋 Registration Issues', 'prob_registration')],
+    [Markup.button.callback('💼 Wallet Problems', 'prob_wallet')],
+    [Markup.button.callback('📺 Subscription Issues', 'prob_subscriptions')],
+    [Markup.button.callback('🚫 Ban & Mute', 'prob_ban')],
+    [Markup.button.callback('🔔 Notifications & Alerts', 'prob_notifications')],
+    [Markup.button.callback('❓ Other Questions', 'prob_other')]
+  ]);
+
+  const message =
+    `🆘 <b>TROUBLESHOOTING & SOLUTIONS</b>\n\n` +
+    `Select a category to find solutions:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `📋 Registration Issues\n` +
+    `💼 Wallet Problems\n` +
+    `📺 Subscription Issues\n` +
+    `🚫 Ban & Mute\n` +
+    `🔔 Notifications & Alerts\n` +
+    `❓ Other Questions\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Can't find a solution?</b>\n` +
+    `Contact admin using /admin command`;
+
+  try {
+    await sendToPrivate(ctx, message, { parse_mode: 'HTML', ...mainMenu });
+  } catch (error) {
+    console.error('❌ Ошибка /problems:', error.message);
   }
 });
 
@@ -2514,6 +2556,917 @@ bot.action(/cmd_(.+)/, async (ctx) => {
 });
 
 // ============================================================
+// PROBLEMS COMMAND - CALLBACK HANDLERS
+// ============================================================
+
+bot.action('prob_registration', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('❌ Can\'t register for airdrop', 'prob_reg_cant')],
+    [Markup.button.callback('🔄 Lost my position', 'prob_reg_lost')],
+    [Markup.button.callback('⏱️ Registration not working', 'prob_reg_notwork')],
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `📋 <b>REGISTRATION ISSUES</b>\n\n` +
+    `Select your problem:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `❌ Can't register for airdrop\n` +
+    `🔄 Lost my position\n` +
+    `⏱️ Registration not working\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_wallet', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔑 Can\'t change wallet', 'prob_wal_change')],
+    [Markup.button.callback('⚠️ Invalid wallet error', 'prob_wal_invalid')],
+    [Markup.button.callback('🔁 Wallet already registered', 'prob_wal_duplicate')],
+    [Markup.button.callback('❓ Where to get Solana wallet?', 'prob_wal_get')],
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `💼 <b>WALLET PROBLEMS</b>\n\n` +
+    `Select your problem:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🔑 Can't change wallet\n` +
+    `⚠️ Invalid wallet error\n` +
+    `🔁 Wallet already registered\n` +
+    `❓ Where to get Solana wallet?\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_subscriptions', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('❌ Says I\'m not subscribed but I am', 'prob_sub_false')],
+    [Markup.button.callback('📱 Can\'t join channel/chat', 'prob_sub_join')],
+    [Markup.button.callback('🔄 Subscription status not updating', 'prob_sub_update')],
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `📺 <b>SUBSCRIPTION ISSUES</b>\n\n` +
+    `Select your problem:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `❌ Says I'm not subscribed but I am\n` +
+    `📱 Can't join channel/chat\n` +
+    `🔄 Subscription status not updating\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ban', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('⛔ I got banned, what to do?', 'prob_ban_banned')],
+    [Markup.button.callback('🔇 I got muted, why?', 'prob_ban_muted')],
+    [Markup.button.callback('❓ How to check my warnings?', 'prob_ban_warnings')],
+    [Markup.button.callback('📊 How warning system works?', 'prob_ban_system')],
+    [Markup.button.callback('⚖️ How to appeal ban/mute?', 'prob_ban_appeal')],
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `🚫 <b>BAN & MUTE</b>\n\n` +
+    `Select your problem:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `⛔ I got banned, what to do?\n` +
+    `🔇 I got muted, why?\n` +
+    `❓ How to check my warnings?\n` +
+    `📊 How warning system works?\n` +
+    `⚖️ How to appeal ban/mute?\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_notifications', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔕 Not receiving bot messages', 'prob_notif_not')],
+    [Markup.button.callback('📬 How to enable notifications?', 'prob_notif_enable')],
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `🔔 <b>NOTIFICATIONS & ALERTS</b>\n\n` +
+    `Select your problem:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🔕 Not receiving bot messages\n` +
+    `📬 How to enable notifications?\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_other', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `❓ <b>OTHER QUESTIONS</b>\n\n` +
+    `For general questions not covered in other categories:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `📚 Check /faq for frequently asked questions\n` +
+    `📋 Check /rules for community guidelines\n` +
+    `🆘 Check /help for all available commands\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still need help?</b>\n\n` +
+    `Use /admin to contact administrators.\n\n` +
+    `Example:\n` +
+    `<code>/admin I need help with...</code>\n\n` +
+    `<b>Limits:</b>\n` +
+    `• 3 messages per day\n` +
+    `• 30 min cooldown between messages\n` +
+    `• Minimum 10 characters`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// ============================================================
+// DETAILED PROBLEM SOLUTIONS
+// ============================================================
+
+// REGISTRATION PROBLEMS
+bot.action('prob_reg_cant', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Registration Issues', 'prob_registration')]
+  ]);
+
+  const message =
+    `❌ <b>CAN'T REGISTER FOR AIRDROP</b>\n\n` +
+    `Possible reasons:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `1️⃣ <b>Airdrop limit reached (${config.AIRDROP_LIMIT.toLocaleString()} spots)</b>\n` +
+    `   Solution: Follow @mai_news for future airdrops\n\n` +
+    `2️⃣ <b>Not subscribed to required channels</b>\n` +
+    `   Solution:\n` +
+    `   • Join @mai_news\n` +
+    `   • Join @mainingmai_chat\n` +
+    `   • Then try /airdrop again\n\n` +
+    `3️⃣ <b>Wallet already used by another user</b>\n` +
+    `   Solution: Use a different Solana wallet\n\n` +
+    `4️⃣ <b>You're banned from community</b>\n` +
+    `   Solution: Contact admin via /admin\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still having issues?</b>\n` +
+    `Use /admin to contact support`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_reg_lost', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Registration Issues', 'prob_registration')]
+  ]);
+
+  const message =
+    `🔄 <b>LOST MY POSITION</b>\n\n` +
+    `Why you might lose your position:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `1️⃣ <b>Unsubscribed from required channels</b>\n` +
+    `   Daily check at 00:00 UTC verifies subscriptions\n` +
+    `   If not subscribed → position lost PERMANENTLY\n\n` +
+    `2️⃣ <b>Left the community chat</b>\n` +
+    `   Must stay in @mainingmai_chat\n` +
+    `   Leaving = losing position\n\n` +
+    `3️⃣ <b>Received permanent ban</b>\n` +
+    `   3 warnings from admins = ban + loss of position\n` +
+    `   30 community reports = ban + loss of position\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ IMPORTANT:</b>\n` +
+    `Lost positions CANNOT be restored!\n` +
+    `Your spot goes to the next person in queue.\n\n` +
+    `Check your status: /status\n\n` +
+    `<b>Prevention:</b>\n` +
+    `✅ Stay subscribed to @mai_news\n` +
+    `✅ Stay in @mainingmai_chat\n` +
+    `✅ Follow /rules\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Questions?</b>\n` +
+    `Use /admin to contact support`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_reg_notwork', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Registration Issues', 'prob_registration')]
+  ]);
+
+  const message =
+    `⏱️ <b>REGISTRATION NOT WORKING</b>\n\n` +
+    `Troubleshooting steps:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `1️⃣ <b>Check subscriptions first</b>\n` +
+    `   • Join @mai_news\n` +
+    `   • Join @mainingmai_chat\n` +
+    `   • Wait 1-2 minutes\n` +
+    `   • Then use /airdrop\n\n` +
+    `2️⃣ <b>Make sure you started the bot</b>\n` +
+    `   • Use /start in private chat with bot\n` +
+    `   • Don't use commands in group chat\n\n` +
+    `3️⃣ <b>Check if bot responds to other commands</b>\n` +
+    `   • Try /status or /help\n` +
+    `   • If bot doesn't respond → restart bot: /start\n\n` +
+    `4️⃣ <b>Verify your wallet address format</b>\n` +
+    `   • Must be Solana wallet (32-44 characters)\n` +
+    `   • Base58 format\n` +
+    `   • Example: 7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still not working?</b>\n` +
+    `Contact admin: /admin Your problem description`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// WALLET PROBLEMS
+bot.action('prob_wal_change', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Wallet Problems', 'prob_wallet')]
+  ]);
+
+  const message =
+    `🔑 <b>CAN'T CHANGE WALLET</b>\n\n` +
+    `How to change your wallet address:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Step 1:</b> Use /changewallet command\n\n` +
+    `<b>Step 2:</b> Send your NEW Solana wallet address\n\n` +
+    `<b>Step 3:</b> Bot will verify and update\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Requirements:</b>\n` +
+    `✅ Must be registered first\n` +
+    `✅ Must have a position\n` +
+    `✅ New wallet must be different\n` +
+    `✅ New wallet cannot be used by others\n\n` +
+    `<b>⚠️ IMPORTANT:</b>\n` +
+    `• Double-check the address!\n` +
+    `• Wrong address = Lost tokens forever!\n` +
+    `• Each wallet can only be used once\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still having issues?</b>\n` +
+    `Use /admin to contact support`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_wal_invalid', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Wallet Problems', 'prob_wallet')]
+  ]);
+
+  const message =
+    `⚠️ <b>INVALID WALLET ERROR</b>\n\n` +
+    `This error means your wallet address format is incorrect.\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Solana wallet requirements:</b>\n\n` +
+    `✅ Length: 32-44 characters\n` +
+    `✅ Format: Base58 (letters and numbers)\n` +
+    `✅ No special characters\n` +
+    `✅ No spaces\n\n` +
+    `<b>Example of valid address:</b>\n` +
+    `<code>7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...</code>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Common mistakes:</b>\n\n` +
+    `❌ Using Bitcoin/Ethereum wallet\n` +
+    `❌ Adding extra spaces\n` +
+    `❌ Copying incomplete address\n` +
+    `❌ Using email or username instead\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>How to get correct address:</b>\n\n` +
+    `1. Open your Solana wallet app\n` +
+    `2. Find "Receive" or "Wallet Address"\n` +
+    `3. Copy the FULL address\n` +
+    `4. Paste it to the bot (no editing!)\n\n` +
+    `Don't have Solana wallet? See:\n` +
+    `"Where to get Solana wallet?" in menu`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_wal_duplicate', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Wallet Problems', 'prob_wallet')]
+  ]);
+
+  const message =
+    `🔁 <b>WALLET ALREADY REGISTERED</b>\n\n` +
+    `This error means the wallet address you provided is already being used by another user.\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Why this happens:</b>\n\n` +
+    `• Each wallet can only be registered ONCE\n` +
+    `• Someone else already registered with this wallet\n` +
+    `• Prevents duplicate rewards\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Solution:</b>\n\n` +
+    `1️⃣ Use a DIFFERENT Solana wallet address\n` +
+    `2️⃣ Create a new wallet if needed\n` +
+    `3️⃣ Make sure you're using YOUR OWN wallet\n\n` +
+    `<b>⚠️ IMPORTANT:</b>\n` +
+    `• Don't share wallets with friends/family\n` +
+    `• Each person needs their own unique wallet\n` +
+    `• Using someone else's wallet = No rewards!\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Need to create new wallet? See:\n` +
+    `"Where to get Solana wallet?" in menu\n\n` +
+    `<b>Questions?</b>\n` +
+    `Use /admin to contact support`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_wal_get', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Wallet Problems', 'prob_wallet')]
+  ]);
+
+  const message =
+    `❓ <b>WHERE TO GET SOLANA WALLET?</b>\n\n` +
+    `Popular Solana wallet options:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>📱 MOBILE WALLETS:</b>\n\n` +
+    `1️⃣ <b>Phantom</b> (Recommended)\n` +
+    `   • Easy to use\n` +
+    `   • Most popular\n` +
+    `   • iOS & Android\n` +
+    `   • phantom.app\n\n` +
+    `2️⃣ <b>Solflare</b>\n` +
+    `   • Secure & reliable\n` +
+    `   • iOS & Android\n` +
+    `   • solflare.com\n\n` +
+    `3️⃣ <b>Trust Wallet</b>\n` +
+    `   • Multi-chain support\n` +
+    `   • Includes Solana\n` +
+    `   • trustwallet.com\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>💻 BROWSER EXTENSIONS:</b>\n\n` +
+    `• Phantom (Chrome, Firefox, Brave)\n` +
+    `• Solflare (Chrome, Firefox)\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>How to get your address after installing:</b>\n\n` +
+    `1. Create new wallet or import existing\n` +
+    `2. Find "Receive" or "Deposit"\n` +
+    `3. Select "Solana" (SOL)\n` +
+    `4. Copy your wallet address\n` +
+    `5. Paste it to the bot\n\n` +
+    `<b>⚠️ SECURITY TIPS:</b>\n` +
+    `• NEVER share your seed phrase!\n` +
+    `• Save your recovery phrase safely\n` +
+    `• Use official wallet apps only\n` +
+    `• Double-check wallet addresses\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Questions?</b>\n` +
+    `Use /admin to contact support`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// SUBSCRIPTION PROBLEMS
+bot.action('prob_sub_false', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Subscription Issues', 'prob_subscriptions')]
+  ]);
+
+  const message =
+    `❌ <b>SAYS I'M NOT SUBSCRIBED BUT I AM</b>\n\n` +
+    `If bot shows you're not subscribed but you are:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Quick fixes:</b>\n\n` +
+    `1️⃣ <b>Wait 1-2 minutes after subscribing</b>\n` +
+    `   Telegram needs time to update\n\n` +
+    `2️⃣ <b>Make sure you're SUBSCRIBED (not just viewing)</b>\n` +
+    `   • Open @mai_news\n` +
+    `   • Tap "JOIN" or "SUBSCRIBE" button\n` +
+    `   • Same for @mainingmai_chat\n\n` +
+    `3️⃣ <b>Check if you were muted/restricted</b>\n` +
+    `   If you were previously muted, you might need to:\n` +
+    `   • Leave the channel\n` +
+    `   • Wait 30 seconds\n` +
+    `   • Join again\n\n` +
+    `4️⃣ <b>Restart the bot</b>\n` +
+    `   • Use /start command\n` +
+    `   • Wait a few seconds\n` +
+    `   • Check /status again\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Subscription status updates:</b>\n` +
+    `• Real-time when you join/leave\n` +
+    `• Daily check at 00:00 UTC\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still showing wrong status?</b>\n` +
+    `Contact admin: /admin\n` +
+    `Include: Your user ID from /status`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_sub_join', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Subscription Issues', 'prob_subscriptions')]
+  ]);
+
+  const message =
+    `📱 <b>CAN'T JOIN CHANNEL/CHAT</b>\n\n` +
+    `Troubleshooting steps:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `1️⃣ <b>Check if you're banned</b>\n` +
+    `   If banned → contact admin via /admin\n\n` +
+    `2️⃣ <b>Try joining via direct links:</b>\n\n` +
+    `   News Channel:\n` +
+    `   @mai_news\n` +
+    `   t.me/mai_news\n\n` +
+    `   Community Chat:\n` +
+    `   @mainingmai_chat\n` +
+    `   t.me/mainingmai_chat\n\n` +
+    `3️⃣ <b>Clear Telegram cache</b>\n` +
+    `   Settings → Data & Storage → Clear Cache\n\n` +
+    `4️⃣ <b>Update Telegram app</b>\n` +
+    `   Make sure you have latest version\n\n` +
+    `5️⃣ <b>Check internet connection</b>\n` +
+    `   Try switching WiFi/Mobile data\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Error: "You are banned"</b>\n` +
+    `See "Ban & Mute" section in /problems\n\n` +
+    `<b>Other errors?</b>\n` +
+    `Contact admin: /admin`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_sub_update', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Subscription Issues', 'prob_subscriptions')]
+  ]);
+
+  const message =
+    `🔄 <b>SUBSCRIPTION STATUS NOT UPDATING</b>\n\n` +
+    `How subscription tracking works:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Automatic updates:</b>\n\n` +
+    `✅ When you join channel/chat\n` +
+    `✅ When you leave channel/chat\n` +
+    `✅ Daily check at 00:00 UTC\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>If status not updating:</b>\n\n` +
+    `1️⃣ <b>Wait 1-2 minutes</b>\n` +
+    `   Updates aren't instant\n\n` +
+    `2️⃣ <b>Make sure you actually joined</b>\n` +
+    `   Look for "JOINED" or "SUBSCRIBED" status\n\n` +
+    `3️⃣ <b>Check with /status command</b>\n` +
+    `   Shows current subscription status\n\n` +
+    `4️⃣ <b>Wait for daily check</b>\n` +
+    `   At 00:00 UTC all statuses refresh\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ IMPORTANT:</b>\n\n` +
+    `If you unsubscribe and don't resubscribe before the daily check (00:00 UTC), you will LOSE your position permanently!\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still not updating after 24 hours?</b>\n` +
+    `Contact admin: /admin`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// BAN & MUTE PROBLEMS
+bot.action('prob_ban_banned', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Ban & Mute', 'prob_ban')]
+  ]);
+
+  const message =
+    `⛔ <b>I GOT BANNED, WHAT TO DO?</b>\n\n` +
+    `Possible reasons for ban:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `1️⃣ <b>3 warnings from admins</b>\n` +
+    `   • 1st violation = ⚠️ Warning\n` +
+    `   • 2nd violation = ⚠️ Final Warning\n` +
+    `   • 3rd violation = 🚫 Permanent Ban\n\n` +
+    `2️⃣ <b>30 reports from community members</b>\n` +
+    `   • 10 reports = 🔇 24h mute\n` +
+    `   • 20 reports = 🔇 7 days mute\n` +
+    `   • 30 reports = 🚫 Permanent Ban\n\n` +
+    `3️⃣ <b>Serious rule violations:</b>\n` +
+    `   • Spam, scam links\n` +
+    `   • Advertising other projects\n` +
+    `   • Harassment, hate speech\n` +
+    `   • NSFW content\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ CONSEQUENCES OF BAN:</b>\n\n` +
+    `❌ Loss of airdrop position\n` +
+    `❌ Loss of all rewards\n` +
+    `❌ Cannot restore position\n` +
+    `❌ Cannot participate in future airdrops\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>How to appeal?</b>\n\n` +
+    `If you believe the ban was unfair:\n` +
+    `Use /admin command to contact administrators\n\n` +
+    `Example:\n` +
+    `<code>/admin I was banned for [reason], but I didn't violate rules because...</code>\n\n` +
+    `<b>⚠️ Note:</b> Admin decision is final`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ban_muted', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Ban & Mute', 'prob_ban')]
+  ]);
+
+  const message =
+    `🔇 <b>I GOT MUTED, WHY?</b>\n\n` +
+    `Mute system explained:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>1️⃣ Mute from admins:</b>\n\n` +
+    `• For rule violations\n` +
+    `• Duration: admin's discretion\n` +
+    `• Usually: 1 hour - 7 days\n\n` +
+    `<b>2️⃣ Mute from community reports:</b>\n\n` +
+    `• 10 unique reports = 🔇 24 hours\n` +
+    `• 20 unique reports = 🔇 7 days\n` +
+    `• 30 unique reports = 🚫 Ban\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ WHILE MUTED:</b>\n\n` +
+    `✅ You stay in chat\n` +
+    `✅ Airdrop position preserved\n` +
+    `❌ Can't send messages\n` +
+    `✅ Can read chat\n` +
+    `✅ Can use bot commands in DM\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>What to do?</b>\n\n` +
+    `1. Wait for mute to expire\n` +
+    `2. Read /rules to avoid future mutes\n` +
+    `3. If you think mute was unfair → /admin\n\n` +
+    `<b>How to check mute duration?</b>\n` +
+    `Contact admin: /admin`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ban_warnings', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Ban & Mute', 'prob_ban')]
+  ]);
+
+  const message =
+    `❓ <b>HOW TO CHECK MY WARNINGS?</b>\n\n` +
+    `Use the /status command\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>In your status you'll see:</b>\n\n` +
+    `⚠️ Warnings: 1/3\n` +
+    `📊 Reports: 5\n\n` +
+    `<b>What this means:</b>\n\n` +
+    `• <b>Warnings</b> - from admins (max 3)\n` +
+    `• <b>Reports</b> - from community (ban at 30)\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ WARNING SYSTEM:</b>\n\n` +
+    `1/3 - ⚠️ First warning\n` +
+    `2/3 - ⚠️ Final warning (last chance!)\n` +
+    `3/3 - 🚫 Permanent ban + loss of rewards\n\n` +
+    `<b>📊 REPORT SYSTEM:</b>\n\n` +
+    `10 reports - 🔇 24h mute\n` +
+    `20 reports - 🔇 7 days mute\n` +
+    `30 reports - 🚫 Permanent ban\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>How to avoid warnings?</b>\n\n` +
+    `✅ Read /rules carefully\n` +
+    `✅ Be respectful to others\n` +
+    `✅ Don't spam or advertise\n` +
+    `✅ Stay on-topic\n` +
+    `✅ Help newcomers\n\n` +
+    `Check your status now: /status`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ban_system', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Ban & Mute', 'prob_ban')]
+  ]);
+
+  const message =
+    `📊 <b>HOW WARNING SYSTEM WORKS?</b>\n\n` +
+    `Two types of moderation:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>1️⃣ FROM ADMINS:</b>\n\n` +
+    `• 1st violation = ⚠️ Warning\n` +
+    `• 2nd violation = ⚠️ Final Warning\n` +
+    `• 3rd violation = 🚫 Permanent Ban\n\n` +
+    `Admins warn for:\n` +
+    `❌ Spam & flooding\n` +
+    `❌ Other project ads\n` +
+    `❌ Scam links\n` +
+    `❌ Harassment\n` +
+    `❌ NSFW content\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>2️⃣ FROM COMMUNITY (reports):</b>\n\n` +
+    `Command: /report (reply to violator's message)\n\n` +
+    `• 10 unique reports = 🔇 24h mute\n` +
+    `• 20 unique reports = 🔇 7 days mute\n` +
+    `• 30 unique reports = 🚫 Permanent ban\n\n` +
+    `Only UNIQUE users count!\n` +
+    `Same person can't report you multiple times\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ WHEN BANNED:</b>\n\n` +
+    `❌ Loss of airdrop position\n` +
+    `❌ Loss of all MAI rewards\n` +
+    `❌ Cannot restore old position\n` +
+    `❌ Removed from community\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Check your status: /status\n` +
+    `Community rules: /rules`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ban_appeal', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Ban & Mute', 'prob_ban')]
+  ]);
+
+  const message =
+    `⚖️ <b>HOW TO APPEAL BAN/MUTE?</b>\n\n` +
+    `If you believe punishment was unfair:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Step 1: Use /admin command</b>\n\n` +
+    `Example:\n` +
+    `<code>/admin I was banned for [reason], but I didn't violate rules because...</code>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Step 2: Provide details</b>\n\n` +
+    `Include in your message:\n` +
+    `• Why you think ban/mute is unfair\n` +
+    `• What exactly happened\n` +
+    `• Your telegram ID (found in /status)\n` +
+    `• Any relevant context\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>/admin command limits:</b>\n\n` +
+    `• 3 messages per day\n` +
+    `• 30 min cooldown between messages\n` +
+    `• Minimum 10 characters per message\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ IMPORTANT:</b>\n\n` +
+    `• Be polite and respectful\n` +
+    `• Admins will review your case\n` +
+    `• Decision is final\n` +
+    `• Spamming /admin = ignored\n` +
+    `• False appeals = permanent ignore\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Prevention is better than appeal!</b>\n\n` +
+    `Read community rules: /rules`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// NOTIFICATION PROBLEMS
+bot.action('prob_notif_not', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Notifications', 'prob_notifications')]
+  ]);
+
+  const message =
+    `🔕 <b>NOT RECEIVING BOT MESSAGES</b>\n\n` +
+    `Troubleshooting steps:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>1️⃣ Check if bot is blocked</b>\n\n` +
+    `• Go to bot's private chat\n` +
+    `• If you see "RESTART" or "UNBLOCK" button → click it\n` +
+    `• Then use /start\n\n` +
+    `<b>2️⃣ Start the bot first</b>\n\n` +
+    `• Open private chat with bot\n` +
+    `• Send /start command\n` +
+    `• Bot must be started to send you messages\n\n` +
+    `<b>3️⃣ Check Telegram notification settings</b>\n\n` +
+    `• Open bot chat\n` +
+    `• Tap bot name → 🔔 icon\n` +
+    `• Enable notifications\n\n` +
+    `<b>4️⃣ Check device notification settings</b>\n\n` +
+    `• Phone Settings → Notifications → Telegram\n` +
+    `• Make sure notifications are enabled\n\n` +
+    `<b>5️⃣ Check if you're in Archive/Muted</b>\n\n` +
+    `• Bot chat might be archived or muted\n` +
+    `• Unarchive and unmute if needed\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Test if bot works:</b>\n\n` +
+    `Send any command like /status or /help\n` +
+    `If bot responds → notifications work!\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still not receiving?</b>\n` +
+    `Contact admin: /admin`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_notif_enable', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Notifications', 'prob_notifications')]
+  ]);
+
+  const message =
+    `📬 <b>HOW TO ENABLE NOTIFICATIONS?</b>\n\n` +
+    `Step-by-step guide:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>📱 IN TELEGRAM APP:</b>\n\n` +
+    `<b>Step 1:</b> Open bot private chat\n\n` +
+    `<b>Step 2:</b> Tap bot name at top\n\n` +
+    `<b>Step 3:</b> Look for 🔔 bell icon\n\n` +
+    `<b>Step 4:</b> Make sure notifications are ON (not muted)\n\n` +
+    `<b>Step 5:</b> Choose notification sound/alert style\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>📱 IN DEVICE SETTINGS:</b>\n\n` +
+    `<b>For iOS:</b>\n` +
+    `Settings → Notifications → Telegram → Allow Notifications\n\n` +
+    `<b>For Android:</b>\n` +
+    `Settings → Apps → Telegram → Notifications → Enable\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>🔔 NOTIFICATION TYPES:</b>\n\n` +
+    `You'll receive notifications for:\n` +
+    `• Airdrop registration confirmation\n` +
+    `• Wallet change confirmation\n` +
+    `• Daily subscription warnings\n` +
+    `• Important announcements\n` +
+    `• Admin responses\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ Note:</b> You must /start the bot first!\n\n` +
+    `<b>Test notifications:</b>\n` +
+    `Use /status command - you should get instant response`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_back', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const mainMenu = Markup.inlineKeyboard([
+    [Markup.button.callback('📋 Registration Issues', 'prob_registration')],
+    [Markup.button.callback('💼 Wallet Problems', 'prob_wallet')],
+    [Markup.button.callback('📺 Subscription Issues', 'prob_subscriptions')],
+    [Markup.button.callback('🚫 Ban & Mute', 'prob_ban')],
+    [Markup.button.callback('🔔 Notifications & Alerts', 'prob_notifications')],
+    [Markup.button.callback('❓ Other Questions', 'prob_other')]
+  ]);
+
+  const message =
+    `🆘 <b>TROUBLESHOOTING & SOLUTIONS</b>\n\n` +
+    `Select a category to find solutions:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `📋 Registration Issues\n` +
+    `💼 Wallet Problems\n` +
+    `📺 Subscription Issues\n` +
+    `🚫 Ban & Mute\n` +
+    `🔔 Notifications & Alerts\n` +
+    `❓ Other Questions\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Can't find a solution?</b>\n` +
+    `Contact admin using /admin command`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...mainMenu });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// ============================================================
 // MILESTONE СИСТЕМА
 // ============================================================
 
@@ -3368,7 +4321,8 @@ bot.on(message('text'), async (ctx) => {
             `Old wallet: <code>${shortOld}</code>\n` +
             `New wallet: <code>${shortNew}</code>\n\n` +
             `Your Community Airdrop position <b>#${userStatus.position}</b> is now linked to your new wallet.\n\n` +
-            `Use /status to verify your details.`,
+            `Use /status to verify your details.\n` +
+            `Need to change again? Use /changewallet`,
             { parse_mode: 'HTML' }
           );
 
@@ -3453,7 +4407,8 @@ bot.on(message('text'), async (ctx) => {
         `❌ Lose your position #${registration.user.position}\n` +
         `❌ Your spot goes to next person\n` +
         `❌ Cannot restore old position\n\n` +
-        `Use /status anytime to verify your status.\n\n` +
+        `Use /status anytime to verify your status.\n` +
+        `Need to change wallet? Use /changewallet\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `<b>Thank you for joining MAI! 🚀</b>\n` +
         `Tokens will be distributed after official listing.`;
