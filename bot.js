@@ -58,14 +58,30 @@ async function checkSubscription(bot, channelId, userId) {
     const member = await bot.telegram.getChatMember(channelId, userId);
 
     // Логируем для отладки
-    console.log(`🔍 checkSubscription: userId=${userId}, channelId=${channelId}, status="${member.status}"`);
+    console.log(`🔍 checkSubscription: userId=${userId}, channelId=${channelId}, status="${member.status}", is_member=${member.is_member}`);
 
-    // Включаем 'restricted' - замьюченный пользователь всё ещё подписан, просто не может писать
-    const isSubscribed = ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
+    // Проверяем статус
+    if (['member', 'administrator', 'creator'].includes(member.status)) {
+      console.log(`🔍 checkSubscription результат: true (${member.status})`);
+      return true;
+    }
 
-    console.log(`🔍 checkSubscription результат: ${isSubscribed}`);
+    // Для статуса 'restricted' нужна дополнительная проверка
+    if (member.status === 'restricted') {
+      // Проверяем есть ли у юзера права (is_member)
+      // Если is_member = true - значит он В группе (но замучен)
+      // Если is_member = false - значит он ВЫШЕЛ из группы (но остался статус restricted)
+      const isMember = member.is_member !== false; // по умолчанию true если не указано
 
-    return isSubscribed;
+      console.log(`🔍 checkSubscription: restricted, is_member=${member.is_member}, результат=${isMember}`);
+
+      return isMember;
+    }
+
+    // left или kicked
+    console.log(`🔍 checkSubscription результат: false (${member.status})`);
+    return false;
+
   } catch (error) {
     console.log(`🔍 checkSubscription ОШИБКА: userId=${userId}, channelId=${channelId}, error="${error.message}"`);
     return false;
