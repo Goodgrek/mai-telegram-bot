@@ -964,6 +964,7 @@ Claim now! 🚀
 /airdrop - Register for community airdrop
 /nftairdrop - Airdrop NFT program (1,400 NFTs)
 /status - Check your status
+/changewallet - Change your wallet address
 /faq - Frequently asked questions
 /rules - Community rules
 /admin - Contact administrators (your message)
@@ -1082,7 +1083,7 @@ bot.command('airdrop', async (ctx) => {
           `2️⃣ Join @mainingmai_chat\n` +
           `3️⃣ Use /status to verify\n\n` +
           `💰 <b>Want to change your wallet?</b>\n` +
-          `Just send me your new Solana wallet address.\n\n` +
+          `Use /changewallet command to update your wallet address.\n\n` +
           `📊 Check status at https://miningmai.com`;
 
         return sendToPrivate(ctx, warningMessage, { parse_mode: 'HTML' });
@@ -1101,7 +1102,7 @@ bot.command('airdrop', async (ctx) => {
         `• Use /status command here\n` +
         `• Connect wallet at https://miningmai.com\n\n` +
         `💰 <b>Want to change your wallet?</b>\n` +
-        `Just send me your new Solana wallet address and I'll update it.\n\n` +
+        `Use /changewallet command to update your wallet address.\n\n` +
         `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`,
         { parse_mode: 'HTML' }
       );
@@ -1186,6 +1187,56 @@ bot.command('airdrop', async (ctx) => {
     console.log('✅ Запрос кошелька отправлен');
   } catch (error) {
     console.error('❌ Ошибка /airdrop:', error.message);
+    await sendToPrivate(ctx, '❌ An error occurred. Please try again later.');
+  }
+});
+
+bot.command('changewallet', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
+  console.log('✅ /changewallet получен от:', ctx.from.id, ctx.from.username);
+
+  const userId = ctx.from.id;
+
+  try {
+    const userStatus = await getUserStatus(userId);
+
+    if (!userStatus?.position || !userStatus?.wallet_address) {
+      return sendToPrivate(
+        ctx,
+        `❌ <b>You Haven't Registered Yet!</b>\n\n` +
+        `You need to register first before you can change your wallet.\n\n` +
+        `Use /airdrop to register.`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    // Устанавливаем awaiting_wallet для смены кошелька
+    await setAwaitingWallet(userId, true);
+
+    await sendToPrivate(
+      ctx,
+      `🔄 <b>CHANGE WALLET ADDRESS</b>\n\n` +
+      `Current wallet: <code>${userStatus.wallet_address}</code>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📝 <b>Send your NEW Solana wallet address:</b>\n\n` +
+      `⚠️ <b>IMPORTANT:</b>\n` +
+      `• Double-check the new address!\n` +
+      `• Wrong address = Lost tokens forever!\n` +
+      `• You can only change once per request\n\n` +
+      `Example format:\n` +
+      `<code>7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...</code>`,
+      { parse_mode: 'HTML' }
+    );
+
+    console.log('✅ Запрос смены кошелька отправлен');
+  } catch (error) {
+    console.error('❌ Ошибка /changewallet:', error.message);
     await sendToPrivate(ctx, '❌ An error occurred. Please try again later.');
   }
 });
@@ -1459,6 +1510,7 @@ bot.command('help', async (ctx) => {
 /nftairdrop - Airdrop NFT program (1,400 NFTs)
 /referral - Referral program ($500K USDT pool)
 /status - Check your airdrop registration status
+/changewallet - Change your wallet address
 
 ━━━━━━━━━━━━━━━━━━━━
 
