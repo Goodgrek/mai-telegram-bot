@@ -3203,14 +3203,22 @@ A: Use /admin command with your message
 }
 
 bot.on(message('text'), async (ctx) => {
-  if (config.ADMIN_IDS.includes(ctx.from.id)) return;
-  
   const userId = ctx.from.id;
   const text = ctx.message.text;
-  
-  console.log('📨 Сообщение от:', userId, 'Текст:', text.substring(0, 50));
-  
-  if (text.startsWith('/')) return;
+  const chatType = ctx.chat.type;
+
+  console.log('🔥 ОБРАБОТЧИК ТЕКСТА ВЫЗВАН!');
+  console.log('📨 Сообщение от:', userId, 'Тип чата:', chatType, 'Текст:', text.substring(0, 50));
+
+  if (config.ADMIN_IDS.includes(ctx.from.id)) {
+    console.log('⚠️ Это админ, пропускаю');
+    return;
+  }
+
+  if (text.startsWith('/')) {
+    console.log('⚠️ Это команда, пропускаю');
+    return;
+  }
   
   try {
     const userStatus = await getUserStatus(userId);
