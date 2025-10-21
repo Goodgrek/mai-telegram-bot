@@ -1833,7 +1833,7 @@ bot.command('adminstats', async (ctx) => {
     `);
     
     const recent = await pool.query(`
-      SELECT user_id, first_name, message_text, created_at, replied
+      SELECT user_id, first_name, message_text, created_at, replied, admin_reply, replied_at
       FROM admin_messages
       ORDER BY created_at DESC
       LIMIT 10
@@ -1852,7 +1852,17 @@ bot.command('adminstats', async (ctx) => {
       const status = msg.replied ? '✅' : '📬';
       const displayName = msg.first_name ? `${msg.first_name} (ID:${msg.user_id})` : `ID:${msg.user_id}`;
       const preview = msg.message_text.substring(0, 40) + '...';
-      message += `${i + 1}. ${status} ${displayName}\n"${preview}"\n\n`;
+      message += `${i + 1}. ${status} ${displayName}\n"${preview}"\n`;
+
+      if (msg.admin_reply) {
+        const replyPreview = msg.admin_reply.substring(0, 40) + (msg.admin_reply.length > 40 ? '...' : '');
+        const repliedDate = msg.replied_at ? new Date(msg.replied_at).toLocaleString('en-GB', { timeZone: 'UTC' }) : '';
+        message += `   ↪️ Reply: "${replyPreview}"`;
+        if (repliedDate) message += ` (${repliedDate})`;
+        message += `\n`;
+      }
+
+      message += `\n`;
     });
     
     await ctx.reply(message, { parse_mode: 'Markdown' });
@@ -1948,17 +1958,19 @@ bot.command('reply', async (ctx) => {
     await bot.telegram.sendMessage(
       targetUserId,
       `📨 *Response from MAI Administration*\n\n` +
-      `${replyText}\n\n` +
+      `\`\`\`\n${replyText}\n\`\`\`\n\n` +
       `━━━━━━━━━━━━━━━━━━━\n\n` +
       `If you have more questions, use /admin command.`,
       { parse_mode: 'Markdown' }
     );
     
-    // Помечаем сообщение как отвеченное
+    // Помечаем сообщение как отвеченное и сохраняем ответ
     try {
       await pool.query(
-        `UPDATE admin_messages SET replied = true WHERE user_id = $1 AND replied = false`,
-        [targetUserId]
+        `UPDATE admin_messages
+         SET replied = true, admin_reply = $1, replied_at = NOW()
+         WHERE user_id = $2 AND replied = false`,
+        [replyText, targetUserId]
       );
     } catch (err) {
       console.error('⚠️ Failed to update replied status:', err.message);
@@ -1968,7 +1980,7 @@ bot.command('reply', async (ctx) => {
     await ctx.reply(
       `✅ *Reply sent successfully!*\n\n` +
       `To: User ${targetUserId}\n` +
-      `Message: "${replyText.substring(0, 100)}${replyText.length > 100 ? '...' : ''}"`,
+      `Message:\n\`\`\`\n${replyText.substring(0, 100)}${replyText.length > 100 ? '...' : ''}\n\`\`\``,
       { parse_mode: 'Markdown' }
     );
     
