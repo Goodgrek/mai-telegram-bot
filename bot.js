@@ -2725,7 +2725,7 @@ bot.on('chat_member', async (ctx) => {
 });
 
 // Дополнительный обработчик для отслеживания выхода/присоединения к группе
-bot.on('message', async (ctx) => {
+bot.on('message', async (ctx, next) => {
   try {
     // ВЫХОД ИЗ ГРУППЫ
     if (ctx.message?.left_chat_member) {
@@ -2837,6 +2837,9 @@ bot.on('message', async (ctx) => {
   } catch (error) {
     console.error(`❌ Ошибка обработки события группы:`, error.message);
   }
+
+  // ВАЖНО: Передаем управление дальше для обработки текстовых сообщений
+  return next();
 });
 
 function getPresaleText() {
