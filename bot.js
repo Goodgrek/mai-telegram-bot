@@ -899,7 +899,14 @@ bot.use(async (ctx, next) => {
 });
 
 bot.catch((err, ctx) => {
-  return;
+  console.error('❌ ОШИБКА БОТА:', err.message);
+  console.error('Stack trace:', err.stack);
+  console.error('Context:', JSON.stringify({
+    updateType: ctx.updateType,
+    userId: ctx.from?.id,
+    chatType: ctx.chat?.type,
+    text: ctx.message?.text?.substring(0, 100)
+  }));
 });
 
 bot.start(async (ctx) => {
