@@ -1267,6 +1267,8 @@ bot.command('changewallet', async (ctx) => {
       `• Double-check the new address!\n` +
       `• Wrong address = Lost tokens forever!\n` +
       `• You can only change once per request\n\n` +
+      `💡 <b>Changed your mind?</b>\n` +
+      `• Just send your current wallet again\n\n` +
       `Example format:\n` +
       `<code>7xK3N9kZXxY2pQwM5vH8Sk1wmVE5...</code>`,
       { parse_mode: 'HTML' }
@@ -1751,11 +1753,11 @@ bot.command('admin', async (ctx) => {
   }
   
   const userLink = username ? `@${username}` : `User ${userId}`;
-  const adminNotification = 
+  const adminNotification =
     `📨 *NEW ADMIN MESSAGE*\n\n` +
   `*From:* ${userLink} (ID: \`${userId}\`)\n` +
   `*Time:* ${new Date().toLocaleString('en-GB', { timeZone: 'UTC' })} UTC\n\n` +
-  `*Message:*\n${messageText}\n\n` +
+  `*Message:*\n\`\`\`\n${messageText}\n\`\`\`\n\n` +
   `━━━━━━━━━━━━━━━━━━━\n\n` +
   `*Quick Actions:*\n` +
   `Reply: /reply ${userId} Your message here\n` +
