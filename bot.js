@@ -751,11 +751,11 @@ async function canSendAdminMessage(userId) {
   }
 }
 
-async function saveAdminMessage(userId, username, messageText) {
+async function saveAdminMessage(userId, firstName, messageText) {
   try {
     await pool.query(
-      `INSERT INTO admin_messages (user_id, username, message_text) VALUES ($1, $2, $3)`,
-      [userId, username, messageText]
+      `INSERT INTO admin_messages (user_id, first_name, message_text) VALUES ($1, $2, $3)`,
+      [userId, firstName, messageText]
     );
     
     await pool.query(
@@ -1833,7 +1833,7 @@ bot.command('adminstats', async (ctx) => {
     `);
     
     const recent = await pool.query(`
-      SELECT user_id, username, message_text, created_at, replied
+      SELECT user_id, first_name, message_text, created_at, replied
       FROM admin_messages
       ORDER BY created_at DESC
       LIMIT 10
@@ -1850,9 +1850,9 @@ bot.command('adminstats', async (ctx) => {
     
     recent.rows.forEach((msg, i) => {
       const status = msg.replied ? '✅' : '📬';
-      const username = msg.username ? `@${msg.username}` : `ID:${msg.user_id}`;
+      const displayName = msg.first_name ? `${msg.first_name} (ID:${msg.user_id})` : `ID:${msg.user_id}`;
       const preview = msg.message_text.substring(0, 40) + '...';
-      message += `${i + 1}. ${status} ${username}\n"${preview}"\n\n`;
+      message += `${i + 1}. ${status} ${displayName}\n"${preview}"\n\n`;
     });
     
     await ctx.reply(message, { parse_mode: 'Markdown' });
