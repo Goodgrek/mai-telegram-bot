@@ -56,9 +56,18 @@ const PRESALE_STAGES = [
 async function checkSubscription(bot, channelId, userId) {
   try {
     const member = await bot.telegram.getChatMember(channelId, userId);
+
+    // Логируем для отладки
+    console.log(`🔍 checkSubscription: userId=${userId}, channelId=${channelId}, status="${member.status}"`);
+
     // Включаем 'restricted' - замьюченный пользователь всё ещё подписан, просто не может писать
-    return ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
-  } catch {
+    const isSubscribed = ['member', 'administrator', 'creator', 'restricted'].includes(member.status);
+
+    console.log(`🔍 checkSubscription результат: ${isSubscribed}`);
+
+    return isSubscribed;
+  } catch (error) {
+    console.log(`🔍 checkSubscription ОШИБКА: userId=${userId}, channelId=${channelId}, error="${error.message}"`);
     return false;
   }
 }
@@ -2856,7 +2865,7 @@ bot.on('message', async (ctx, next) => {
 
             // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
             const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
-            const chatSubscribed = userStatus.is_subscribed_chat; // Присоединился к чату
+            const chatSubscribed = true; // Присоединился к чату - ВСЕГДА TRUE!
 
             await updateSubscription(userId, newsSubscribed, chatSubscribed);
             console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
