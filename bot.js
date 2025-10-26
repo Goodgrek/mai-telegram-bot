@@ -483,13 +483,80 @@ async function getUserStatus(userId) {
 
 async function updateSubscription(userId, newsSubscribed, chatSubscribed) {
   try {
+    // Получаем старые значения + проверяем есть ли реферер
+    const oldData = await pool.query(
+      'SELECT is_subscribed_news, is_subscribed_chat, referrer_id FROM telegram_users WHERE telegram_id = $1',
+      [userId]
+    );
+
+    if (oldData.rows.length === 0) {
+      // Юзера нет в БД - просто выходим
+      return;
+    }
+
+    const user = oldData.rows[0];
+    const wasActive = user.is_subscribed_news && user.is_subscribed_chat;
+    const isActiveNow = newsSubscribed && chatSubscribed;
+
+    // Обновляем подписки
     await pool.query(
-      `UPDATE telegram_users 
+      `UPDATE telegram_users
        SET is_subscribed_news = $1, is_subscribed_chat = $2, last_check = NOW()
        WHERE telegram_id = $3`,
       [newsSubscribed, chatSubscribed, userId]
     );
-  } catch {}
+
+    // Если у юзера есть реферер И статус изменился → обновляем баланс реферера
+    if (user.referrer_id && wasActive !== isActiveNow) {
+      if (isActiveNow) {
+        // Подписался на ОБА канала → реферер получает +1000
+        await pool.query(
+          'UPDATE telegram_users SET referral_reward_balance = referral_reward_balance + 1000 WHERE telegram_id = $1',
+          [user.referrer_id]
+        );
+
+        console.log(`✅ Реферер ${user.referrer_id} получил +1000 MAI за реферала ${userId}`);
+
+        // Уведомление рефереру
+        try {
+          await bot.telegram.sendMessage(user.referrer_id,
+            `✅ <b>Referral Reward!</b>\n\n` +
+            `Your referral subscribed to both channels!\n` +
+            `<b>+1,000 MAI</b> 🎁\n\n` +
+            `Check your stats: /referral`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          console.log(`⚠️ Не удалось отправить уведомление рефереру ${user.referrer_id}`);
+        }
+
+      } else if (wasActive) {
+        // Отписался от хотя бы одного канала → реферер теряет -1000
+        await pool.query(
+          'UPDATE telegram_users SET referral_reward_balance = referral_reward_balance - 1000 WHERE telegram_id = $1',
+          [user.referrer_id]
+        );
+
+        console.log(`❌ Реферер ${user.referrer_id} потерял -1000 MAI (реферал ${userId} отписался)`);
+
+        // Уведомление рефереру
+        try {
+          await bot.telegram.sendMessage(user.referrer_id,
+            `❌ <b>Referral Lost!</b>\n\n` +
+            `Your referral unsubscribed from channels.\n` +
+            `<b>-1,000 MAI</b>\n\n` +
+            `Check your stats: /referral`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          console.log(`⚠️ Не удалось отправить уведомление рефереру ${user.referrer_id}`);
+        }
+      }
+    }
+
+  } catch (err) {
+    console.error('❌ Ошибка updateSubscription:', err);
+  }
 }
 
 async function addWarning(userId) {
@@ -971,6 +1038,14 @@ View details: /presale
 ❌ Unsubscribe = Position lost!
 Claim now! 🚀
 
+🎁 COMMUNITY REFERRAL PROGRAM:
+💰 Earn 1,000 MAI per friend!
+✅ Friend subscribes to BOTH channels = You earn!
+✅ Unlimited invites - no cap!
+✅ Instant rewards when friend subscribes
+⚠️ Friend unsubscribes = Reward removed
+👉 Command: /referral
+
 🎁Presale Airdrop: Up to 1,000,000 MAI
 - Complete tasks during presale
 - Command: /tasks
@@ -979,9 +1054,9 @@ Claim now! 🚀
 - Complete tasks during presale
 - Command: /nftairdrop
 
-🎁Referral Program: Earn USDT
+🎁Presale Referral: Earn USDT
 - $500,000 reward pool
-- Command: /referral
+- Command: /refpresale
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -990,8 +1065,9 @@ Claim now! 🚀
 /presale - View all presale stages
 /nft - NFT reward levels
 /tasks - Presale airdrop program
-/referral - Earn USDT rewards
 /airdrop - Register for community airdrop
+/referral - Invite friends, earn MAI tokens
+/refpresale - Presale referral (earn USDT)
 /nftairdrop - Airdrop NFT program (1,400 NFTs)
 /status - Check your status
 /changewallet - Change your wallet address
@@ -1033,6 +1109,15 @@ Let's decentralize AI together! 🤖⚡`;
     const username = ctx.from.username || 'no_username';
     const firstName = ctx.from.first_name || 'User';
 
+    // Проверяем реферальный параметр
+    const startPayload = ctx.startPayload; // "ref_12345"
+    let referrerId = null;
+
+    if (startPayload && startPayload.startsWith('ref_')) {
+      referrerId = parseInt(startPayload.replace('ref_', ''));
+      console.log(`🔗 Реферальная ссылка: referrer_id = ${referrerId}`);
+    }
+
     // Проверяем существует ли пользователь в БД
     const existingUser = await getUserStatus(userId);
 
@@ -1043,14 +1128,14 @@ Let's decentralize AI together! 🤖⚡`;
 
       console.log(`🆕 НОВЫЙ пользователь ${userId}: API проверка - news=${newsSubscribed}, chat=${chatSubscribed}`);
 
-      // Создаём запись с проверенными подписками
+      // Создаём запись с проверенными подписками + referrer_id (если есть)
       await pool.query(
-        `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [userId, username, firstName, newsSubscribed, chatSubscribed]
+        `INSERT INTO telegram_users (telegram_id, username, first_name, is_subscribed_news, is_subscribed_chat, referrer_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [userId, username, firstName, newsSubscribed, chatSubscribed, referrerId]
       );
 
-      console.log(`✅ Новый пользователь ${userId} добавлен в БД с подписками из API`);
+      console.log(`✅ Новый пользователь ${userId} добавлен в БД с подписками из API${referrerId ? ` (реферер: ${referrerId})` : ''}`);
     } else {
       // СУЩЕСТВУЮЩИЙ пользователь - НЕ перезаписываем подписки!
       // Подписки обновляются только через события chat_member/new_chat_members/left_chat_member
@@ -1375,35 +1460,26 @@ bot.command('status', async (ctx) => {
 
   try {
     const userStatus = await getUserStatus(userId);
-    
-    if (!userStatus?.position) {
-      return sendToPrivate(
-        ctx,
-        `❌ <b>Not Registered</b>\n\n` +
-        `You haven't registered for the community airdrop yet.\n\n` +
-        `Use /airdrop to register and claim your ${config.AIRDROP_REWARD.toLocaleString()} MAI tokens!`,
-        { parse_mode: 'HTML' }
-      );
-    }
-    
+
     // Используем данные ИЗ БД (без проверки через API и без обновления)
     // БД обновляется автоматически через события chat_member/left_chat_member и CRON в 00:00 UTC
     const newsSubscribed = userStatus.is_subscribed_news;
     const chatSubscribed = userStatus.is_subscribed_chat;
-    
-    const isActive = newsSubscribed && chatSubscribed && !userStatus.banned;
-    const isInTop20K = userStatus.position <= config.AIRDROP_LIMIT;
+
+    const hasPosition = userStatus?.position ? true : false;
+    const isActive = hasPosition && newsSubscribed && chatSubscribed && !userStatus.banned;
+    const isInTop20K = hasPosition && userStatus.position <= config.AIRDROP_LIMIT;
     const rewardAmount = (isActive && isInTop20K) ? config.AIRDROP_REWARD.toLocaleString() : '0';
-    const statusEmoji = isActive ? '✅' : '❌';
-    const statusText = isActive ? 'ACTIVE' : 'INACTIVE';
+    const statusEmoji = isActive ? '✅' : (hasPosition ? '❌' : '➖');
+    const statusText = isActive ? 'ACTIVE' : (hasPosition ? 'INACTIVE' : 'NOT REGISTERED');
 
     let warnings = '';
-    if (!newsSubscribed) warnings += '\n⚠️ Subscribe to @mai_news to keep your position!';
-    if (!chatSubscribed) warnings += '\n⚠️ Join @mainingmai_chat to keep your position!';
+    if (hasPosition && !newsSubscribed) warnings += '\n⚠️ Subscribe to @mai_news to keep your position!';
+    if (hasPosition && !chatSubscribed) warnings += '\n⚠️ Join @mainingmai_chat to keep your position!';
     if (!userStatus.wallet_address) warnings += '\n⚠️ Wallet not linked - send your wallet address!';
 
     let queueInfo = '';
-    if (!isInTop20K) {
+    if (hasPosition && !isInTop20K) {
       const peopleAhead = userStatus.position - config.AIRDROP_LIMIT;
       queueInfo = `\n\n💡 *YOU'RE IN THE QUEUE*\n` +
         `You're currently at position #${userStatus.position}.\n` +
@@ -1412,34 +1488,169 @@ bot.command('status', async (ctx) => {
         `Keep your subscriptions active to maintain your queue position!`;
     }
 
+    // Получаем статистику рефералов
+    const referralStats = await pool.query(
+      `SELECT
+        COUNT(*) as total_invited,
+        COUNT(*) FILTER (WHERE is_subscribed_news = true AND is_subscribed_chat = true) as active_now
+       FROM telegram_users
+       WHERE referrer_id = $1`,
+      [userId]
+    );
+
+    const totalReferrals = parseInt(referralStats.rows[0].total_invited) || 0;
+    const activeReferrals = parseInt(referralStats.rows[0].active_now) || 0;
+    const referralBalance = userStatus.referral_reward_balance || 0;
+
+    let referralSection = '';
+    if (totalReferrals > 0 || referralBalance !== 0) {
+      referralSection = `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎁 <b>REFERRAL REWARDS</b>\n\n` +
+        `💰 Balance: <b>${referralBalance.toLocaleString()} MAI</b>\n` +
+        `👥 Total Invited: ${totalReferrals}\n` +
+        `✅ Active Now: ${activeReferrals}\n\n`;
+    }
+
+    // Формируем секцию аирдропа
+    let airdropSection = '';
+    if (hasPosition) {
+      airdropSection =
+        `📊 <b>COMMUNITY AIRDROP STATUS</b>\n\n` +
+        `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        `📅 Registered: ${new Date(userStatus.registered_at).toLocaleDateString()}\n` +
+        `⚠️ <b>Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive && hasPosition ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\n\nYou have until the next daily check at <b>00:00 UTC</b> to resubscribe to the required channels. If you don't resubscribe before then, you will permanently lose your position #${userStatus.position}!\n\nResubscribe NOW to keep your spot!` : ''}\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    } else {
+      airdropSection =
+        `📊 <b>COMMUNITY AIRDROP STATUS</b>\n\n` +
+        `⚠️ <b>Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
+        `You haven't registered for the community airdrop yet.\n` +
+        `Use /airdrop to register and claim ${config.AIRDROP_REWARD.toLocaleString()} MAI!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    }
+
     await sendToPrivate(
       ctx,
-      `📊 <b>YOUR COMMUNITY AIRDROP STATUS</b>\n\n` +
-      `👤 Username: @${userStatus.username}\n` +
-      `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-      `📅 Registered: ${new Date(userStatus.registered_at).toLocaleDateString()}\n\n` +
+      `📊 <b>YOUR STATUS</b>\n\n` +
+      `👤 Username: @${userStatus.username}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `⚠️ <b>Registration Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📺 <b>Required Subscriptions:</b>\n` +
+      airdropSection +
+      `📺 <b>Subscriptions:</b>\n` +
       `${newsSubscribed ? '✅' : '❌'} News Channel (@mai_news)\n` +
       `${chatSubscribed ? '✅' : '❌'} Community Chat (@mainingmai_chat)\n\n` +
       `💼 <b>Wallet:</b> ${userStatus.wallet_address ? `<code>${userStatus.wallet_address}</code>` : '❌ Not linked'}\n` +
-      `${userStatus.wallet_address ? `   Use /changewallet to update your wallet address\n` : ``}\n` +
+      `${userStatus.wallet_address ? `   Use /changewallet to update\n` : ``}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `⚠️ Warnings: ${userStatus.warnings}/${config.WARN_LIMIT}\n` +
-      `📊 Reports: ${userStatus.reports_received}\n\n` +
+      `⚠️ Warnings: ${userStatus.warnings || 0}/${config.WARN_LIMIT}\n` +
+      `📊 Reports: ${userStatus.reports_received || 0}\n\n` +
+      `${referralSection}` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\n\nYou have until the next daily check at <b>00:00 UTC</b> to resubscribe to the required channels. If you don't resubscribe before then, you will permanently lose your position #${userStatus.position}!\n\nResubscribe NOW to keep your spot!` : ''}\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🌐 <b>Check status on website:</b>\n` +
-      `Connect your wallet at https://miningmai.com`,
+      `🌐 <b>More info:</b> https://miningmai.com`,
       { parse_mode: 'HTML' }
     );
   } catch (error) {
     console.error('❌ Ошибка /status:', error.message);
     console.error('Stack:', error.stack);
     await sendToPrivate(ctx, '❌ Error checking status. Try again later.');
+  }
+});
+
+bot.command('referral', async (ctx) => {
+  if (ctx.chat.type !== 'private') {
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      console.log('Не удалось удалить сообщение команды');
+    }
+  }
+
+  const userId = ctx.from.id;
+
+  try {
+    // Получаем данные юзера
+    const userStatus = await getUserStatus(userId);
+
+    if (!userStatus) {
+      return sendToPrivate(
+        ctx,
+        `❌ <b>Not Found</b>\n\n` +
+        `Please start the bot first: /start`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    // Проверяем есть ли кошелек
+    if (!userStatus.wallet_address) {
+      return sendToPrivate(
+        ctx,
+        `🎁 <b>REFERRAL PROGRAM</b>\n\n` +
+        `📝 To participate in the referral program, please provide your Solana wallet address.\n\n` +
+        `💰 You'll earn <b>1,000 MAI</b> for every friend who:\n` +
+        `✅ Subscribes to @mai_news\n` +
+        `✅ Subscribes to @mainingmai_chat\n\n` +
+        `⚠️ If your referral unsubscribes, you'll lose the 1,000 MAI reward.\n\n` +
+        `📝 <b>Please send your Solana wallet address to continue:</b>`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    // Получаем статистику рефералов
+    const referralStats = await pool.query(
+      `SELECT
+        COUNT(*) as total_invited,
+        COUNT(*) FILTER (WHERE is_subscribed_news = true AND is_subscribed_chat = true) as active_now
+       FROM telegram_users
+       WHERE referrer_id = $1`,
+      [userId]
+    );
+
+    const totalInvited = parseInt(referralStats.rows[0].total_invited) || 0;
+    const activeNow = parseInt(referralStats.rows[0].active_now) || 0;
+    const currentBalance = userStatus.referral_reward_balance || 0;
+
+    // Генерируем реферальную ссылку
+    const botUsername = ctx.botInfo.username;
+    const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
+
+    await sendToPrivate(
+      ctx,
+      `🎁 <b>YOUR REFERRAL PROGRAM</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔗 <b>Your Referral Link:</b>\n` +
+      `<code>${referralLink}</code>\n\n` +
+      `📋 <i>Share this link with friends to earn rewards!</i>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📊 <b>STATISTICS</b>\n\n` +
+      `👥 Total Invited: <b>${totalInvited}</b>\n` +
+      `✅ Active Now: <b>${activeNow}</b>\n` +
+      `💰 Current Balance: <b>${currentBalance.toLocaleString()} MAI</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `💡 <b>HOW IT WORKS:</b>\n\n` +
+      `1️⃣ Share your referral link\n` +
+      `2️⃣ Friend subscribes to BOTH channels:\n` +
+      `   • @mai_news\n` +
+      `   • @mainingmai_chat\n` +
+      `3️⃣ You get <b>+1,000 MAI</b> 🎁\n\n` +
+      `⚠️ If friend unsubscribes from ANY channel:\n` +
+      `   • You lose <b>-1,000 MAI</b>\n\n` +
+      `✅ If friend resubscribes:\n` +
+      `   • You get <b>+1,000 MAI</b> again!\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `💼 <b>Wallet Address:</b>\n` +
+      `<code>${userStatus.wallet_address}</code>\n\n` +
+      `💸 <b>Reward Distribution:</b>\n` +
+      `Within 10 days after token listing\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎯 Start sharing and earn MAI tokens! 🚀`,
+      { parse_mode: 'HTML' }
+    );
+
+  } catch (error) {
+    console.error('❌ Ошибка /referral:', error.message);
+    console.error('Stack:', error.stack);
+    await sendToPrivate(ctx, '❌ Error loading referral info. Try again later.');
   }
 });
 
@@ -1488,7 +1699,7 @@ bot.command('tasks', async (ctx) => {
   }
 });
 
-bot.command('referral', async (ctx) => {
+bot.command('refpresale', async (ctx) => {
   if (ctx.chat.type !== 'private') {
     try {
       await ctx.deleteMessage();
@@ -1499,7 +1710,7 @@ bot.command('referral', async (ctx) => {
   try {
     await sendToPrivate(ctx, getReferralText(), { parse_mode: 'Markdown' });
   } catch (error) {
-    console.error('❌ Ошибка /referral:', error.message);
+    console.error('❌ Ошибка /refpresale:', error.message);
   }
 });
 
@@ -1552,9 +1763,11 @@ bot.command('help', async (ctx) => {
 
 /airdrop - Community airdrop (5,000 MAI FREE)
   → First 20,000 participants. After 20K? Join the queue!
+/referral - Community referral program (1,000 MAI per friend)
+  → Earn MAI tokens by inviting friends!
 /tasks - Presale airdrop program (up to 1M MAI)
 /nftairdrop - Airdrop NFT program (1,400 NFTs)
-/referral - Referral program ($500K USDT pool)
+/refpresale - Presale referral ($500K USDT pool)
 /status - Check your airdrop registration status
 /changewallet - Change your wallet address
 
@@ -1613,6 +1826,7 @@ bot.command('problems', async (ctx) => {
     [Markup.button.callback('📋 Registration Issues', 'prob_registration')],
     [Markup.button.callback('💼 Wallet Problems', 'prob_wallet')],
     [Markup.button.callback('📺 Subscription Issues', 'prob_subscriptions')],
+    [Markup.button.callback('🎁 Community Referral', 'prob_referral')],
     [Markup.button.callback('🚫 Ban & Mute', 'prob_ban')],
     [Markup.button.callback('🔔 Notifications & Alerts', 'prob_notifications')],
     [Markup.button.callback('❓ Other Questions', 'prob_other')]
@@ -1625,6 +1839,7 @@ bot.command('problems', async (ctx) => {
     `📋 Registration Issues\n` +
     `💼 Wallet Problems\n` +
     `📺 Subscription Issues\n` +
+    `🎁 Community Referral\n` +
     `🚫 Ban & Mute\n` +
     `🔔 Notifications & Alerts\n` +
     `❓ Other Questions\n\n` +
@@ -2469,24 +2684,8 @@ bot.command('pin', async (ctx) => {
   
   const keyboard = Markup.inlineKeyboard([
     [
-      Markup.button.url('🎁 Airdrop (5K MAI)', `https://t.me/${ctx.botInfo.username}?start=airdrop`),
+      Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=pin`),
       Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
-    ],
-    [
-      Markup.button.callback('📋 Presale Stages', 'cmd_presale'),
-      Markup.button.callback('🎨 NFT Levels', 'cmd_nft')
-    ],
-    [
-      Markup.button.callback('🎁 Airdrop NFT', 'cmd_nftairdrop'),
-      Markup.button.url('🎨 Stickers', 'https://t.me/addstickers/MAImining')
-    ],
-    [
-      Markup.button.callback('🎁 Presale Airdrop', 'cmd_tasks'),
-      Markup.button.callback('💵 Referral', 'cmd_referral')
-    ],
-    [
-      Markup.button.callback('❓ FAQ', 'cmd_faq'),
-      Markup.button.callback('📋 Rules', 'cmd_rules')
     ],
     [Markup.button.url('📱 News Channel', 'https://t.me/mai_news')]
   ]);
@@ -2510,6 +2709,12 @@ Decentralized AI Platform
 ❌ Unsubscribe = Position lost!
 Claim now! 🚀
 
+🎁 COMMUNITY REFERRAL:
+💰 Earn 1,000 MAI per friend!
+👉 Friend subscribes = You earn
+👉 Unlimited invites!
+Command: /referral
+
 💎 PRESALE:
 🪙 7B • 14 stages • 🔥 80% OFF
 💵 $0.0005 → $0.0020
@@ -2517,7 +2722,7 @@ Claim now! 🚀
 
 🎯 EARN MORE:
 🏆 800M MAI • 🎨 1,400 NFTs • 💵 USDT
-/tasks • /nftairdrop • /referral
+/tasks • /nftairdrop • /refpresale
 
 🛡️ RULES:
 ✅ Discussions OK 
@@ -2564,7 +2769,7 @@ bot.action(/cmd_(.+)/, async (ctx) => {
     await sendToPrivate(ctx, text);
   },
   tasks: () => sendToPrivate(ctx, getTasksText(), { parse_mode: 'Markdown' }),
-  referral: () => sendToPrivate(ctx, getReferralText(), { parse_mode: 'Markdown' }),
+  refpresale: () => sendToPrivate(ctx, getReferralText(), { parse_mode: 'Markdown' }),
   faq: () => sendToPrivate(ctx, getFaqText()),
   rules: () => sendToPrivate(ctx, getRulesText(), { parse_mode: 'Markdown' })
 };
@@ -2649,6 +2854,36 @@ bot.action('prob_subscriptions', async (ctx) => {
     `❌ Says I'm not subscribed but I am\n` +
     `📱 Can't join channel/chat\n` +
     `🔄 Subscription status not updating\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_referral', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('❓ How does it work?', 'prob_ref_how')],
+    [Markup.button.callback('🔗 Can\'t get referral link', 'prob_ref_link')],
+    [Markup.button.callback('💰 Reward not credited', 'prob_ref_reward')],
+    [Markup.button.callback('➖ Lost reward (friend unsubscribed)', 'prob_ref_lost')],
+    [Markup.button.callback('📊 How to check my stats?', 'prob_ref_stats')],
+    [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
+  ]);
+
+  const message =
+    `🎁 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
+    `Select your question:\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `❓ How does it work?\n` +
+    `🔗 Can't get referral link\n` +
+    `💰 Reward not credited\n` +
+    `➖ Lost reward (friend unsubscribed)\n` +
+    `📊 How to check my stats?\n\n` +
     `━━━━━━━━━━━━━━━━━━━━`;
 
   try {
@@ -3459,6 +3694,7 @@ bot.action('prob_back', async (ctx) => {
     [Markup.button.callback('📋 Registration Issues', 'prob_registration')],
     [Markup.button.callback('💼 Wallet Problems', 'prob_wallet')],
     [Markup.button.callback('📺 Subscription Issues', 'prob_subscriptions')],
+    [Markup.button.callback('🎁 Community Referral', 'prob_referral')],
     [Markup.button.callback('🚫 Ban & Mute', 'prob_ban')],
     [Markup.button.callback('🔔 Notifications & Alerts', 'prob_notifications')],
     [Markup.button.callback('❓ Other Questions', 'prob_other')]
@@ -3471,6 +3707,7 @@ bot.action('prob_back', async (ctx) => {
     `📋 Registration Issues\n` +
     `💼 Wallet Problems\n` +
     `📺 Subscription Issues\n` +
+    `🎁 Community Referral\n` +
     `🚫 Ban & Mute\n` +
     `🔔 Notifications & Alerts\n` +
     `❓ Other Questions\n\n` +
@@ -3480,6 +3717,226 @@ bot.action('prob_back', async (ctx) => {
 
   try {
     await ctx.editMessageText(message, { parse_mode: 'HTML', ...mainMenu });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+// ============================================================
+// REFERRAL PROGRAM PROBLEMS - DETAILED ANSWERS
+// ============================================================
+
+bot.action('prob_ref_how', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Referral', 'prob_referral')]
+  ]);
+
+  const message =
+    `❓ <b>HOW COMMUNITY REFERRAL WORKS</b>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>📋 Step-by-Step:</b>\n\n` +
+    `1️⃣ Get your wallet address ready\n` +
+    `   • Use /referral to get your link\n` +
+    `   • Bot will ask for Solana wallet if you don't have one saved\n\n` +
+    `2️⃣ Share your referral link\n` +
+    `   • Link format: t.me/mai_verify_bot?start=ref_YOURID\n` +
+    `   • Share on social media, with friends, etc.\n\n` +
+    `3️⃣ Friend clicks your link and subscribes\n` +
+    `   • Must subscribe to @mai_news\n` +
+    `   • Must subscribe to @mainingmai_chat\n` +
+    `   • <b>BOTH channels required!</b>\n\n` +
+    `4️⃣ You get rewarded!\n` +
+    `   • <b>+1,000 MAI</b> instantly credited\n` +
+    `   • Notification sent to you\n` +
+    `   • Check balance: /referral or /status\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ Important Rules:</b>\n\n` +
+    `• Friend must be NEW user (never used bot before)\n` +
+    `• Friend must stay subscribed to BOTH channels\n` +
+    `• If friend unsubscribes from ANY channel → you lose -1,000 MAI\n` +
+    `• If friend resubscribes → you get +1,000 MAI again!\n` +
+    `• Unlimited referrals - no cap!\n` +
+    `• Rewards paid within 10 days after token listing\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💡 <b>Example:</b>\n` +
+    `You invite 10 friends, 8 subscribe → +8,000 MAI\n` +
+    `2 friends unsubscribe → -2,000 MAI\n` +
+    `Current balance: 6,000 MAI 🎁`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ref_link', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Referral', 'prob_referral')]
+  ]);
+
+  const message =
+    `🔗 <b>CAN'T GET REFERRAL LINK</b>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Problem:</b> Can't get my referral link\n\n` +
+    `<b>Solution:</b>\n\n` +
+    `1️⃣ <b>Check if you have a wallet</b>\n` +
+    `   • Use /referral command\n` +
+    `   • Bot will ask for Solana wallet if needed\n` +
+    `   • You MUST provide wallet before getting link\n\n` +
+    `2️⃣ <b>Send valid Solana wallet address</b>\n` +
+    `   • 32-44 characters long\n` +
+    `   • Example: DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK\n` +
+    `   • Get wallet from: Phantom, Solflare, etc.\n\n` +
+    `3️⃣ <b>After wallet is saved</b>\n` +
+    `   • Use /referral again\n` +
+    `   • You'll see your unique link\n` +
+    `   • Copy and share it!\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Still having issues?</b>\n` +
+    `• Make sure you started the bot: /start\n` +
+    `• Try /changewallet if wallet was rejected\n` +
+    `• Contact admin: /admin if problem persists`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ref_reward', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Referral', 'prob_referral')]
+  ]);
+
+  const message =
+    `💰 <b>REWARD NOT CREDITED</b>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Why reward might not show:</b>\n\n` +
+    `1️⃣ <b>Friend not subscribed to BOTH channels</b>\n` +
+    `   • Check: @mai_news AND @mainingmai_chat\n` +
+    `   • Reward only credited when BOTH subscribed\n` +
+    `   • If only 1 channel → no reward\n\n` +
+    `2️⃣ <b>Friend already used bot before</b>\n` +
+    `   • Referrals only count for NEW users\n` +
+    `   • If friend used bot before → won't count\n` +
+    `   • Each Telegram ID can only be referred once\n\n` +
+    `3️⃣ <b>Need to wait for subscription check</b>\n` +
+    `   • Real-time: usually instant\n` +
+    `   • Daily check: 00:00 UTC\n` +
+    `   • Wait 1-2 minutes after friend subscribes\n\n` +
+    `4️⃣ <b>Friend was a bot</b>\n` +
+    `   • Bot accounts don't count\n` +
+    `   • Must be real Telegram user\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>How to check:</b>\n` +
+    `• Use /referral to see stats\n` +
+    `• "Total Invited" = how many clicked your link\n` +
+    `• "Active Now" = how many subscribed to BOTH\n` +
+    `• "Balance" = your current MAI rewards\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💡 <b>Reminder:</b> Rewards are paid within 10 days after token listing, not immediately to wallet!`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ref_lost', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Referral', 'prob_referral')]
+  ]);
+
+  const message =
+    `➖ <b>LOST REWARD (FRIEND UNSUBSCRIBED)</b>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>This is NORMAL behavior!</b>\n\n` +
+    `Community Referral rewards are <b>dynamic</b>:\n\n` +
+    `✅ <b>Friend subscribes to BOTH channels</b>\n` +
+    `   • You get: +1,000 MAI\n` +
+    `   • Notification: "Referral Reward!"\n\n` +
+    `❌ <b>Friend unsubscribes from ANY channel</b>\n` +
+    `   • You lose: -1,000 MAI\n` +
+    `   • Notification: "Referral Lost!"\n\n` +
+    `✅ <b>Friend resubscribes</b>\n` +
+    `   • You get back: +1,000 MAI\n` +
+    `   • Can happen multiple times!\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Why this system?</b>\n\n` +
+    `• Encourages quality referrals\n` +
+    `• Keeps community engaged\n` +
+    `• Rewards only active subscribers\n` +
+    `• Prevents spam/bot accounts\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>What to do:</b>\n\n` +
+    `1️⃣ Remind your friends to stay subscribed\n` +
+    `2️⃣ Explain rewards are after listing\n` +
+    `3️⃣ Share value of MAI community\n` +
+    `4️⃣ Keep inviting new people!\n\n` +
+    `💡 Your balance can go up and down - this is by design!`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ref_stats', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Referral', 'prob_referral')]
+  ]);
+
+  const message =
+    `📊 <b>HOW TO CHECK REFERRAL STATS</b>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Method 1: /referral command</b>\n\n` +
+    `Shows complete referral info:\n` +
+    `• 🔗 Your referral link\n` +
+    `• 👥 Total Invited (all who clicked link)\n` +
+    `• ✅ Active Now (subscribed to BOTH channels)\n` +
+    `• 💰 Current Balance (MAI tokens earned)\n` +
+    `• 💼 Wallet address for payouts\n` +
+    `• 📋 How the program works\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Method 2: /status command</b>\n\n` +
+    `Shows referral section (if you have referrals):\n` +
+    `• 💰 Balance\n` +
+    `• 👥 Total Invited\n` +
+    `• ✅ Active Now\n\n` +
+    `Plus your airdrop status, subscriptions, etc.\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>Understanding the stats:</b>\n\n` +
+    `<b>Total Invited</b> = All users who:\n` +
+    `• Clicked your referral link\n` +
+    `• Started the bot\n` +
+    `• Includes inactive users\n\n` +
+    `<b>Active Now</b> = Users who:\n` +
+    `• Are subscribed to @mai_news\n` +
+    `• Are subscribed to @mainingmai_chat\n` +
+    `• Currently earning you MAI\n\n` +
+    `<b>Current Balance</b> = Your MAI rewards:\n` +
+    `• Active Now × 1,000 MAI\n` +
+    `• Can decrease if friends unsubscribe\n` +
+    `• Paid within 10 days after listing\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💡 Check stats anytime with /referral or /status!`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
   } catch (error) {
     console.error('❌ Error editing message:', error.message);
   }
