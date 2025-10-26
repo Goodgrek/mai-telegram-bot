@@ -627,13 +627,15 @@ async function banUser(userId, reason = 'Violation of rules', chatId = null) {
 
     // Отправляем уведомление пользователю
     try {
+      const referralBalance = userStatus?.referral_reward_balance || 0;
+
       await bot.telegram.sendMessage(
         userId,
         `🚫 <b>YOU HAVE BEEN BANNED</b>\n\n` +
         `Status: <b>PERMANENTLY BANNED</b>\n\n` +
         `Reason: ${reason}\n\n` +
         `━━━━━━━━━━━━━━━━━━━\n\n` +
-        `You cannot participate in airdrops or other activities.${hadPosition ? `\n\nYour Community Airdrop position #${hadPosition} has been removed.` : ''}\n\n` +
+        `You cannot participate in airdrops or other activities.${hadPosition ? `\n\nYour Community Airdrop position #${hadPosition} has been removed.` : ''}${referralBalance > 0 ? `\n\n⚠️ Your referral rewards (${referralBalance.toLocaleString()} MAI) will NOT be paid out.` : ''}\n\n` +
         `If you believe this is a mistake, contact support.`,
         { parse_mode: 'HTML' }
       );
@@ -1711,6 +1713,7 @@ bot.command('referral', async (ctx) => {
       `<code>${userStatus.wallet_address}</code>\n\n` +
       `💸 <b>Reward Distribution:</b>\n` +
       `Within 10 days after token listing\n\n` +
+      `⚠️ <b>IMPORTANT:</b> Ban = No rewards\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🎯 Start sharing and earn MAI tokens! 🚀`,
       { parse_mode: 'HTML' }
@@ -2941,6 +2944,7 @@ bot.action('prob_referral', async (ctx) => {
     [Markup.button.callback('💰 Reward not credited', 'prob_ref_reward')],
     [Markup.button.callback('➖ Lost reward (friend unsubscribed)', 'prob_ref_lost')],
     [Markup.button.callback('📊 How to check my stats?', 'prob_ref_stats')],
+    [Markup.button.callback('🚫 What if I get banned?', 'prob_ref_ban')],
     [Markup.button.callback('🔙 Back to Menu', 'prob_back')]
   ]);
 
@@ -3827,7 +3831,8 @@ bot.action('prob_ref_how', async (ctx) => {
     `• If friend unsubscribes from ANY channel → you lose -1,000 MAI\n` +
     `• If friend resubscribes → you get +1,000 MAI again!\n` +
     `• Unlimited referrals - no cap!\n` +
-    `• Rewards paid within 10 days after token listing\n\n` +
+    `• Rewards paid within 10 days after token listing\n` +
+    `• <b>⚠️ BAN = Loss of ALL rewards!</b>\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `💡 <b>Example:</b>\n` +
     `You invite 10 friends, 8 subscribe → +8,000 MAI\n` +
@@ -4003,6 +4008,55 @@ bot.action('prob_ref_stats', async (ctx) => {
     `• Paid within 10 days after listing\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `💡 Check stats anytime with /referral or /status!`;
+
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
+  } catch (error) {
+    console.error('❌ Error editing message:', error.message);
+  }
+});
+
+bot.action('prob_ref_ban', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔙 Back to Referral', 'prob_referral')]
+  ]);
+
+  const message =
+    `🚫 <b>WHAT IF I GET BANNED?</b>\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>If you get banned from MAI community:</b>\n\n` +
+    `❌ You LOSE access to ALL rewards\n` +
+    `❌ Your referral balance will NOT be paid out\n` +
+    `❌ You cannot participate in any activities\n` +
+    `❌ Your airdrop position will be removed\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>⚠️ Common reasons for ban:</b>\n\n` +
+    `• Spam in community chat\n` +
+    `• Using fake accounts or bots\n` +
+    `• Manipulation of referral system\n` +
+    `• Violating community rules\n` +
+    `• Offensive behavior\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>💡 How to keep your account safe:</b>\n\n` +
+    `✅ Follow all community rules\n` +
+    `✅ No spam or fake referrals\n` +
+    `✅ Respect other members\n` +
+    `✅ Use only one real account\n` +
+    `✅ Stay subscribed to required channels\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>📝 Important:</b>\n` +
+    `Your referral balance stays in database for records, but will NOT be distributed if you're banned.\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `<b>🤔 Think ban was unfair?</b>\n\n` +
+    `If you believe you were banned unfairly, contact admin:\n` +
+    `Use /admin command to send a message.\n\n` +
+    `Include:\n` +
+    `• Your Telegram ID\n` +
+    `• Reason you think ban is unfair\n` +
+    `• Any relevant details\n\n` +
+    `Admin will review your case.`;
 
   try {
     await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
@@ -4627,6 +4681,26 @@ Keep your position:
 ✅ Daily check at 00:00 UTC
 ❌ Unsubscribe = Position lost immediately!
 ✅ Register wallet: /airdrop
+
+🎁 COMMUNITY REFERRAL (1,000 MAI per friend)
+- Earn 1,000 MAI for every friend who subscribes!
+- Unlimited referrals - no cap!
+- Distribution: Within 10 days after listing
+
+How to participate:
+1️⃣ Get your referral link: /referral
+2️⃣ Share link with friends
+3️⃣ Friend subscribes to @mai_news AND @mainingmai_chat
+4️⃣ You get +1,000 MAI instantly! 🎁
+
+⚠️ Important:
+• Friend must be NEW user (never used bot)
+• Friend must stay subscribed to BOTH channels
+• If friend unsubscribes → you lose -1,000 MAI
+• If friend resubscribes → you get +1,000 MAI again!
+• BAN = Loss of ALL rewards
+
+📊 Check stats: /referral or /status
 
 🏆 PRESALE AIRDROP (Up to 1M MAI)
 
