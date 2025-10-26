@@ -5030,10 +5030,69 @@ bot.on(message('text'), async (ctx) => {
         return;
       }
 
-      // ДОБАВЛЕНИЕ КОШЕЛЬКА (для реферальной программы или первичное добавление)
+      // ДОБАВЛЕНИЕ КОШЕЛЬКА (первичное добавление - может быть для аирдропа или реферальной)
       console.log('💼 Первичное добавление кошелька');
 
-      // Просто сохраняем кошелек и сбрасываем флаг
+      const username = ctx.from.username || 'no_username';
+      const firstName = ctx.from.first_name;
+
+      // Пытаемся зарегистрировать в аирдроп
+      console.log('🎯 Попытка регистрации в аирдроп...');
+      const registration = await registerUser(userId, username, firstName, text);
+      console.log('📊 Результат регистрации:', JSON.stringify(registration));
+
+      // Проверяем: успешно ли зарегистрировались в аирдроп?
+      if (registration.success && registration.user.position) {
+        // ✅ АИРДРОП РЕГИСТРАЦИЯ - показываем поздравление с картинкой!
+        console.log('✅ АИРДРОП РЕГИСТРАЦИЯ! Position:', registration.user.position);
+
+        const successMessage =
+          `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+          `Welcome to the MAI Community Airdrop!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+          `💼 Wallet: <code>${text}</code>\n` +
+          `📅 Distribution: Within 10 days after listing\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+          `✅ Stay subscribed to @mai_news\n` +
+          `✅ Stay in community chat @mainingmai_chat\n` +
+          `✅ Follow all rules\n\n` +
+          `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+          `If you unsubscribe, you will:\n` +
+          `❌ Lose your position #${registration.user.position}\n` +
+          `❌ Your spot goes to next person\n` +
+          `❌ Cannot restore old position\n\n` +
+          `Use /status anytime to verify your status.\n` +
+          `Need to change wallet? Use /changewallet\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `<b>Thank you for joining MAI! 🚀</b>\n` +
+          `Tokens will be distributed after official listing.`;
+
+        // Отправляем с картинкой
+        try {
+          await bot.telegram.sendPhoto(
+            userId,
+            { source: './images/milestone.webp' },
+            {
+              caption: successMessage,
+              parse_mode: 'HTML'
+            }
+          );
+          console.log(`✅ Registration success message with image sent to user ${userId}`);
+          return;
+        } catch (imgError) {
+          // Если картинка не найдена - отправляем просто текст
+          console.log(`⚠️ Image not found, sending text message`);
+          return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+        }
+      }
+
+      // ✅ РЕФЕРАЛЬНАЯ ПРОГРАММА - показываем реферальное сообщение
+      console.log('🎁 РЕФЕРАЛЬНАЯ ПРОГРАММА - позиция не присвоена, показываем реферальную инфу');
+
+      // Сохраняем кошелек (если еще не сохранен)
       await pool.query(
         'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = false WHERE telegram_id = $2',
         [text, userId]
