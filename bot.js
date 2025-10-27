@@ -15,7 +15,7 @@ const config = {
   CHAT_CHANNEL_ID: process.env.CHAT_CHANNEL_ID,
   ADMIN_IDS: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => parseInt(id.trim())) : [],
   AIRDROP_REWARD: 5000,
-  AIRDROP_LIMIT: 20000,
+  AIRDROP_LIMIT: 1,
   WARN_LIMIT: 3,
   REPORT_MUTE_LIMIT: 10,        // 10+ reports → 24 hours mute (1st offense)
   REPORT_BAN_LIMIT: 20,          // 20+ reports → 7 days mute (2nd offense)
@@ -410,7 +410,7 @@ function containsSpamLinks(text) {
 // Функция проверки уникальности кошелька
 async function checkWalletUniqueness(walletAddress, excludeUserId = null) {
   try {
-    let query = 'SELECT telegram_id, first_name, position FROM telegram_users WHERE wallet_address = $1 AND position IS NOT NULL';
+    let query = 'SELECT telegram_id, first_name, position FROM telegram_users WHERE wallet_address = $1';
     let params = [walletAddress];
 
     // Если указан excludeUserId, исключаем этого пользователя из проверки
@@ -1259,11 +1259,20 @@ bot.command('airdrop', async (ctx) => {
 
       // Если отписался от хотя бы одного канала - показываем предупреждение
       if (!isActive) {
-        let warningMessage = `⚠️ <b>You're Already Registered, BUT...</b>\n\n` +
-          `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-          `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-          `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        const isInQueue = userStatus.position > config.AIRDROP_LIMIT;
+
+        let warningMessage = `⚠️ <b>You're Already Registered, BUT...</b>\n\n`;
+
+        if (isInQueue) {
+          warningMessage += `📊 Queue Position: <b>#${userStatus.position}</b>\n` +
+            `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n`;
+        } else {
+          warningMessage += `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+            `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+            `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n`;
+        }
+
+        warningMessage += `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `🚫 <b>STATUS: INACTIVE</b>\n\n` +
           `You unsubscribed from:\n`;
 
@@ -1272,9 +1281,13 @@ bot.command('airdrop', async (ctx) => {
 
         warningMessage += `\n⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
           `If you don't resubscribe before the daily check at 00:00 UTC, you will:\n` +
-          `❌ Permanently lose your position #${userStatus.position}\n` +
-          `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
-          `❌ Your spot will go to the next person in queue\n\n` +
+          `❌ Permanently lose your ${isInQueue ? 'queue ' : ''}position #${userStatus.position}\n`;
+
+        if (!isInQueue) {
+          warningMessage += `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n`;
+        }
+
+        warningMessage += `❌ Your spot will go to the next person in queue\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
           `1️⃣ Subscribe to @mai_news\n` +
@@ -1288,22 +1301,32 @@ bot.command('airdrop', async (ctx) => {
       }
 
       // Если всё ОК - показываем обычное сообщение
-      return sendToPrivate(
-        ctx,
-        `✅ <b>You're Already Registered!</b>\n\n` +
-        `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-        `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-        `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
-        `📊 <b>Check your status:</b>\n` +
+      const isInQueue = userStatus.position > config.AIRDROP_LIMIT;
+
+      let statusMessage = `✅ <b>You're Already Registered!</b>\n\n`;
+
+      if (isInQueue) {
+        statusMessage += `📊 Queue Position: <b>#${userStatus.position}</b>\n` +
+          `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
+          `You're in the waiting queue. If someone loses their airdrop spot, you'll automatically move up!\n\n`;
+      } else {
+        statusMessage += `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+          `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+          `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ Status: ✅ <b>ACTIVE</b>\n\n`;
+      }
+
+      statusMessage += `📊 <b>Check your status:</b>\n` +
         `• Use /status command here\n` +
         `• Connect wallet at https://miningmai.com\n\n` +
         `💰 <b>Want to change your wallet?</b>\n` +
         `Use /changewallet command to update your wallet address.\n\n` +
-        `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`,
-        { parse_mode: 'HTML' }
-      );
+        `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`;
+
+      return sendToPrivate(ctx, statusMessage, { parse_mode: 'HTML' });
     }
     
     // Проверяем подписки ИЗ БД (не через API!)
@@ -1358,10 +1381,14 @@ bot.command('airdrop', async (ctx) => {
           );
         }
         if (registration.reason === 'wallet_duplicate') {
+          const positionText = registration.existingPosition
+            ? `Position #${registration.existingPosition}`
+            : 'another user';
+
           return sendToPrivate(
             ctx,
             `❌ <b>Wallet Already Registered!</b>\n\n` +
-            `This wallet address is already registered by another user (Position #${registration.existingPosition}).\n\n` +
+            `This wallet address is already registered by ${positionText}.\n\n` +
             `Each wallet can only be used once.\n\n` +
             `Please use /changewallet to change your wallet, then try /airdrop again.`,
             { parse_mode: 'HTML' }
@@ -1373,27 +1400,59 @@ bot.command('airdrop', async (ctx) => {
 
       console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
 
-      const successMessage =
-        `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-        `Welcome to the MAI Community Airdrop!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-        `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-        `💼 Wallet: <code>${currentUser.wallet_address}</code>\n` +
-        `📅 Distribution: Within 10 days after listing\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-        `✅ Stay subscribed to @mai_news\n` +
-        `✅ Stay in community chat @mainingmai_chat\n` +
-        `✅ Follow all rules\n\n` +
-        `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
-        `If you unsubscribe, you will:\n` +
-        `❌ Lose your position #${registration.user.position}\n` +
-        `❌ Your spot goes to next person\n` +
-        `❌ Cannot restore old position\n\n` +
-        `Use /status anytime to verify your status.\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `<b>Thank you for joining MAI! 🚀</b>`;
+      const isInQueue = registration.user.position > config.AIRDROP_LIMIT;
+
+      let successMessage;
+
+      if (isInQueue) {
+        // ЮЗЕР В ОЧЕРЕДИ (позиция > лимита)
+        successMessage =
+          `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+          `You're in the waiting queue!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `📊 <b>Queue Position: #${registration.user.position}</b>\n` +
+          `⏳ Airdrop spots filled: ${config.AIRDROP_LIMIT.toLocaleString()}/${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+          `💼 Wallet: <code>${currentUser.wallet_address}</code>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `✨ <b>HOW THE QUEUE WORKS:</b>\n\n` +
+          `If someone unsubscribes from channels and loses their airdrop spot, you'll automatically move up!\n\n` +
+          `You could become position #${config.AIRDROP_LIMIT} or higher and get <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>! 🎁\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ <b>STAY IN THE QUEUE:</b>\n\n` +
+          `✅ Stay subscribed to @mai_news\n` +
+          `✅ Stay in community chat @mainingmai_chat\n` +
+          `✅ Follow all rules\n\n` +
+          `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+          `If you unsubscribe, you will:\n` +
+          `❌ Lose your queue position #${registration.user.position}\n` +
+          `❌ Cannot restore your position\n\n` +
+          `Use /status anytime to check if you've moved up!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `<b>Thank you for joining MAI! 🚀</b>`;
+      } else {
+        // ЮЗЕР В АИРДРОПЕ (позиция <= лимита)
+        successMessage =
+          `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+          `Welcome to the MAI Community Airdrop!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+          `💼 Wallet: <code>${currentUser.wallet_address}</code>\n` +
+          `📅 Distribution: Within 10 days after listing\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+          `✅ Stay subscribed to @mai_news\n` +
+          `✅ Stay in community chat @mainingmai_chat\n` +
+          `✅ Follow all rules\n\n` +
+          `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+          `If you unsubscribe, you will:\n` +
+          `❌ Lose your position #${registration.user.position}\n` +
+          `❌ Your spot goes to next person\n` +
+          `❌ Cannot restore old position\n\n` +
+          `Use /status anytime to verify your status.\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `<b>Thank you for joining MAI! 🚀</b>`;
+      }
 
       return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
     }
@@ -1645,13 +1704,22 @@ bot.command('status', async (ctx) => {
     // Формируем секцию аирдропа
     let airdropSection = '';
     if (hasPosition) {
+      let positionDisplay = '';
+      if (isInTop20K) {
+        // В аирдропе
+        positionDisplay = `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n`;
+      } else {
+        // В очереди
+        positionDisplay = `📊 Queue Position: <b>#${userStatus.position}</b>\n`;
+      }
+
       airdropSection =
         `📊 <b>COMMUNITY AIRDROP STATUS</b>\n\n` +
-        `🎫 Position: <b>#${userStatus.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+        positionDisplay +
         `📅 Registered: ${new Date(userStatus.registered_at).toLocaleDateString()}\n` +
         `⚠️ <b>Status:</b> ${statusEmoji} <b>${statusText}</b>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive && hasPosition ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\n\nYou have until the next daily check at <b>00:00 UTC</b> to resubscribe to the required channels. If you don't resubscribe before then, you will permanently lose your position #${userStatus.position}!\n\nResubscribe NOW to keep your spot!` : ''}\n\n` +
+        `🎁 <b>Expected Reward: ${rewardAmount} MAI</b>${warnings ? `\n\n🚨 <b>ACTION REQUIRED:</b>${warnings}` : ''}${queueInfo}${!isActive && hasPosition ? `\n\n⚠️ <b>Your position is INACTIVE!</b>\n\nYou have until the next daily check at <b>00:00 UTC</b> to resubscribe to the required channels. If you don't resubscribe before then, you will permanently lose your ${isInTop20K ? '' : 'queue '}position #${userStatus.position}!\n\nResubscribe NOW to keep your spot!` : ''}\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n`;
     } else {
       airdropSection =
@@ -4982,10 +5050,15 @@ bot.on(message('text'), async (ctx) => {
         const uniqueCheck = await checkWalletUniqueness(text, userId);
         if (!uniqueCheck.isUnique) {
           console.log(`⚠️ Кошелёк уже используется пользователем ${uniqueCheck.existingUser.telegram_id}`);
+
+          const positionText = uniqueCheck.existingUser.position
+            ? `Position #${uniqueCheck.existingUser.position}`
+            : 'another user';
+
           return sendToPrivate(
             ctx,
             `❌ <b>Wallet Already Registered!</b>\n\n` +
-            `This wallet address is already registered by another user (Position #${uniqueCheck.existingUser.position}).\n\n` +
+            `This wallet address is already registered by ${positionText}.\n\n` +
             `Each wallet can only be used once.\n\n` +
             `Please send a different Solana wallet address.`,
             { parse_mode: 'HTML' }
@@ -5002,16 +5075,22 @@ bot.on(message('text'), async (ctx) => {
           const shortOld = `${oldWallet.slice(0, 6)}...${oldWallet.slice(-4)}`;
           const shortNew = `${text.slice(0, 6)}...${text.slice(-4)}`;
 
-          await sendToPrivate(
-            ctx,
-            `✅ <b>Wallet Updated Successfully!</b>\n\n` +
+          const isInQueue = userStatus.position > config.AIRDROP_LIMIT;
+
+          let walletUpdateMsg = `✅ <b>Wallet Updated Successfully!</b>\n\n` +
             `Old wallet: <code>${shortOld}</code>\n` +
-            `New wallet: <code>${shortNew}</code>\n\n` +
-            `Your Community Airdrop position <b>#${userStatus.position}</b> is now linked to your new wallet.\n\n` +
-            `Use /status to verify your details.\n` +
-            `Need to change again? Use /changewallet`,
-            { parse_mode: 'HTML' }
-          );
+            `New wallet: <code>${shortNew}</code>\n\n`;
+
+          if (isInQueue) {
+            walletUpdateMsg += `Your queue position <b>#${userStatus.position}</b> is now linked to your new wallet.\n\n`;
+          } else {
+            walletUpdateMsg += `Your Community Airdrop position <b>#${userStatus.position}</b> is now linked to your new wallet.\n\n`;
+          }
+
+          walletUpdateMsg += `Use /status to verify your details.\n` +
+            `Need to change again? Use /changewallet`;
+
+          await sendToPrivate(ctx, walletUpdateMsg, { parse_mode: 'HTML' });
 
           // Логирование для админа
           if (config.ADMIN_IDS[0]) {
@@ -5065,33 +5144,78 @@ bot.on(message('text'), async (ctx) => {
               { parse_mode: 'HTML' }
             );
           }
+          if (registration.reason === 'wallet_duplicate') {
+            const positionText = registration.existingPosition
+              ? `Position #${registration.existingPosition}`
+              : 'another user';
+
+            return sendToPrivate(
+              ctx,
+              `❌ <b>Wallet Already Registered!</b>\n\n` +
+              `This wallet address is already registered by ${positionText}.\n\n` +
+              `Each wallet can only be used once.\n\n` +
+              `Please use /changewallet to change your wallet, then try again.`,
+              { parse_mode: 'HTML' }
+            );
+          }
           console.error('❌ Ошибка регистрации:', registration.reason);
           return sendToPrivate(ctx, '❌ Registration error. Please try /airdrop again.');
         }
 
         console.log('✅ РЕГИСТРАЦИЯ УСПЕШНА! Position:', registration.user.position);
 
-        const successMessage =
-          `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-          `Welcome to the MAI Community Airdrop!\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-          `💼 Wallet: <code>${userStatus.wallet_address}</code>\n` +
-          `📅 Distribution: Within 10 days after listing\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-          `✅ Stay subscribed to @mai_news\n` +
-          `✅ Stay in community chat @mainingmai_chat\n` +
-          `✅ Follow all rules\n\n` +
-          `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
-          `If you unsubscribe, you will:\n` +
-          `❌ Lose your position #${registration.user.position}\n` +
-          `❌ Your spot goes to next person\n` +
-          `❌ Cannot restore old position\n\n` +
-          `Use /status anytime to verify your status.\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `<b>Thank you for joining MAI! 🚀</b>`;
+        const isInQueue = registration.user.position > config.AIRDROP_LIMIT;
+        let successMessage;
+
+        if (isInQueue) {
+          // ЮЗЕР В ОЧЕРЕДИ
+          successMessage =
+            `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+            `You're in the waiting queue!\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `📊 <b>Queue Position: #${registration.user.position}</b>\n` +
+            `⏳ Airdrop spots filled: ${config.AIRDROP_LIMIT.toLocaleString()}/${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+            `💼 Wallet: <code>${userStatus.wallet_address}</code>\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `✨ <b>HOW THE QUEUE WORKS:</b>\n\n` +
+            `If someone unsubscribes from channels and loses their airdrop spot, you'll automatically move up!\n\n` +
+            `You could become position #${config.AIRDROP_LIMIT} or higher and get <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>! 🎁\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `⚠️ <b>STAY IN THE QUEUE:</b>\n\n` +
+            `✅ Stay subscribed to @mai_news\n` +
+            `✅ Stay in community chat @mainingmai_chat\n` +
+            `✅ Follow all rules\n\n` +
+            `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+            `If you unsubscribe, you will:\n` +
+            `❌ Lose your queue position #${registration.user.position}\n` +
+            `❌ Cannot restore your position\n\n` +
+            `Use /status anytime to check if you've moved up!\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `<b>Thank you for joining MAI! 🚀</b>`;
+        } else {
+          // ЮЗЕР В АИРДРОПЕ
+          successMessage =
+            `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+            `Welcome to the MAI Community Airdrop!\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+            `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+            `💼 Wallet: <code>${userStatus.wallet_address}</code>\n` +
+            `📅 Distribution: Within 10 days after listing\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+            `✅ Stay subscribed to @mai_news\n` +
+            `✅ Stay in community chat @mainingmai_chat\n` +
+            `✅ Follow all rules\n\n` +
+            `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+            `If you unsubscribe, you will:\n` +
+            `❌ Lose your position #${registration.user.position}\n` +
+            `❌ Your spot goes to next person\n` +
+            `❌ Cannot restore old position\n\n` +
+            `Use /status anytime to verify your status.\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `<b>Thank you for joining MAI! 🚀</b>`;
+        }
 
         await sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
         console.log(`✅ Аирдроп регистрация завершена для ${userId}`);
@@ -5111,54 +5235,133 @@ bot.on(message('text'), async (ctx) => {
         const registration = await registerUser(userId, username, firstName, text);
         console.log('📊 Результат регистрации:', JSON.stringify(registration));
 
+        // Проверка ошибок регистрации
+        if (!registration.success) {
+          if (registration.reason === 'wallet_duplicate') {
+            const positionText = registration.existingPosition
+              ? `Position #${registration.existingPosition}`
+              : 'another user';
+
+            return sendToPrivate(
+              ctx,
+              `❌ <b>Wallet Already Registered!</b>\n\n` +
+              `This wallet address is already registered by ${positionText}.\n\n` +
+              `Each wallet can only be used once.\n\n` +
+              `Please send a different Solana wallet address.`,
+              { parse_mode: 'HTML' }
+            );
+          }
+          console.error('❌ Ошибка регистрации:', registration.reason);
+          return sendToPrivate(ctx, '❌ Registration error. Please try /airdrop again.');
+        }
+
         if (registration.success && registration.user.position) {
           console.log('✅ АИРДРОП РЕГИСТРАЦИЯ! Position:', registration.user.position);
 
-          const successMessage =
-            `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-            `Welcome to the MAI Community Airdrop!\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-            `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-            `💼 Wallet: <code>${text}</code>\n` +
-            `📅 Distribution: Within 10 days after listing\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-            `✅ Stay subscribed to @mai_news\n` +
-            `✅ Stay in community chat @mainingmai_chat\n` +
-            `✅ Follow all rules\n\n` +
-            `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
-            `If you unsubscribe, you will:\n` +
-            `❌ Lose your position #${registration.user.position}\n` +
-            `❌ Your spot goes to next person\n` +
-            `❌ Cannot restore old position\n\n` +
-            `Use /status anytime to verify your status.\n` +
-            `Need to change wallet? Use /changewallet\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `<b>Thank you for joining MAI! 🚀</b>\n` +
-            `Tokens will be distributed after official listing.`;
+          const isInQueue = registration.user.position > config.AIRDROP_LIMIT;
+          let successMessage;
 
-          // Отправляем с картинкой
-          try {
-            await bot.telegram.sendPhoto(
-              userId,
-              { source: './images/milestone.webp' },
-              {
-                caption: successMessage,
-                parse_mode: 'HTML'
-              }
-            );
-            console.log(`✅ Registration success message with image sent to user ${userId}`);
+          if (isInQueue) {
+            // ЮЗЕР В ОЧЕРЕДИ
+            successMessage =
+              `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+              `You're in the waiting queue!\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `📊 <b>Queue Position: #${registration.user.position}</b>\n` +
+              `⏳ Airdrop spots filled: ${config.AIRDROP_LIMIT.toLocaleString()}/${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+              `💼 Wallet: <code>${text}</code>\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `✨ <b>HOW THE QUEUE WORKS:</b>\n\n` +
+              `If someone unsubscribes from channels and loses their airdrop spot, you'll automatically move up!\n\n` +
+              `You could become position #${config.AIRDROP_LIMIT} or higher and get <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>! 🎁\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `⚠️ <b>STAY IN THE QUEUE:</b>\n\n` +
+              `✅ Stay subscribed to @mai_news\n` +
+              `✅ Stay in community chat @mainingmai_chat\n` +
+              `✅ Follow all rules\n\n` +
+              `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+              `If you unsubscribe, you will:\n` +
+              `❌ Lose your queue position #${registration.user.position}\n` +
+              `❌ Cannot restore your position\n\n` +
+              `Use /status anytime to check if you've moved up!\n\n` +
+              `Need to change wallet? Use /changewallet\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `<b>Thank you for joining MAI! 🚀</b>\n` +
+              `Tokens will be distributed after official listing.`;
+          } else {
+            // ЮЗЕР В АИРДРОПЕ
+            successMessage =
+              `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+              `Welcome to the MAI Community Airdrop!\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+              `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+              `💼 Wallet: <code>${text}</code>\n` +
+              `📅 Distribution: Within 10 days after listing\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+              `✅ Stay subscribed to @mai_news\n` +
+              `✅ Stay in community chat @mainingmai_chat\n` +
+              `✅ Follow all rules\n\n` +
+              `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+              `If you unsubscribe, you will:\n` +
+              `❌ Lose your position #${registration.user.position}\n` +
+              `❌ Your spot goes to next person\n` +
+              `❌ Cannot restore old position\n\n` +
+              `Use /status anytime to verify your status.\n` +
+              `Need to change wallet? Use /changewallet\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `<b>Thank you for joining MAI! 🚀</b>\n` +
+              `Tokens will be distributed after official listing.`;
+          }
+
+          // Отправляем с картинкой (только для аирдропа, не для очереди)
+          if (!isInQueue) {
+            try {
+              await bot.telegram.sendPhoto(
+                userId,
+                { source: './images/milestone.webp' },
+                {
+                  caption: successMessage,
+                  parse_mode: 'HTML'
+                }
+              );
+              console.log(`✅ Registration success message with image sent to user ${userId}`);
+              return;
+            } catch (imgError) {
+              console.log(`⚠️ Image not found, sending text message`);
+              return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+            }
+          } else {
+            // Для очереди - просто текст без картинки
+            await sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+            console.log(`✅ Queue registration message sent to user ${userId}`);
             return;
-          } catch (imgError) {
-            console.log(`⚠️ Image not found, sending text message`);
-            return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
           }
         }
 
       } else if (userStatus.awaiting_wallet === 'referral') {
         // ✅ РЕФЕРАЛЬНАЯ ПРОГРАММА - сохраняем кошелек и показываем реферальную ссылку
         console.log('🎁 РЕФЕРАЛЬНАЯ ПРОГРАММА - сохраняем кошелек');
+
+        // ПРОВЕРКА УНИКАЛЬНОСТИ КОШЕЛЬКА
+        const uniqueCheck = await checkWalletUniqueness(text, userId);
+        if (!uniqueCheck.isUnique) {
+          console.log(`⚠️ Кошелёк уже используется пользователем ${uniqueCheck.existingUser.telegram_id}`);
+
+          const positionText = uniqueCheck.existingUser.position
+            ? `Position #${uniqueCheck.existingUser.position}`
+            : 'another user';
+
+          return sendToPrivate(
+            ctx,
+            `❌ <b>Wallet Already Registered!</b>\n\n` +
+            `This wallet address is already registered by ${positionText}.\n\n` +
+            `Each wallet can only be used once.\n\n` +
+            `Please send a different Solana wallet address.`,
+            { parse_mode: 'HTML' }
+          );
+        }
 
         await pool.query(
           'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = NULL WHERE telegram_id = $2',
