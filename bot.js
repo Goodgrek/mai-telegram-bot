@@ -17,9 +17,18 @@ const config = {
   AIRDROP_REWARD: 5000,
   AIRDROP_LIMIT: 20000,
   WARN_LIMIT: 3,
-  REPORT_MUTE_LIMIT: 10,
-  REPORT_BAN_LIMIT: 20,
-  ALLOWED_DOMAINS: ['miningmai.com', 'www.miningmai.com', 't.me'],
+  REPORT_MUTE_LIMIT: 10,        // 10+ reports → 24 hours mute (1st offense)
+  REPORT_BAN_LIMIT: 20,          // 20+ reports → 7 days mute (2nd offense)
+  REPORT_PERMA_BAN_LIMIT: 30,    // 30+ reports → permanent ban
+  ALLOWED_DOMAINS: [
+    'miningmai.com',
+    'www.miningmai.com',
+    'https://miningmai.com',
+    'https://www.miningmai.com',
+    't.me/mai_news',
+    't.me/mainingmai_chat',
+    't.me/mai_verify_bot'
+  ],
   CURRENT_PRESALE_STAGE: 1,
 };
 
@@ -437,29 +446,30 @@ async function registerUser(userId, username, firstName, walletAddress) {
       };
     }
 
+    // Считаем текущее количество зарегистрированных юзеров
     const countResult = await pool.query('SELECT COUNT(*) FROM telegram_users WHERE position IS NOT NULL');
     const currentCount = parseInt(countResult.rows[0].count);
-    
-    console.log('📊 Текущее количество:', currentCount, 'Лимит:', config.AIRDROP_LIMIT);
-    
-    if (currentCount >= config.AIRDROP_LIMIT) {
-      return { success: false, reason: 'limit_reached' };
-    }
-    
-    // ОБНОВЛЯЕМ ИЛИ СОЗДАЕМ
+    const newPosition = currentCount + 1;
+
+    console.log('📊 Текущее количество:', currentCount, 'Лимит:', config.AIRDROP_LIMIT, 'Новая позиция:', newPosition);
+
+    // РЕГИСТРИРУЕМ ВСЕГДА! Даже если лимит превышен - это ОЧЕРЕДЬ!
+    // Позиции 1-20,000 = АИРДРОП
+    // Позиции 20,001+ = ОЧЕРЕДЬ (автоматически получат место если кто-то отпишется)
+
     const result = await pool.query(
       `INSERT INTO telegram_users (telegram_id, username, first_name, wallet_address, position, awaiting_wallet, registered_at)
-       VALUES ($1, $2, $3, $4, $5, false, NOW())
-       ON CONFLICT (telegram_id) 
-       DO UPDATE SET 
-         username = $2, 
-         first_name = $3, 
-         wallet_address = $4, 
-         position = $5, 
-         awaiting_wallet = false,
+       VALUES ($1, $2, $3, $4, $5, NULL, NOW())
+       ON CONFLICT (telegram_id)
+       DO UPDATE SET
+         username = $2,
+         first_name = $3,
+         wallet_address = $4,
+         position = $5,
+         awaiting_wallet = NULL,
          registered_at = COALESCE(telegram_users.registered_at, NOW())
        RETURNING *`,
-      [userId, username, firstName, walletAddress, currentCount + 1]
+      [userId, username, firstName, walletAddress, newPosition]
     );
     
     console.log('✅ registerUser результат:', result.rows[0]);
@@ -717,13 +727,71 @@ async function removePosition(userId) {
       [userId]
     );
     
+    // Получаем всех юзеров из очереди (позиция > 20,000) ПЕРЕД сдвигом
+    const queueUsers = await pool.query(
+      'SELECT telegram_id, position FROM telegram_users WHERE position > $1 ORDER BY position ASC',
+      [config.AIRDROP_LIMIT]
+    );
+
     // Сдвигаем всех, кто был после него
     await pool.query(
       'UPDATE telegram_users SET position = position - 1 WHERE position > $1',
       [removedPosition]
     );
-    
+
     console.log(`✅ Позиция #${removedPosition} удалена, очередь сдвинута`);
+
+    // Отправляем уведомления юзерам из очереди
+    if (queueUsers.rows.length > 0) {
+      console.log(`📢 Отправляем уведомления ${queueUsers.rows.length} юзерам из очереди`);
+
+      for (const user of queueUsers.rows) {
+        const oldPosition = user.position;
+        const newPosition = oldPosition - 1;
+
+        // Проверяем: попал ли юзер в аирдроп?
+        const movedToAirdrop = oldPosition > config.AIRDROP_LIMIT && newPosition <= config.AIRDROP_LIMIT;
+
+        try {
+          if (movedToAirdrop) {
+            // 🎉 Юзер попал в аирдроп из очереди!
+            await bot.telegram.sendMessage(
+              user.telegram_id,
+              `🎉 <b>CONGRATULATIONS!</b>\n\n` +
+              `You've moved from the waiting queue into the airdrop!\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `🎫 <b>Your New Position: #${newPosition}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+              `🎁 <b>Your Reward: ${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n\n` +
+              `Someone unsubscribed, and you automatically moved up!\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `⚠️ <b>Keep your position:</b>\n` +
+              `✅ Stay subscribed to @mai_news\n` +
+              `✅ Stay subscribed to @mainingmai_chat\n\n` +
+              `Use /status to check your details.`,
+              { parse_mode: 'HTML' }
+            );
+            console.log(`✅ Уведомление отправлено юзеру ${user.telegram_id}: очередь → аирдроп (#${oldPosition} → #${newPosition})`);
+          } else if (oldPosition > config.AIRDROP_LIMIT) {
+            // 📊 Юзер остался в очереди, но позиция улучшилась
+            await bot.telegram.sendMessage(
+              user.telegram_id,
+              `📊 <b>Queue Position Updated</b>\n\n` +
+              `Your position in the waiting queue has improved!\n\n` +
+              `Old position: #${oldPosition.toLocaleString()}\n` +
+              `<b>New position: #${newPosition.toLocaleString()}</b>\n\n` +
+              `You're getting closer to the airdrop! 🎯\n` +
+              `Current airdrop spots: ${config.AIRDROP_LIMIT.toLocaleString()}\n\n` +
+              `Keep subscribed to both channels to maintain your queue position!`,
+              { parse_mode: 'HTML' }
+            );
+            console.log(`✅ Уведомление отправлено юзеру ${user.telegram_id}: очередь (#${oldPosition} → #${newPosition})`);
+          }
+        } catch (notifyError) {
+          console.log(`⚠️ Не удалось отправить уведомление юзеру ${user.telegram_id}:`, notifyError.message);
+        }
+      }
+    }
+
     return removedPosition;
   } catch (error) {
     console.error('❌ Ошибка removePosition:', error.message);
@@ -1331,8 +1399,8 @@ bot.command('airdrop', async (ctx) => {
     }
 
     // Кошелька нет - запрашиваем
-    await setAwaitingWallet(userId, true);
-    console.log('✅ Установлен awaiting_wallet для:', userId);
+    await setAwaitingWallet(userId, 'airdrop');
+    console.log('✅ Установлен awaiting_wallet = airdrop для:', userId);
     
     await sendToPrivate(
   ctx,
@@ -1408,7 +1476,7 @@ bot.command('changewallet', async (ctx) => {
     }
 
     // Устанавливаем awaiting_wallet для смены кошелька
-    await setAwaitingWallet(userId, true);
+    await setAwaitingWallet(userId, 'changewallet');
 
     await sendToPrivate(
       ctx,
@@ -1648,8 +1716,8 @@ bot.command('referral', async (ctx) => {
     if (!userStatus.wallet_address) {
       // Устанавливаем флаг ожидания кошелька для реферальной программы
       await pool.query(
-        'UPDATE telegram_users SET awaiting_wallet = true WHERE telegram_id = $1',
-        [userId]
+        'UPDATE telegram_users SET awaiting_wallet = $1 WHERE telegram_id = $2',
+        ['referral', userId]
       );
 
       return sendToPrivate(
@@ -2324,31 +2392,31 @@ bot.command('report', async (ctx) => {
   const muteCount = await getMuteCount(reportedUserId);
   
   await ctx.reply(`✅ Report accepted. User has ${uniqueReports} unique reports.`);
-  
-  // ЛОГИКА ЭСКАЛАЦИИ:
-  // 10 жалоб → первый мут (24 часа)
-  // 20 жалоб → второй мут (7 дней)
-  // 30 жалоб → пермабан
-  
-  if (uniqueReports === 30) {
+
+  // ЛОГИКА ЭСКАЛАЦИИ (используем конфиг):
+  // 10+ жалоб → первый мут (24 часа)
+  // 20+ жалоб → второй мут (7 дней)
+  // 30+ жалоб → пермабан
+
+  if (uniqueReports >= config.REPORT_PERMA_BAN_LIMIT) {
     // ТРЕТИЙ ПОРОГ - ПЕРМАБАН В ОБОИХ КАНАЛАХ
-    await banUser(reportedUserId, `30 reports from community members`, config.CHAT_CHANNEL_ID);
+    await banUser(reportedUserId, `${uniqueReports} reports from community members`, config.CHAT_CHANNEL_ID);
     // Также баним в NEWS канале
     try {
       await bot.telegram.banChatMember(config.NEWS_CHANNEL_ID, reportedUserId);
-      console.log(`✅ User ${reportedUserId} auto-banned in NEWS channel (30 reports)`);
+      console.log(`✅ User ${reportedUserId} auto-banned in NEWS channel (${uniqueReports} reports)`);
     } catch (err) {
       console.log(`⚠️ Cannot auto-ban in NEWS channel: ${err.message}`);
     }
     await ctx.reply(`🚫 User permanently banned in BOTH channels after ${uniqueReports} reports from community.`);
-  } else if (uniqueReports === 20 && muteCount === 1) {
+  } else if (uniqueReports >= config.REPORT_BAN_LIMIT && muteCount === 1) {
     // ВТОРОЙ ПОРОГ - МУТ НА 7 ДНЕЙ (только в чате)
-    await muteUser(reportedUserId, 168, `20 reports from community (2nd offense)`, config.CHAT_CHANNEL_ID); // 7 дней = 168 часов
+    await muteUser(reportedUserId, 168, `${uniqueReports} reports from community (2nd offense)`, config.CHAT_CHANNEL_ID); // 7 дней = 168 часов
     await incrementMuteCount(reportedUserId);
     await ctx.reply(`⚠️ User muted for 7 DAYS after ${uniqueReports} reports (2nd offense).`);
-  } else if (uniqueReports === 10 && muteCount === 0) {
+  } else if (uniqueReports >= config.REPORT_MUTE_LIMIT && muteCount === 0) {
     // ПЕРВЫЙ ПОРОГ - МУТ НА 24 ЧАСА (только в чате)
-    await muteUser(reportedUserId, 24, `10 reports from community (1st offense)`, config.CHAT_CHANNEL_ID);
+    await muteUser(reportedUserId, 24, `${uniqueReports} reports from community (1st offense)`, config.CHAT_CHANNEL_ID);
     await incrementMuteCount(reportedUserId);
     await ctx.reply(`⚠️ User muted for 24 hours after ${uniqueReports} reports (1st offense).`);
   }
@@ -4889,7 +4957,7 @@ bot.on(message('text'), async (ctx) => {
     console.log('👤 Статус пользователя:', JSON.stringify(userStatus));
     
     // ОБРАБОТКА КОШЕЛЬКА - ГЛАВНОЕ!
-    if (userStatus && userStatus.awaiting_wallet === true) {
+    if (userStatus && userStatus.awaiting_wallet) {
       console.log('💼 НАЧАЛО ОБРАБОТКИ КОШЕЛЬКА:', text);
 
       if (!isValidSolanaAddress(text)) {
@@ -4927,7 +4995,7 @@ bot.on(message('text'), async (ctx) => {
         try {
           // Обновляем только wallet_address и сбрасываем awaiting_wallet
           await pool.query(
-            'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = false WHERE telegram_id = $2',
+            'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = NULL WHERE telegram_id = $2',
             [text, userId]
           );
 
@@ -5030,129 +5098,129 @@ bot.on(message('text'), async (ctx) => {
         return;
       }
 
-      // ДОБАВЛЕНИЕ КОШЕЛЬКА (первичное добавление - может быть для аирдропа или реферальной)
-      console.log('💼 Первичное добавление кошелька');
+      // ДОБАВЛЕНИЕ КОШЕЛЬКА (первичное добавление - проверяем awaiting_wallet тип)
+      console.log('💼 Первичное добавление кошелька, awaiting_wallet =', userStatus.awaiting_wallet);
 
       const username = ctx.from.username || 'no_username';
       const firstName = ctx.from.first_name;
 
-      // Пытаемся зарегистрировать в аирдроп
-      console.log('🎯 Попытка регистрации в аирдроп...');
-      const registration = await registerUser(userId, username, firstName, text);
-      console.log('📊 Результат регистрации:', JSON.stringify(registration));
+      // ПРОВЕРЯЕМ awaiting_wallet ТИП
+      if (userStatus.awaiting_wallet === 'airdrop') {
+        // ✅ АИРДРОП РЕГИСТРАЦИЯ
+        console.log('🎯 Попытка регистрации в аирдроп...');
+        const registration = await registerUser(userId, username, firstName, text);
+        console.log('📊 Результат регистрации:', JSON.stringify(registration));
 
-      // Проверяем: успешно ли зарегистрировались в аирдроп?
-      if (registration.success && registration.user.position) {
-        // ✅ АИРДРОП РЕГИСТРАЦИЯ - показываем поздравление с картинкой!
-        console.log('✅ АИРДРОП РЕГИСТРАЦИЯ! Position:', registration.user.position);
+        if (registration.success && registration.user.position) {
+          console.log('✅ АИРДРОП РЕГИСТРАЦИЯ! Position:', registration.user.position);
 
-        const successMessage =
-          `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-          `Welcome to the MAI Community Airdrop!\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
-          `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-          `💼 Wallet: <code>${text}</code>\n` +
-          `📅 Distribution: Within 10 days after listing\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-          `✅ Stay subscribed to @mai_news\n` +
-          `✅ Stay in community chat @mainingmai_chat\n` +
-          `✅ Follow all rules\n\n` +
-          `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
-          `If you unsubscribe, you will:\n` +
-          `❌ Lose your position #${registration.user.position}\n` +
-          `❌ Your spot goes to next person\n` +
-          `❌ Cannot restore old position\n\n` +
-          `Use /status anytime to verify your status.\n` +
-          `Need to change wallet? Use /changewallet\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `<b>Thank you for joining MAI! 🚀</b>\n` +
-          `Tokens will be distributed after official listing.`;
+          const successMessage =
+            `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
+            `Welcome to the MAI Community Airdrop!\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
+            `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+            `💼 Wallet: <code>${text}</code>\n` +
+            `📅 Distribution: Within 10 days after listing\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
+            `✅ Stay subscribed to @mai_news\n` +
+            `✅ Stay in community chat @mainingmai_chat\n` +
+            `✅ Follow all rules\n\n` +
+            `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
+            `If you unsubscribe, you will:\n` +
+            `❌ Lose your position #${registration.user.position}\n` +
+            `❌ Your spot goes to next person\n` +
+            `❌ Cannot restore old position\n\n` +
+            `Use /status anytime to verify your status.\n` +
+            `Need to change wallet? Use /changewallet\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `<b>Thank you for joining MAI! 🚀</b>\n` +
+            `Tokens will be distributed after official listing.`;
 
-        // Отправляем с картинкой
-        try {
-          await bot.telegram.sendPhoto(
-            userId,
-            { source: './images/milestone.webp' },
-            {
-              caption: successMessage,
-              parse_mode: 'HTML'
-            }
-          );
-          console.log(`✅ Registration success message with image sent to user ${userId}`);
-          return;
-        } catch (imgError) {
-          // Если картинка не найдена - отправляем просто текст
-          console.log(`⚠️ Image not found, sending text message`);
-          return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+          // Отправляем с картинкой
+          try {
+            await bot.telegram.sendPhoto(
+              userId,
+              { source: './images/milestone.webp' },
+              {
+                caption: successMessage,
+                parse_mode: 'HTML'
+              }
+            );
+            console.log(`✅ Registration success message with image sent to user ${userId}`);
+            return;
+          } catch (imgError) {
+            console.log(`⚠️ Image not found, sending text message`);
+            return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+          }
         }
+
+      } else if (userStatus.awaiting_wallet === 'referral') {
+        // ✅ РЕФЕРАЛЬНАЯ ПРОГРАММА - сохраняем кошелек и показываем реферальную ссылку
+        console.log('🎁 РЕФЕРАЛЬНАЯ ПРОГРАММА - сохраняем кошелек');
+
+        await pool.query(
+          'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = NULL WHERE telegram_id = $2',
+          [text, userId]
+        );
+
+        const shortWallet = `${text.slice(0, 6)}...${text.slice(-4)}`;
+
+        // Получаем статистику рефералов
+        const referralStats = await pool.query(
+          `SELECT
+            COUNT(*) as total_invited,
+            COUNT(*) FILTER (WHERE is_subscribed_news = true AND is_subscribed_chat = true) as active_now
+           FROM telegram_users
+           WHERE referrer_id = $1`,
+          [userId]
+        );
+
+        const totalInvited = parseInt(referralStats.rows[0].total_invited) || 0;
+        const activeNow = parseInt(referralStats.rows[0].active_now) || 0;
+
+        // Получаем обновленный статус с балансом
+        const updatedUser = await getUserStatus(userId);
+        const currentBalance = updatedUser.referral_reward_balance || 0;
+
+        // Генерируем реферальную ссылку
+        const botUsername = ctx.botInfo.username;
+        const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
+
+        await sendToPrivate(
+          ctx,
+          `✅ <b>Wallet Saved Successfully!</b>\n\n` +
+          `💼 Wallet: <code>${shortWallet}</code>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `🎁 <b>YOUR COMMUNITY REFERRAL</b>\n\n` +
+          `🔗 <b>Your Referral Link:</b>\n` +
+          `<code>${referralLink}</code>\n\n` +
+          `📊 <b>STATISTICS</b>\n` +
+          `👥 Total Invited: <b>${totalInvited}</b>\n` +
+          `✅ Active Now: <b>${activeNow}</b>\n` +
+          `💰 Current Balance: <b>${currentBalance.toLocaleString()} MAI</b>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `💡 <b>HOW IT WORKS:</b>\n\n` +
+          `1️⃣ Share your referral link\n` +
+          `2️⃣ Friend subscribes to BOTH channels:\n` +
+          `   • @mai_news\n` +
+          `   • @mainingmai_chat\n` +
+          `3️⃣ You get <b>+1,000 MAI</b> 🎁\n\n` +
+          `⚠️ If friend unsubscribes from ANY channel:\n` +
+          `   • You lose <b>-1,000 MAI</b>\n\n` +
+          `✅ If friend resubscribes:\n` +
+          `   • You get <b>+1,000 MAI</b> again!\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `💸 <b>Reward Distribution:</b>\n` +
+          `Within 10 days after token listing\n\n` +
+          `🎯 Start sharing and earn MAI tokens! 🚀`,
+          { parse_mode: 'HTML' }
+        );
+
+        console.log(`✅ Кошелёк сохранен и показана реферальная ссылка для ${userId}`);
+        return;
       }
-
-      // ✅ РЕФЕРАЛЬНАЯ ПРОГРАММА - показываем реферальное сообщение
-      console.log('🎁 РЕФЕРАЛЬНАЯ ПРОГРАММА - позиция не присвоена, показываем реферальную инфу');
-
-      // Сохраняем кошелек (если еще не сохранен)
-      await pool.query(
-        'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = false WHERE telegram_id = $2',
-        [text, userId]
-      );
-
-      const shortWallet = `${text.slice(0, 6)}...${text.slice(-4)}`;
-
-      // Получаем статистику рефералов
-      const referralStats = await pool.query(
-        `SELECT
-          COUNT(*) as total_invited,
-          COUNT(*) FILTER (WHERE is_subscribed_news = true AND is_subscribed_chat = true) as active_now
-         FROM telegram_users
-         WHERE referrer_id = $1`,
-        [userId]
-      );
-
-      const totalInvited = parseInt(referralStats.rows[0].total_invited) || 0;
-      const activeNow = parseInt(referralStats.rows[0].active_now) || 0;
-
-      // Получаем обновленный статус с балансом
-      const updatedUser = await getUserStatus(userId);
-      const currentBalance = updatedUser.referral_reward_balance || 0;
-
-      // Генерируем реферальную ссылку
-      const botUsername = ctx.botInfo.username;
-      const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
-
-      await sendToPrivate(
-        ctx,
-        `✅ <b>Wallet Saved Successfully!</b>\n\n` +
-        `💼 Wallet: <code>${shortWallet}</code>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🎁 <b>YOUR COMMUNITY REFERRAL</b>\n\n` +
-        `🔗 <b>Your Referral Link:</b>\n` +
-        `<code>${referralLink}</code>\n\n` +
-        `📊 <b>STATISTICS</b>\n` +
-        `👥 Total Invited: <b>${totalInvited}</b>\n` +
-        `✅ Active Now: <b>${activeNow}</b>\n` +
-        `💰 Current Balance: <b>${currentBalance.toLocaleString()} MAI</b>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `💡 <b>HOW IT WORKS:</b>\n\n` +
-        `1️⃣ Share your referral link\n` +
-        `2️⃣ Friend subscribes to BOTH channels:\n` +
-        `   • @mai_news\n` +
-        `   • @mainingmai_chat\n` +
-        `3️⃣ You get <b>+1,000 MAI</b> 🎁\n\n` +
-        `⚠️ If friend unsubscribes from ANY channel:\n` +
-        `   • You lose <b>-1,000 MAI</b>\n\n` +
-        `✅ If friend resubscribes:\n` +
-        `   • You get <b>+1,000 MAI</b> again!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `💸 <b>Reward Distribution:</b>\n` +
-        `Within 10 days after token listing\n\n` +
-        `🎯 Start sharing and earn MAI tokens! 🚀`,
-        { parse_mode: 'HTML' }
-      );
-
-      console.log(`✅ Кошелёк сохранен и показана реферальная ссылка для ${userId}`);
-      return;
     } 
     
     // Если нет статуса или не ждет кошелек - выход
