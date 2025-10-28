@@ -2924,11 +2924,10 @@ bot.command('pin', async (ctx) => {
   }
   
   const keyboard = Markup.inlineKeyboard([
-    [
-      Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=pin`),
-      Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
-    ],
-    [Markup.button.url('📱 News Channel', 'https://t.me/mainingmai_news')]
+    [Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=pin`)],
+    [Markup.button.url('💰 Buy MAI', 'https://miningmai.com')],
+    [Markup.button.url('📱 News Channel', 'https://t.me/mainingmai_news')],
+    [Markup.button.url('🎨 MAI Stickers', 't.me/addstickers/MAImining')]
   ]);
   
   try {
