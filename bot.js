@@ -15,7 +15,7 @@ const config = {
   CHAT_CHANNEL_ID: process.env.CHAT_CHANNEL_ID,
   ADMIN_IDS: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => parseInt(id.trim())) : [],
   AIRDROP_REWARD: 5000,
-  AIRDROP_LIMIT: 1,
+  AIRDROP_LIMIT: 20000,
   WARN_LIMIT: 3,
   REPORT_MUTE_LIMIT: 10,        // 10+ reports → 24 hours mute (1st offense)
   REPORT_BAN_LIMIT: 20,          // 20+ reports → 7 days mute (2nd offense)
