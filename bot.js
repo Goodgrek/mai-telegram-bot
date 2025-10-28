@@ -5039,6 +5039,9 @@ bot.on(message('text'), async (ctx) => {
         );
       }
 
+      // ЗАПОМИНАЕМ БЫЛА ЛИ ПОЗИЦИЯ ДО РЕГИСТРАЦИИ
+      const hadPositionBefore = userStatus.position ? true : false;
+
       // ПРОВЕРЯЕМ: это новая регистрация или смена кошелька?
       if (userStatus.position) {
         // ЭТО СМЕНА КОШЕЛЬКА (пользователь уже зарегистрирован)
@@ -5217,9 +5220,34 @@ bot.on(message('text'), async (ctx) => {
             `<b>Thank you for joining MAI! 🚀</b>`;
         }
 
-        await sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
-        console.log(`✅ Аирдроп регистрация завершена для ${userId}`);
-        return;
+        // Проверяем: это первая регистрация? (позиции не было, а теперь появилась)
+        const isFirstRegistration = !hadPositionBefore;
+
+        // Отправляем с картинкой только при ПЕРВОЙ регистрации в аирдроп
+        if (isFirstRegistration && !isInQueue) {
+          try {
+            await bot.telegram.sendPhoto(
+              userId,
+              { source: './images/milestone.webp' },
+              {
+                caption: successMessage,
+                parse_mode: 'HTML'
+              }
+            );
+            console.log(`✅ Аирдроп регистрация с картинкой (первая) завершена для ${userId}`);
+            return;
+          } catch (imgError) {
+            console.log(`⚠️ Картинка не найдена, отправляю текст`);
+            await sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+            console.log(`✅ Аирдроп регистрация завершена для ${userId}`);
+            return;
+          }
+        } else {
+          // Для очереди или повторного вызова - просто текст
+          await sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+          console.log(`✅ Аирдроп регистрация ${isInQueue ? '(очередь)' : '(повторная)'} завершена для ${userId}`);
+          return;
+        }
       }
 
       // ДОБАВЛЕНИЕ КОШЕЛЬКА (первичное добавление - проверяем awaiting_wallet тип)
