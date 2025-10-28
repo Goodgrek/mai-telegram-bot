@@ -435,8 +435,8 @@ async function registerUser(userId, username, firstName, walletAddress) {
   try {
     console.log('🔍 registerUser вызван:', { userId, username, firstName, walletAddress: walletAddress.substring(0, 20) });
 
-    // ПРОВЕРКА УНИКАЛЬНОСТИ КОШЕЛЬКА
-    const uniqueCheck = await checkWalletUniqueness(walletAddress, null);
+    // ПРОВЕРКА УНИКАЛЬНОСТИ КОШЕЛЬКА (исключая текущего пользователя)
+    const uniqueCheck = await checkWalletUniqueness(walletAddress, userId);
     if (!uniqueCheck.isUnique) {
       console.log(`⚠️ Кошелёк уже используется пользователем ${uniqueCheck.existingUser.telegram_id}`);
       return {
@@ -1524,12 +1524,12 @@ bot.command('changewallet', async (ctx) => {
   try {
     const userStatus = await getUserStatus(userId);
 
-    if (!userStatus?.position || !userStatus?.wallet_address) {
+    if (!userStatus?.wallet_address) {
       return sendToPrivate(
         ctx,
-        `❌ <b>You Haven't Registered Yet!</b>\n\n` +
-        `You need to register first before you can change your wallet.\n\n` +
-        `Use /airdrop to register.`,
+        `❌ <b>No Wallet Found!</b>\n\n` +
+        `You need to add a wallet first before you can change it.\n\n` +
+        `Use /airdrop or /referral to add a wallet.`,
         { parse_mode: 'HTML' }
       );
     }
