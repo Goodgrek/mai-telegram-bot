@@ -1454,7 +1454,27 @@ bot.command('airdrop', async (ctx) => {
           `<b>Thank you for joining MAI! 🚀</b>`;
       }
 
-      return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+      // Отправляем с картинкой (только для аирдропа, не для очереди)
+      if (!isInQueue) {
+        try {
+          await bot.telegram.sendPhoto(
+            userId,
+            { source: './images/milestone.webp' },
+            {
+              caption: successMessage,
+              parse_mode: 'HTML'
+            }
+          );
+          console.log(`✅ Сообщение с картинкой отправлено ${userId}`);
+          return;
+        } catch (imgError) {
+          console.log(`⚠️ Картинка не найдена, отправляю текст`);
+          return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+        }
+      } else {
+        // Для очереди - просто текст
+        return sendToPrivate(ctx, successMessage, { parse_mode: 'HTML' });
+      }
     }
 
     // Кошелька нет - запрашиваем
@@ -5030,11 +5050,20 @@ bot.on(message('text'), async (ctx) => {
 
       if (!isValidSolanaAddress(text)) {
         console.log('❌ Невалидный адрес Solana');
+
+        // Определяем какую команду показать для повтора
+        let retryCommand = '/airdrop';
+        if (userStatus.awaiting_wallet === 'referral') {
+          retryCommand = '/referral';
+        } else if (userStatus.awaiting_wallet === 'changewallet') {
+          retryCommand = '/changewallet';
+        }
+
         return sendToPrivate(
           ctx,
           `❌ <b>Invalid Solana Address!</b>\n\n` +
           `Solana addresses must be 32-44 characters (base58 format).\n\n` +
-          `Please send a valid address or use /airdrop to start over.`,
+          `Please send a valid address or use ${retryCommand} to start over.`,
           { parse_mode: 'HTML' }
         );
       }
