@@ -1776,8 +1776,10 @@ bot.command('status', async (ctx) => {
       `${userStatus.wallet_address ? `   Use /changewallet to update\n` : ``}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `⚠️ Warnings: ${userStatus.warnings || 0}/${config.WARN_LIMIT}\n` +
-      `📊 Reports: ${userStatus.reports_received || 0}\n\n` +
+      `📊 Reports: ${userStatus.reports_received || 0}\n` +
+      `${userStatus.banned ? `🚫 <b>Status: BANNED</b>\n` : ``}\n` +
       `${referralSection}` +
+      `${userStatus.banned ? `━━━━━━━━━━━━━━━━━━━━\n\n🚫 <b>YOU ARE BANNED</b>\n\n❌ Cannot participate in airdrop\n❌ No referral rewards will be paid\n\nContact support if you believe this is a mistake.\n\n` : ``}` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🌐 <b>More info:</b> https://miningmai.com`,
       { parse_mode: 'HTML' }
@@ -1865,7 +1867,8 @@ bot.command('referral', async (ctx) => {
       `📊 <b>STATISTICS</b>\n\n` +
       `👥 Total Invited: <b>${totalInvited}</b>\n` +
       `✅ Active Now: <b>${activeNow}</b>\n` +
-      `💰 Current Balance: <b>${currentBalance.toLocaleString()} MAI</b>\n\n` +
+      `💰 Current Balance: <b>${currentBalance.toLocaleString()} MAI</b>\n` +
+      `${userStatus.banned ? `🚫 <b>Status: BANNED - NO PAYOUTS</b>\n` : ``}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `💡 <b>HOW IT WORKS:</b>\n\n` +
       `1️⃣ Share your referral link\n` +
@@ -2925,7 +2928,7 @@ bot.command('pin', async (ctx) => {
   
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=pin`)],
-    [Markup.button.url('💰 Buy MAI', 'https://miningmai.com')],
+    [Markup.button.url('🌐 Buy MAI', 'https://miningmai.com')],
     [Markup.button.url('📱 News Channel', 'https://t.me/mainingmai_news')],
     [Markup.button.url('🎨 MAI Stickers', 't.me/addstickers/MAImining')]
   ]);
