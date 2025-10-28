@@ -622,8 +622,12 @@ async function banUser(userId, reason = 'Violation of rules', chatId = null) {
       console.log(`🚫 Удалена позиция #${hadPosition} у забаненного пользователя ${userId}`);
     }
 
-    // Баним пользователя в БД
-    await pool.query('UPDATE telegram_users SET banned = true WHERE telegram_id = $1', [userId]);
+    // Баним пользователя в БД и ОБНУЛЯЕМ статусы подписок
+    await pool.query(
+      'UPDATE telegram_users SET banned = true, is_subscribed_news = false, is_subscribed_chat = false WHERE telegram_id = $1',
+      [userId]
+    );
+    console.log(`✅ User ${userId} banned in DB, subscriptions set to false`);
 
     // Баним в чате Telegram (если указан chatId)
     if (chatId) {
@@ -1408,7 +1412,7 @@ bot.command('airdrop', async (ctx) => {
         // ЮЗЕР В ОЧЕРЕДИ (позиция > лимита)
         successMessage =
           `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-          `You're in the waiting queue!\n\n` +
+          `⏳ <b>You're in the WAITING QUEUE!</b>\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `📊 <b>Queue Position: #${registration.user.position}</b>\n` +
           `⏳ Airdrop spots filled: ${config.AIRDROP_LIMIT.toLocaleString()}/${config.AIRDROP_LIMIT.toLocaleString()}\n` +
@@ -4439,14 +4443,26 @@ bot.on('chat_member', async (ctx) => {
           `Use /status to check your current status.`;
       } else {
         // Отписался от чата
-        warningText = `⚠️ <b>WARNING: You Left ${channelName}!</b>\n\n` +
-          `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        const isInQueue = userStatus.position > config.AIRDROP_LIMIT;
+
+        warningText = `⚠️ <b>WARNING: You Left ${channelName}!</b>\n\n`;
+
+        if (isInQueue) {
+          warningText += `Your queue position <b>#${userStatus.position}</b> is now at risk!\n\n`;
+        } else {
+          warningText += `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n`;
+        }
+
+        warningText += `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `⏰ <b>You have until 00:00 UTC to rejoin!</b>\n\n` +
           `If you don't rejoin before the daily check at 00:00 UTC, you will:\n` +
-          `❌ Permanently lose your position #${userStatus.position}\n` +
-          `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
-          `❌ Your spot will go to the next person in queue\n\n` +
+          `❌ Permanently lose your ${isInQueue ? 'queue ' : ''}position #${userStatus.position}\n`;
+
+        if (!isInQueue) {
+          warningText += `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n`;
+        }
+
+        warningText += `❌ Your spot will go to the next person in queue\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `🔔 <b>REJOIN NOW:</b>\n` +
           `Join ${channelName} and stay subscribed!\n\n` +
@@ -4484,18 +4500,27 @@ bot.on('chat_member', async (ctx) => {
 
         if (isNowActive) {
           // Отправляем подтверждение восстановления статуса
-          await bot.telegram.sendMessage(
-            userId,
-            `✅ <b>Welcome Back!</b>\n\n` +
+          const isInQueue = userStatus.position > config.AIRDROP_LIMIT;
+
+          let welcomeBackMsg = `✅ <b>Welcome Back!</b>\n\n` +
             `You resubscribed to ${channelName}!\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
-            `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-            `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
-            `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
-            `Use /status to check your details.`,
-            { parse_mode: 'HTML' }
-          );
+            `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+          if (isInQueue) {
+            welcomeBackMsg += `📊 <b>Queue Position: #${userStatus.position}</b>\n` +
+              `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
+              `Your queue position is now safe! Keep both subscriptions active.\n\n` +
+              `If someone loses their airdrop spot, you'll automatically move up!\n\n`;
+          } else {
+            welcomeBackMsg += `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
+              `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
+              `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
+              `Your position is now safe! Keep both subscriptions active until listing.\n\n`;
+          }
+
+          welcomeBackMsg += `Use /status to check your details.`;
+
+          await bot.telegram.sendMessage(userId, welcomeBackMsg, { parse_mode: 'HTML' });
 
           console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
         } else {
@@ -4521,123 +4546,6 @@ bot.on('chat_member', async (ctx) => {
   }
 });
 
-// Дополнительный обработчик для отслеживания выхода/присоединения к группе
-bot.on('message', async (ctx, next) => {
-  try {
-    // ВЫХОД ИЗ ГРУППЫ
-    if (ctx.message?.left_chat_member) {
-      const userId = ctx.message.left_chat_member.id;
-      const chatId = ctx.chat.id;
-
-      console.log(`\n👋 LEAVE EVENT: User ${userId} left chat ${chatId}`);
-
-      // Проверяем, это наш чат?
-      if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
-        const userStatus = await getUserStatus(userId);
-
-        if (userStatus) {
-          console.log(`⚠️ Пользователь ${userId} вышел из @mainingmai_chat`);
-
-          // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
-          const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
-          const chatSubscribed = false; // Вышел из чата
-
-          await updateSubscription(userId, newsSubscribed, chatSubscribed);
-          console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=false`);
-
-          // Отправляем предупреждение ТОЛЬКО если зарегистрирован в аирдропе
-          if (userStatus.position) {
-            await bot.telegram.sendMessage(
-              userId,
-              `⚠️ <b>WARNING: You Left @mainingmai_chat!</b>\n\n` +
-              `Your Community Airdrop position <b>#${userStatus.position}</b> is now at risk!\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `⏰ <b>You have until 00:00 UTC to rejoin!</b>\n\n` +
-              `If you don't rejoin before the daily check at 00:00 UTC, you will:\n` +
-              `❌ Permanently lose your position #${userStatus.position}\n` +
-              `❌ Lose your ${config.AIRDROP_REWARD.toLocaleString()} MAI reward\n` +
-              `❌ Your spot will go to the next person in queue\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `🔔 <b>REJOIN NOW:</b>\n` +
-              `Join @mainingmai_chat and stay subscribed!\n\n` +
-              `Use /status to check your current status.`,
-              { parse_mode: 'HTML' }
-            );
-
-            console.log(`✅ Предупреждение о выходе из чата отправлено пользователю ${userId}`);
-          }
-        }
-      }
-    }
-
-    // ПРИСОЕДИНЕНИЕ К ГРУППЕ
-    if (ctx.message?.new_chat_members) {
-      const chatId = ctx.chat.id;
-
-      // Проверяем, это наш чат?
-      if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
-        for (const member of ctx.message.new_chat_members) {
-          if (member.is_bot) continue; // Пропускаем ботов
-
-          const userId = member.id;
-          console.log(`\n👋 JOIN EVENT: User ${userId} joined chat ${chatId}`);
-
-          const userStatus = await getUserStatus(userId);
-
-          if (userStatus) {
-            console.log(`✅ Пользователь ${userId} присоединился к @mainingmai_chat`);
-
-            // Обновляем статус подписок в БД - берём из БД и обновляем только CHAT
-            const newsSubscribed = userStatus.is_subscribed_news; // Берём из БД
-            const chatSubscribed = true; // Присоединился к чату - ВСЕГДА TRUE!
-
-            await updateSubscription(userId, newsSubscribed, chatSubscribed);
-            console.log(`✅ Обновлен статус подписок в БД: news=${newsSubscribed}, chat=true`);
-
-            // Отправляем уведомление ТОЛЬКО если зарегистрирован в аирдропе
-            if (userStatus.position) {
-              const isNowActive = newsSubscribed && chatSubscribed;
-
-              if (isNowActive) {
-                await bot.telegram.sendMessage(
-                  userId,
-                  `✅ <b>Welcome Back to @mainingmai_chat!</b>\n\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `🎫 Your Position: <b>#${userStatus.position}</b>\n` +
-                  `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
-                  `⚠️ Status: ✅ <b>ACTIVE</b>\n\n` +
-                  `Your position is now safe! Keep both subscriptions active until listing.\n\n` +
-                  `Use /status to check your details.`,
-                  { parse_mode: 'HTML' }
-                );
-
-                console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
-              } else {
-                await bot.telegram.sendMessage(
-                  userId,
-                  `✅ <b>You Joined @mainingmai_chat!</b>\n\n` +
-                  `But your position is still INACTIVE.\n\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `⚠️ <b>Action Required:</b>\n` +
-                  `Subscribe to @mai_news to activate your position.\n\n` +
-                  `You have until 00:00 UTC!`,
-                  { parse_mode: 'HTML' }
-                );
-
-                console.log(`✅ Уведомление о недостающей подписке отправлено пользователю ${userId}`);
-              }
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error(`❌ Ошибка обработки события группы:`, error.message);
-  }
-
-  // ВАЖНО: Передаем управление дальше для обработки текстовых сообщений
-  return next();
-});
 
 function getPresaleText() {
   let text = '💰 *MAI PRESALE - ALL 14 STAGES*\n\n';
@@ -5203,7 +5111,7 @@ bot.on(message('text'), async (ctx) => {
           // ЮЗЕР В ОЧЕРЕДИ
           successMessage =
             `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-            `You're in the waiting queue!\n\n` +
+            `⏳ <b>You're in the WAITING QUEUE!</b>\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n\n` +
             `📊 <b>Queue Position: #${registration.user.position}</b>\n` +
             `⏳ Airdrop spots filled: ${config.AIRDROP_LIMIT.toLocaleString()}/${config.AIRDROP_LIMIT.toLocaleString()}\n` +
@@ -5322,7 +5230,7 @@ bot.on(message('text'), async (ctx) => {
             // ЮЗЕР В ОЧЕРЕДИ
             successMessage =
               `🎉 <b>REGISTRATION SUCCESSFUL!</b>\n\n` +
-              `You're in the waiting queue!\n\n` +
+              `⏳ <b>You're in the WAITING QUEUE!</b>\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `📊 <b>Queue Position: #${registration.user.position}</b>\n` +
               `⏳ Airdrop spots filled: ${config.AIRDROP_LIMIT.toLocaleString()}/${config.AIRDROP_LIMIT.toLocaleString()}\n` +
