@@ -5029,8 +5029,8 @@ bot.on(message('text'), async (ctx) => {
       // У пользователя НЕТ position
       console.log('💼 Пользователь без позиции');
 
-      // Проверяем: есть ли уже кошелек? Если есть - это регистрация в аирдроп!
-      if (userStatus.wallet_address) {
+      // Проверяем: есть ли уже кошелек? Если есть И awaiting_wallet='airdrop' - это регистрация в аирдроп!
+      if (userStatus.wallet_address && userStatus.awaiting_wallet === 'airdrop') {
         // РЕГИСТРАЦИЯ В АИРДРОП (кошелек уже был, добавляем позицию)
         console.log('📝 РЕГИСТРАЦИЯ В АИРДРОП - кошелек уже есть:', userStatus.wallet_address);
 
@@ -5271,6 +5271,47 @@ bot.on(message('text'), async (ctx) => {
             return;
           }
         }
+
+      } else if (userStatus.awaiting_wallet === 'changewallet') {
+        // ✅ СМЕНА КОШЕЛЬКА БЕЗ РЕГИСТРАЦИИ (для юзеров без позиции)
+        console.log('🔄 СМЕНА КОШЕЛЬКА для пользователя БЕЗ позиции');
+
+        // ПРОВЕРКА УНИКАЛЬНОСТИ КОШЕЛЬКА
+        const uniqueCheck = await checkWalletUniqueness(text, userId);
+        if (!uniqueCheck.isUnique) {
+          console.log(`⚠️ Кошелёк уже используется пользователем ${uniqueCheck.existingUser.telegram_id}`);
+
+          const positionText = uniqueCheck.existingUser.position
+            ? `Position #${uniqueCheck.existingUser.position}`
+            : 'another user';
+
+          return sendToPrivate(
+            ctx,
+            `❌ <b>Wallet Already Registered!</b>\n\n` +
+            `This wallet address is already registered by ${positionText}.\n\n` +
+            `Each wallet can only be used once.\n\n` +
+            `Please send a different Solana wallet address.`,
+            { parse_mode: 'HTML' }
+          );
+        }
+
+        // Обновляем ТОЛЬКО кошелёк, без регистрации в аирдроп
+        await pool.query(
+          'UPDATE telegram_users SET wallet_address = $1, awaiting_wallet = NULL WHERE telegram_id = $2',
+          [text, userId]
+        );
+
+        const shortWallet = `${text.slice(0, 6)}...${text.slice(-4)}`;
+
+        return sendToPrivate(
+          ctx,
+          `✅ <b>Wallet Saved Successfully!</b>\n\n` +
+          `💼 Wallet: <code>${shortWallet}</code>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `You can now register for the airdrop using /airdrop\n\n` +
+          `Or participate in the referral program using /referral`,
+          { parse_mode: 'HTML' }
+        );
 
       } else if (userStatus.awaiting_wallet === 'referral') {
         // ✅ РЕФЕРАЛЬНАЯ ПРОГРАММА - сохраняем кошелек и показываем реферальную ссылку
