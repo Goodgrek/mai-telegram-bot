@@ -25,7 +25,7 @@ const config = {
     'www.miningmai.com',
     'https://miningmai.com',
     'https://www.miningmai.com',
-    't.me/mai_news',
+    't.me/mainingmai_news',
     't.me/mainingmai_chat',
     't.me/mai_verify_bot'
   ],
@@ -650,7 +650,7 @@ async function banUser(userId, reason = 'Violation of rules', chatId = null) {
         `Reason: ${reason}\n\n` +
         `━━━━━━━━━━━━━━━━━━━\n\n` +
         `You cannot participate in airdrops or other activities.${hadPosition ? `\n\nYour Community Airdrop position #${hadPosition} has been removed.` : ''}${referralBalance > 0 ? `\n\n⚠️ Your referral rewards (${referralBalance.toLocaleString()} MAI) will NOT be paid out.` : ''}\n\n` +
-        `If you believe this is a mistake, contact support.`,
+        `If you believe this is a mistake, contact support /admin.`,
         { parse_mode: 'HTML' }
       );
       console.log(`✅ Ban notification sent to user ${userId}`);
@@ -769,7 +769,7 @@ async function removePosition(userId) {
               `Someone unsubscribed, and you automatically moved up!\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `⚠️ <b>Keep your position:</b>\n` +
-              `✅ Stay subscribed to @mai_news\n` +
+              `✅ Stay subscribed to @mainingmai_news\n` +
               `✅ Stay subscribed to @mainingmai_chat\n\n` +
               `Use /status to check your details.`,
               { parse_mode: 'HTML' }
@@ -1102,7 +1102,7 @@ View details: /presale
 🎁 COMMUNITY AIRDROP:
 ✅ 5,000 MAI FREE for first 20,000 participants
 ✅ How to participate:
-   1️⃣ Subscribe @mai_news
+   1️⃣ Subscribe @mainingmai_news
    2️⃣ Subscribe @mainingmai_chat
    3️⃣ Register: /airdrop
 ✅ STAY subscribed until listing
@@ -1162,7 +1162,7 @@ Express yourself with MAI stickers
 
 ⚠️ CRITICAL REQUIREMENTS
 To qualify for ANY rewards, you MUST:
-✅ Subscribe to @mai_news
+✅ Subscribe to @mainingmai_news
 ✅ Subscribe to @mainingmai_chat
 ✅ Follow all community rules
 
@@ -1171,7 +1171,7 @@ Unsubscribing = Automatic disqualification
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 Website: https://miningmai.com
-📢 @mai_news
+📢 @mainingmai_news
 💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 📱 Join the revolution. Build the future.
@@ -1280,7 +1280,7 @@ bot.command('airdrop', async (ctx) => {
           `🚫 <b>STATUS: INACTIVE</b>\n\n` +
           `You unsubscribed from:\n`;
 
-        if (!newsSubscribed) warningMessage += `❌ @mai_news\n`;
+        if (!newsSubscribed) warningMessage += `❌ @mainingmai_news\n`;
         if (!chatSubscribed) warningMessage += `❌ @mainingmai_chat\n`;
 
         warningMessage += `\n⏰ <b>You have until 00:00 UTC to resubscribe!</b>\n\n` +
@@ -1294,7 +1294,7 @@ bot.command('airdrop', async (ctx) => {
         warningMessage += `❌ Your spot will go to the next person in queue\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `🔔 <b>RESUBSCRIBE NOW:</b>\n` +
-          `1️⃣ Subscribe to @mai_news\n` +
+          `1️⃣ Subscribe to @mainingmai_news\n` +
           `2️⃣ Join @mainingmai_chat\n` +
           `3️⃣ Use /status to verify\n\n` +
           `💰 <b>Want to change your wallet?</b>\n` +
@@ -1328,7 +1328,7 @@ bot.command('airdrop', async (ctx) => {
         `• Connect wallet at https://miningmai.com\n\n` +
         `💰 <b>Want to change your wallet?</b>\n` +
         `Use /changewallet command to update your wallet address.\n\n` +
-        `🔒 Keep your position by staying subscribed to @mai_news and @mainingmai_chat!`;
+        `🔒 Keep your position by staying subscribed to @mainingmai_news and @mainingmai_chat!`;
 
       return sendToPrivate(ctx, statusMessage, { parse_mode: 'HTML' });
     }
@@ -1358,7 +1358,7 @@ bot.command('airdrop', async (ctx) => {
         ctx,
         `❌ <b>Subscription Required!</b>\n\n` +
         `You must subscribe to BOTH channels to participate:\n\n` +
-        `${newsSubscribed ? '✅' : '❌'} News Channel: @mai_news\n` +
+        `${newsSubscribed ? '✅' : '❌'} News Channel: @mainingmai_news\n` +
         `${chatSubscribed ? '✅' : '❌'} Community Chat: @mainingmai_chat\n\n` +
         `After subscribing to ${!newsSubscribed && !chatSubscribed ? 'both channels' : 'the missing channel'}, run /airdrop again.`,
         { parse_mode: 'HTML' }
@@ -1380,7 +1380,7 @@ bot.command('airdrop', async (ctx) => {
             `❌ <b>Airdrop Full!</b>\n\n` +
             `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
             `You're now in the waiting queue. If someone loses their spot, you'll automatically move up!\n\n` +
-            `Follow @mai_news for updates!`,
+            `Follow @mainingmai_news for updates!`,
             { parse_mode: 'HTML' }
           );
         }
@@ -1423,7 +1423,7 @@ bot.command('airdrop', async (ctx) => {
           `You could become position #${config.AIRDROP_LIMIT} or higher and get <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>! 🎁\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `⚠️ <b>STAY IN THE QUEUE:</b>\n\n` +
-          `✅ Stay subscribed to @mai_news\n` +
+          `✅ Stay subscribed to @mainingmai_news\n` +
           `✅ Stay in community chat @mainingmai_chat\n` +
           `✅ Follow all rules\n\n` +
           `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
@@ -1445,7 +1445,7 @@ bot.command('airdrop', async (ctx) => {
           `📅 Distribution: Within 10 days after listing\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-          `✅ Stay subscribed to @mai_news\n` +
+          `✅ Stay subscribed to @mainingmai_news\n` +
           `✅ Stay in community chat @mainingmai_chat\n` +
           `✅ Follow all rules\n\n` +
           `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
@@ -1519,7 +1519,7 @@ bot.command('airdrop', async (ctx) => {
 
   `🔒 <b>How to Keep Your Position:</b>\n\n` +
 
-  `1️⃣ Stay subscribed to @mai_news\n` +
+  `1️⃣ Stay subscribed to @mainingmai_news\n` +
   `2️⃣ Stay subscribed to @mainingmai_chat\n` +
   `3️⃣ Daily verification at 00:00 UTC\n\n` +
 
@@ -1547,6 +1547,15 @@ bot.command('changewallet', async (ctx) => {
 
   try {
     const userStatus = await getUserStatus(userId);
+
+    // Проверка бана
+    if (userStatus?.banned) {
+      return sendToPrivate(
+        ctx,
+        `❌ <b>You are banned and cannot change your wallet.</b>`,
+        { parse_mode: 'HTML' }
+      );
+    }
 
     if (!userStatus?.wallet_address) {
       return sendToPrivate(
@@ -1650,7 +1659,7 @@ All decisions regarding winner eligibility and NFT allocation are final and at o
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 More info: https://miningmai.com
-📱 Stay connected: @mai_news
+📱 Stay connected: @mainingmai_news
 💬 @mainingmai_chat
 `;
 
@@ -1688,7 +1697,7 @@ bot.command('status', async (ctx) => {
     const statusText = isActive ? 'ACTIVE' : (hasPosition ? 'INACTIVE' : 'NOT REGISTERED');
 
     let warnings = '';
-    if (hasPosition && !newsSubscribed) warnings += '\n⚠️ Subscribe to @mai_news to keep your position!';
+    if (hasPosition && !newsSubscribed) warnings += '\n⚠️ Subscribe to @mainingmai_news to keep your position!';
     if (hasPosition && !chatSubscribed) warnings += '\n⚠️ Join @mainingmai_chat to keep your position!';
     if (!userStatus.wallet_address) warnings += '\n⚠️ Wallet not linked - send your wallet address!';
 
@@ -1761,7 +1770,7 @@ bot.command('status', async (ctx) => {
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       airdropSection +
       `📺 <b>Subscriptions:</b>\n` +
-      `${newsSubscribed ? '✅' : '❌'} News Channel (@mai_news)\n` +
+      `${newsSubscribed ? '✅' : '❌'} News Channel (@mainingmai_news)\n` +
       `${chatSubscribed ? '✅' : '❌'} Community Chat (@mainingmai_chat)\n\n` +
       `💼 <b>Wallet:</b> ${userStatus.wallet_address ? `<code>${userStatus.wallet_address}</code>` : '❌ Not linked'}\n` +
       `${userStatus.wallet_address ? `   Use /changewallet to update\n` : ``}\n` +
@@ -1817,7 +1826,7 @@ bot.command('referral', async (ctx) => {
         `🎁 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
         `📝 To participate in the referral program, please provide your Solana wallet address.\n\n` +
         `💰 You'll earn <b>1,000 MAI</b> for every friend who:\n` +
-        `✅ Subscribes to @mai_news\n` +
+        `✅ Subscribes to @mainingmai_news\n` +
         `✅ Subscribes to @mainingmai_chat\n\n` +
         `⚠️ If your referral unsubscribes, you'll lose the 1,000 MAI reward.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -1861,7 +1870,7 @@ bot.command('referral', async (ctx) => {
       `💡 <b>HOW IT WORKS:</b>\n\n` +
       `1️⃣ Share your referral link\n` +
       `2️⃣ Friend subscribes to BOTH channels:\n` +
-      `   • @mai_news\n` +
+      `   • @mainingmai_news\n` +
       `   • @mainingmai_chat\n` +
       `3️⃣ You get <b>+1,000 MAI</b> 🎁\n\n` +
       `⚠️ If friend unsubscribes from ANY channel:\n` +
@@ -2027,14 +2036,14 @@ bot.command('help', async (ctx) => {
 🌐 *LINKS:*
 
 🌐 Website: https://miningmai.com
-📢 @mai_news
+📢 @mainingmai_news
 💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 
 ━━━━━━━━━━━━━━━━━━━━
 
 💡 *QUICK TIP:*
-Make sure to stay subscribed to @mai_news and remain in the community chat to maintain eligibility for ALL rewards!
+Make sure to stay subscribed to @mainingmai_news and remain in the community chat to maintain eligibility for ALL rewards!
 
 *Questions? Check /faq first!* 📚`;
   
@@ -2919,7 +2928,7 @@ bot.command('pin', async (ctx) => {
       Markup.button.url('🤖 Start Bot', `https://t.me/${ctx.botInfo.username}?start=pin`),
       Markup.button.url('💰 Buy MAI', 'https://miningmai.com')
     ],
-    [Markup.button.url('📱 News Channel', 'https://t.me/mai_news')]
+    [Markup.button.url('📱 News Channel', 'https://t.me/mainingmai_news')]
   ]);
   
   try {
@@ -2932,7 +2941,7 @@ Decentralized AI Platform
 🎁 COMMUNITY AIRDROP:
 ✅ 5,000 MAI FREE for first 20,000 participants
 ✅ How to participate:
-   1️⃣ Subscribe @mai_news
+   1️⃣ Subscribe @mainingmai_news
    2️⃣ Subscribe @mainingmai_chat
    3️⃣ Register: /airdrop
 ✅ STAY subscribed until listing
@@ -2969,7 +2978,7 @@ Command: /referral
 
 🔗 OFFICIAL LINKS
 🌐 miningmai.com
-📢 @mai_news
+📢 @mainingmai_news
 💬 @mainingmai_chat
 🤖 @mai_verify_bot
 🎨 t.me/addstickers/MAImining
@@ -3228,10 +3237,10 @@ bot.action('prob_reg_cant', async (ctx) => {
     `Possible reasons:\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `1️⃣ <b>Airdrop limit reached (${config.AIRDROP_LIMIT.toLocaleString()} spots)</b>\n` +
-    `   Solution: Follow @mai_news for future airdrops\n\n` +
+    `   Solution: Follow @mainingmai_news for future airdrops\n\n` +
     `2️⃣ <b>Not subscribed to required channels</b>\n` +
     `   Solution:\n` +
-    `   • Join @mai_news\n` +
+    `   • Join @mainingmai_news\n` +
     `   • Join @mainingmai_chat\n` +
     `   • Then try /airdrop again\n\n` +
     `3️⃣ <b>Wallet already used by another user</b>\n` +
@@ -3275,7 +3284,7 @@ bot.action('prob_reg_lost', async (ctx) => {
     `Your spot goes to the next person in queue.\n\n` +
     `Check your status: /status\n\n` +
     `<b>Prevention:</b>\n` +
-    `✅ Stay subscribed to @mai_news\n` +
+    `✅ Stay subscribed to @mainingmai_news\n` +
     `✅ Stay in @mainingmai_chat\n` +
     `✅ Follow /rules\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -3301,7 +3310,7 @@ bot.action('prob_reg_notwork', async (ctx) => {
     `Troubleshooting steps:\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `1️⃣ <b>Check subscriptions first</b>\n` +
-    `   • Join @mai_news\n` +
+    `   • Join @mainingmai_news\n` +
     `   • Join @mainingmai_chat\n` +
     `   • Wait 1-2 minutes\n` +
     `   • Then use /airdrop\n\n` +
@@ -3507,7 +3516,7 @@ bot.action('prob_sub_false', async (ctx) => {
     `1️⃣ <b>Wait 1-2 minutes after subscribing</b>\n` +
     `   Telegram needs time to update\n\n` +
     `2️⃣ <b>Make sure you're SUBSCRIBED (not just viewing)</b>\n` +
-    `   • Open @mai_news\n` +
+    `   • Open @mainingmai_news\n` +
     `   • Tap "JOIN" or "SUBSCRIBE" button\n` +
     `   • Same for @mainingmai_chat\n\n` +
     `3️⃣ <b>Check if you were muted/restricted</b>\n` +
@@ -3550,8 +3559,8 @@ bot.action('prob_sub_join', async (ctx) => {
     `   If banned → contact admin via /admin\n\n` +
     `2️⃣ <b>Try joining via direct links:</b>\n\n` +
     `   News Channel:\n` +
-    `   @mai_news\n` +
-    `   t.me/mai_news\n\n` +
+    `   @mainingmai_news\n` +
+    `   t.me/mainingmai_news\n\n` +
     `   Community Chat:\n` +
     `   @mainingmai_chat\n` +
     `   t.me/mainingmai_chat\n\n` +
@@ -3977,7 +3986,7 @@ bot.action('prob_ref_how', async (ctx) => {
     `   • Link format: t.me/mai_verify_bot?start=ref_YOURID\n` +
     `   • Share on social media, with friends, etc.\n\n` +
     `3️⃣ Friend clicks your link and subscribes\n` +
-    `   • Must subscribe to @mai_news\n` +
+    `   • Must subscribe to @mainingmai_news\n` +
     `   • Must subscribe to @mainingmai_chat\n` +
     `   • <b>BOTH channels required!</b>\n\n` +
     `4️⃣ You get rewarded!\n` +
@@ -4055,7 +4064,7 @@ bot.action('prob_ref_reward', async (ctx) => {
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `<b>Why reward might not show:</b>\n\n` +
     `1️⃣ <b>Friend not subscribed to BOTH channels</b>\n` +
-    `   • Check: @mai_news AND @mainingmai_chat\n` +
+    `   • Check: @mainingmai_news AND @mainingmai_chat\n` +
     `   • Reward only credited when BOTH subscribed\n` +
     `   • If only 1 channel → no reward\n\n` +
     `2️⃣ <b>Friend already used bot before</b>\n` +
@@ -4159,7 +4168,7 @@ bot.action('prob_ref_stats', async (ctx) => {
     `• Started the bot\n` +
     `• Includes inactive users\n\n` +
     `<b>Active Now</b> = Users who:\n` +
-    `• Are subscribed to @mai_news\n` +
+    `• Are subscribed to @mainingmai_news\n` +
     `• Are subscribed to @mainingmai_chat\n` +
     `• Currently earning you MAI\n\n` +
     `<b>Current Balance</b> = Your MAI rewards:\n` +
@@ -4268,7 +4277,7 @@ async function checkAndSendMilestone(chatId, botInfo) {
         `🎁 COMMUNITY AIRDROP:\n` +
         `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI FREE\n\n` +
         `📋 How to participate:\n` +
-        `1️⃣ Subscribe to @mai_news\n` +
+        `1️⃣ Subscribe to @mainingmai_news\n` +
         `2️⃣ Subscribe to @mainingmai_chat\n` +
         `3️⃣ Register via command: /airdrop\n\n` +
         `💡 Register after 20K? You're in queue and can move up!\n\n` +
@@ -4329,7 +4338,7 @@ bot.on('chat_member', async (ctx) => {
   // Определяем из какого канала изменение
   let channelName = '';
   if (chatId === parseInt(config.NEWS_CHANNEL_ID)) {
-    channelName = '@mai_news';
+    channelName = '@mainingmai_news';
   } else if (chatId === parseInt(config.CHAT_CHANNEL_ID)) {
     channelName = '@mainingmai_chat';
   } else {
@@ -4470,7 +4479,7 @@ bot.on('chat_member', async (ctx) => {
           console.log(`✅ Уведомление о восстановлении статуса отправлено пользователю ${userId}`);
         } else {
           // Подписался только на один канал, нужен второй
-          const missingChannel = newsSubscribed ? '@mainingmai_chat' : '@mai_news';
+          const missingChannel = newsSubscribed ? '@mainingmai_chat' : '@mainingmai_news';
           await bot.telegram.sendMessage(
             userId,
             `✅ <b>You Resubscribed to ${channelName}!</b>\n\n` +
@@ -4678,7 +4687,7 @@ Telegram blocks Web3. Use real browser!
 - Distribution: Within 10 days after listing
 
 How to participate:
-1️⃣ Subscribe to @mai_news
+1️⃣ Subscribe to @mainingmai_news
 2️⃣ Subscribe to @mainingmai_chat
 3️⃣ Register via command: /airdrop
 
@@ -4699,7 +4708,7 @@ Keep your position:
 How to participate:
 1️⃣ Get your referral link: /referral
 2️⃣ Share link with friends
-3️⃣ Friend subscribes to @mai_news AND @mainingmai_chat
+3️⃣ Friend subscribes to @mainingmai_news AND @mainingmai_chat
 4️⃣ You get +1,000 MAI instantly! 🎁
 
 ⚠️ Important:
@@ -4792,7 +4801,7 @@ Admins NEVER DM first!
 
 🔗 OFFICIAL LINKS
 🌐 Website: https://miningmai.com
-📢 @mai_news
+📢 @mainingmai_news
 💬 @mainingmai_chat
 🎨 t.me/addstickers/MAImining
 `;
@@ -4845,7 +4854,7 @@ Breaking rules = Loss of rewards!
 
 To keep rewards:
 ✅ Follow rules
-✅ Stay in @mai_news
+✅ Stay in @mainingmai_news
 ✅ Stay in this chat @mainingmai_chat
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -4871,7 +4880,7 @@ A: Use /admin command with your message
 ━━━━━━━━━━━━━━━━━━━━
 
 🌐 Website: https://miningmai.com
-📢 @mai_news
+📢 @mainingmai_news
 💬 @mainingmai_chat`;
 }
 
@@ -4900,6 +4909,17 @@ bot.on(message('text'), async (ctx) => {
     // ОБРАБОТКА КОШЕЛЬКА - ГЛАВНОЕ!
     if (userStatus && userStatus.awaiting_wallet) {
       console.log('💼 НАЧАЛО ОБРАБОТКИ КОШЕЛЬКА:', text);
+
+      // ПРОВЕРКА БАНА - забаненные не могут вводить кошельки
+      if (userStatus.banned) {
+        console.log('❌ Забаненный пользователь пытается ввести кошелёк');
+        await setAwaitingWallet(userId, null); // Сбрасываем awaiting_wallet
+        return sendToPrivate(
+          ctx,
+          `❌ <b>You are banned and cannot participate.</b>`,
+          { parse_mode: 'HTML' }
+        );
+      }
 
       if (!isValidSolanaAddress(text)) {
         console.log('❌ Невалидный адрес Solana');
@@ -5025,7 +5045,7 @@ bot.on(message('text'), async (ctx) => {
               `❌ <b>Airdrop Full!</b>\n\n` +
               `Unfortunately, all ${config.AIRDROP_LIMIT.toLocaleString()} spots have been taken.\n\n` +
               `You're now in the waiting queue. If someone loses their spot, you'll automatically move up!\n\n` +
-              `Follow @mai_news for updates!`,
+              `Follow @mainingmai_news for updates!`,
               { parse_mode: 'HTML' }
             );
           }
@@ -5067,7 +5087,7 @@ bot.on(message('text'), async (ctx) => {
             `You could become position #${config.AIRDROP_LIMIT} or higher and get <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>! 🎁\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n\n` +
             `⚠️ <b>STAY IN THE QUEUE:</b>\n\n` +
-            `✅ Stay subscribed to @mai_news\n` +
+            `✅ Stay subscribed to @mainingmai_news\n` +
             `✅ Stay in community chat @mainingmai_chat\n` +
             `✅ Follow all rules\n\n` +
             `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
@@ -5089,7 +5109,7 @@ bot.on(message('text'), async (ctx) => {
             `📅 Distribution: Within 10 days after listing\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n\n` +
             `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-            `✅ Stay subscribed to @mai_news\n` +
+            `✅ Stay subscribed to @mainingmai_news\n` +
             `✅ Stay in community chat @mainingmai_chat\n` +
             `✅ Follow all rules\n\n` +
             `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
@@ -5186,7 +5206,7 @@ bot.on(message('text'), async (ctx) => {
               `You could become position #${config.AIRDROP_LIMIT} or higher and get <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>! 🎁\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `⚠️ <b>STAY IN THE QUEUE:</b>\n\n` +
-              `✅ Stay subscribed to @mai_news\n` +
+              `✅ Stay subscribed to @mainingmai_news\n` +
               `✅ Stay in community chat @mainingmai_chat\n` +
               `✅ Follow all rules\n\n` +
               `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
@@ -5210,7 +5230,7 @@ bot.on(message('text'), async (ctx) => {
               `📅 Distribution: Within 10 days after listing\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
-              `✅ Stay subscribed to @mai_news\n` +
+              `✅ Stay subscribed to @mainingmai_news\n` +
               `✅ Stay in community chat @mainingmai_chat\n` +
               `✅ Follow all rules\n\n` +
               `🔍 <b>Daily Check: 00:00 UTC</b>\n` +
@@ -5317,7 +5337,7 @@ bot.on(message('text'), async (ctx) => {
           `💡 <b>HOW IT WORKS:</b>\n\n` +
           `1️⃣ Share your referral link\n` +
           `2️⃣ Friend subscribes to BOTH channels:\n` +
-          `   • @mai_news\n` +
+          `   • @mainingmai_news\n` +
           `   • @mainingmai_chat\n` +
           `3️⃣ You get <b>+1,000 MAI</b> 🎁\n\n` +
           `⚠️ If friend unsubscribes from ANY channel:\n` +
@@ -5458,12 +5478,12 @@ cron.schedule('0 0 * * *', async () => {
           `🚨 <b>AIRDROP POSITION LOST!</b>\n\n` +
           `You lost your position #${removed.position} in the airdrop queue.\n\n` +
           `<b>Reason:</b> Unsubscribed from required channels\n` +
-          `${!removed.newsSubscribed ? '❌ Not subscribed to @mai_news\n' : ''}` +
+          `${!removed.newsSubscribed ? '❌ Not subscribed to @mainingmai_news\n' : ''}` +
           `${!removed.chatSubscribed ? '❌ Not in community chat @mainingmai_chat\n' : ''}\n\n` +
           `Your spot was given to the next person in line.\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `<b>Want to register again?</b>\n` +
-          `1️⃣ Subscribe to @mai_news\n` +
+          `1️⃣ Subscribe to @mainingmai_news\n` +
           `2️⃣ Join community chat @mainingmai_chat\n` +
           `3️⃣ Use /airdrop command\n\n` +
           `⚠️ You'll get a NEW position at the end of the queue.`,
@@ -5506,7 +5526,7 @@ cron.schedule('0 0 * * *', async () => {
               `✅ <b>You're now eligible for the airdrop!</b>\n` +
               `🎁 Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI tokens</b>\n\n` +
               `⚠️ <b>IMPORTANT:</b>\n` +
-              `Stay subscribed to @mai_news and @mainingmai_chat until listing to keep your reward!\n\n` +
+              `Stay subscribed to @mainingmai_news and @mainingmai_chat until listing to keep your reward!\n\n` +
               `Use /status to check your details.`,
               { parse_mode: 'HTML' }
             );
