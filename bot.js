@@ -622,12 +622,41 @@ async function banUser(userId, reason = 'Violation of rules', chatId = null) {
       console.log(`🚫 Удалена позиция #${hadPosition} у забаненного пользователя ${userId}`);
     }
 
+    // Проверяем был ли юзер активным рефералом (обе подписки) и есть ли реферер
+    const wasActiveReferral = userStatus?.is_subscribed_news && userStatus?.is_subscribed_chat && userStatus?.referrer_id;
+    const referrerId = userStatus?.referrer_id;
+
     // Баним пользователя в БД и ОБНУЛЯЕМ статусы подписок
     await pool.query(
       'UPDATE telegram_users SET banned = true, is_subscribed_news = false, is_subscribed_chat = false WHERE telegram_id = $1',
       [userId]
     );
     console.log(`✅ User ${userId} banned in DB, subscriptions set to false`);
+
+    // Если юзер был активным рефералом → забираем бонус у реферера
+    if (wasActiveReferral && referrerId) {
+      console.log(`💰 Забираем реферальный бонус у реферера ${referrerId} за забаненного реферала ${userId}`);
+
+      await pool.query(
+        'UPDATE telegram_users SET referral_reward_balance = GREATEST(referral_reward_balance - 1000, 0) WHERE telegram_id = $1',
+        [referrerId]
+      );
+
+      // Уведомляем реферера
+      try {
+        await bot.telegram.sendMessage(
+          referrerId,
+          `⚠️ <b>Referral Update</b>\n\n` +
+          `One of your referrals was banned and lost their subscriptions.\n\n` +
+          `<b>-1,000 MAI</b> removed from your balance.\n\n` +
+          `Use /referral to check your current balance.`,
+          { parse_mode: 'HTML' }
+        );
+        console.log(`✅ Уведомление о снятии бонуса отправлено рефереру ${referrerId}`);
+      } catch (err) {
+        console.log(`⚠️ Cannot send referral update to ${referrerId}: ${err.message}`);
+      }
+    }
 
     // Баним в чате Telegram (если указан chatId)
     if (chatId) {
