@@ -25,6 +25,7 @@ const config = {
     'www.miningmai.com',
     'https://miningmai.com',
     'https://www.miningmai.com',
+    'https://x.com/mainingmai',
     't.me/mainingmai_news',
     't.me/mainingmai_chat',
     't.me/mai_verify_bot'
@@ -1129,6 +1130,7 @@ View details: /presale
 🎁 MEGA REWARDS PROGRAM
 
 🎁 COMMUNITY AIRDROP:
+⏰ Active until presale completion • Status: ✅ ACTIVE
 ✅ 5,000 MAI FREE for first 20,000 participants
 ✅ How to participate:
    1️⃣ Subscribe @mainingmai_news
@@ -1142,6 +1144,7 @@ View details: /presale
 Claim now! 🚀
 
 🎁 COMMUNITY REFERRAL PROGRAM:
+⏰ Active until presale completion • Status: ✅ ACTIVE
 💰 Earn 1,000 MAI per friend!
 ✅ Friend subscribes to BOTH channels = You earn!
 ✅ Unlimited invites - no cap!
@@ -1336,7 +1339,8 @@ bot.command('airdrop', async (ctx) => {
       // Если всё ОК - показываем обычное сообщение
       const isInQueue = userStatus.position > config.AIRDROP_LIMIT;
 
-      let statusMessage = `✅ <b>You're Already Registered!</b>\n\n`;
+      let statusMessage = `⏰ Active until presale completion • ✅ ACTIVE\n\n` +
+        `✅ <b>You're Already Registered!</b>\n\n`;
 
       if (isInQueue) {
         statusMessage += `📊 Queue Position: <b>#${userStatus.position}</b>\n` +
@@ -1492,7 +1496,7 @@ bot.command('airdrop', async (ctx) => {
         try {
           await bot.telegram.sendPhoto(
             userId,
-            { source: './images/milestone.webp' },
+            { source: './images/Airdropcongra.jpeg' },
             {
               caption: successMessage,
               parse_mode: 'HTML'
@@ -1888,6 +1892,7 @@ bot.command('referral', async (ctx) => {
     await sendToPrivate(
       ctx,
       `🎁 <b>YOUR REFERRAL PROGRAM</b>\n\n` +
+      `⏰ Active until presale completion • ✅ ACTIVE\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🔗 <b>Your Referral Link:</b>\n` +
       `<code>${referralLink}</code>\n\n` +
@@ -2970,6 +2975,7 @@ bot.command('pin', async (ctx) => {
 Decentralized AI Platform
 
 🎁 COMMUNITY AIRDROP:
+⏰ Active until presale completion • ✅ ACTIVE
 ✅ 5,000 MAI FREE for first 20,000 participants
 ✅ How to participate:
    1️⃣ Subscribe @mainingmai_news
@@ -2982,6 +2988,7 @@ Decentralized AI Platform
 Claim now! 🚀
 
 🎁 COMMUNITY REFERRAL:
+⏰ Active until presale completion • ✅ ACTIVE
 💰 Earn 1,000 MAI per friend!
 👉 Friend subscribes = You earn
 👉 Unlimited invites!
@@ -3067,6 +3074,7 @@ bot.action('prob_registration', async (ctx) => {
 
   const message =
     `📋 <b>REGISTRATION ISSUES</b>\n\n` +
+    `⏰ Active until presale completion • Status: ✅ ACTIVE\n\n` +
     `Select your problem:\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `❌ Can't register for airdrop\n` +
@@ -3150,6 +3158,7 @@ bot.action('prob_referral', async (ctx) => {
 
   const message =
     `🎁 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
+    `⏰ Active until presale completion • Status: ✅ ACTIVE\n\n` +
     `Select your question:\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `❓ How does it work?\n` +
@@ -4270,7 +4279,7 @@ bot.action('prob_ref_ban', async (ctx) => {
 // ============================================================
 
 // Milestone каждые 500 участников
-const MILESTONE_STEP = 500;
+const MILESTONE_STEP = 1;
 
 async function checkAndSendMilestone(chatId, botInfo) {
   try {
@@ -4312,6 +4321,14 @@ async function checkAndSendMilestone(chatId, botInfo) {
         `2️⃣ Subscribe to @mainingmai_chat\n` +
         `3️⃣ Register via command: /airdrop\n\n` +
         `💡 Register after 20K? You're in queue and can move up!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🎁 COMMUNITY REFERRAL:\n` +
+        `⏰ Active until presale completion • ✅ ACTIVE\n` +
+        `💰 Earn 1,000 MAI per friend!\n` +
+        `👉 Friend subscribes = You earn\n` +
+        `👉 Unlimited invites!\n` +
+        `Command: /referral\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `💪 Together we're building the future of decentralized AI!\n\n` +
         `🌐 https://miningmai.com`;
 
@@ -4713,6 +4730,7 @@ Telegram blocks Web3. Use real browser!
 - Listing: Q1 2026 on DEX/CEX
 
 🎁 COMMUNITY AIRDROP (5,000 MAI)
+⏰ Active until presale completion • Status: ✅ ACTIVE
 - First 20,000 participants get 5,000 MAI!
 - Absolutely FREE - just subscribe & register
 - Distribution: Within 10 days after listing
@@ -4732,6 +4750,7 @@ Keep your position:
 ✅ Register wallet: /airdrop
 
 🎁 COMMUNITY REFERRAL (1,000 MAI per friend)
+⏰ Active until presale completion • Status: ✅ ACTIVE
 - Earn 1,000 MAI for every friend who subscribes!
 - Unlimited referrals - no cap!
 - Distribution: Within 10 days after listing
@@ -5161,7 +5180,7 @@ bot.on(message('text'), async (ctx) => {
           try {
             await bot.telegram.sendPhoto(
               userId,
-              { source: './images/milestone.webp' },
+              { source: './images/Airdropcongra.jpeg' },
               {
                 caption: successMessage,
                 parse_mode: 'HTML'
@@ -5281,7 +5300,7 @@ bot.on(message('text'), async (ctx) => {
             try {
               await bot.telegram.sendPhoto(
                 userId,
-                { source: './images/milestone.webp' },
+                { source: './images/Airdropcongra.jpeg' },
                 {
                   caption: successMessage,
                   parse_mode: 'HTML'
