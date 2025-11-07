@@ -5641,21 +5641,22 @@ cron.schedule('0 0 * * *', async () => {
 // ==================== START PRESALE MONITOR ====================
 let presaleMonitor = null;
 
+// Initialize presale monitor before bot launch
+if (config.NEWS_CHANNEL_ID) {
+  console.log('🚀 Initializing Presale Monitor...');
+  presaleMonitor = new PresaleMonitor(bot, config.NEWS_CHANNEL_ID, pool);
+  presaleMonitor.start().catch((err) => {
+    console.error('❌ Failed to start presale monitor:', err);
+  });
+} else {
+  console.warn('⚠️ NEWS_CHANNEL_ID not set, presale monitor disabled');
+}
+
 bot.launch({
   dropPendingUpdates: true,
   allowedUpdates: ['message', 'chat_member', 'callback_query', 'my_chat_member']
 }).then(() => {
   console.log('✅ Bot launched successfully');
-
-  // Start presale monitor
-  if (config.NEWS_CHANNEL_ID) {
-    presaleMonitor = new PresaleMonitor(bot, config.NEWS_CHANNEL_ID, pool);
-    presaleMonitor.start().catch((err) => {
-      console.error('❌ Failed to start presale monitor:', err);
-    });
-  } else {
-    console.warn('⚠️ NEWS_CHANNEL_ID not set, presale monitor disabled');
-  }
 
   if (config.ADMIN_IDS[0]) {
     bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active with chat_member tracking!').catch(() => {});
