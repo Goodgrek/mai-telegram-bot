@@ -1141,7 +1141,6 @@ View details: /presale
 ✅ Distribution: Within 10 days after listing
 💡 Register after 20K? You're in queue - if someone loses their spot, you move up!
 ❌ Unsubscribe = Position lost!
-Claim now! 🚀
 
 🎁 COMMUNITY REFERRAL PROGRAM:
 ⏰ Active until presale completion • Status: ✅ ACTIVE
@@ -2975,7 +2974,6 @@ bot.command('pin', async (ctx) => {
 Decentralized AI Platform
 
 🎁 COMMUNITY AIRDROP:
-⏰ Active until presale completion • ✅ ACTIVE
 ✅ 5,000 MAI FREE for first 20,000 participants
 ✅ How to participate:
    1️⃣ Subscribe @mainingmai_news
@@ -2985,10 +2983,8 @@ Decentralized AI Platform
 ✅ Daily check 00:00 UTC
 ✅ Distribution: Within 10 days after listing
 ❌ Unsubscribe = Position lost!
-Claim now! 🚀
 
 🎁 COMMUNITY REFERRAL:
-⏰ Active until presale completion • ✅ ACTIVE
 💰 Earn 1,000 MAI per friend!
 👉 Friend subscribes = You earn
 👉 Unlimited invites!
@@ -3019,7 +3015,6 @@ Command: /referral
 📢 @mainingmai_news
 💬 @mainingmai_chat
 🤖 @mai_verify_bot
-🎨 t.me/addstickers/MAImining
 
 👇 Click buttons below!`,
     ...keyboard
@@ -4321,14 +4316,14 @@ async function checkAndSendMilestone(chatId, botInfo) {
         `2️⃣ Subscribe to @mainingmai_chat\n` +
         `3️⃣ Register via command: /airdrop\n\n` +
         `💡 Register after 20K? You're in queue and can move up!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `━━━━━━━━━━━━━━━━\n\n` +
         `🎁 COMMUNITY REFERRAL:\n` +
         `⏰ Active until presale completion • ✅ ACTIVE\n` +
         `💰 Earn 1,000 MAI per friend!\n` +
         `👉 Friend subscribes = You earn\n` +
         `👉 Unlimited invites!\n` +
         `Command: /referral\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `━━━━━━━━━━━━━━━━\n\n` +
         `💪 Together we're building the future of decentralized AI!\n\n` +
         `🌐 https://miningmai.com`;
 
