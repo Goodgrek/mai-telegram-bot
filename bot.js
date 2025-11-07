@@ -2,6 +2,7 @@ const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { Pool } = require('pg');
 const cron = require('node-cron');
+const PresaleMonitor = require('./presaleMonitor');
 console.log('🚀 Запуск MAI Bot...');
 console.log('📋 Проверка переменных:');
 console.log('  BOT_TOKEN:', process.env.BOT_TOKEN ? '✅' : '❌');
@@ -4274,7 +4275,7 @@ bot.action('prob_ref_ban', async (ctx) => {
 // ============================================================
 
 // Milestone каждые 500 участников
-const MILESTONE_STEP = 1;
+const MILESTONE_STEP = 500;
 
 async function checkAndSendMilestone(chatId, botInfo) {
   try {
@@ -5637,10 +5638,25 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
+// ==================== START PRESALE MONITOR ====================
+let presaleMonitor = null;
+
 bot.launch({
   dropPendingUpdates: true,
   allowedUpdates: ['message', 'chat_member', 'callback_query', 'my_chat_member']
 }).then(() => {
+  console.log('✅ Bot launched successfully');
+
+  // Start presale monitor
+  if (config.NEWS_CHANNEL_ID) {
+    presaleMonitor = new PresaleMonitor(bot, config.NEWS_CHANNEL_ID);
+    presaleMonitor.start().catch((err) => {
+      console.error('❌ Failed to start presale monitor:', err);
+    });
+  } else {
+    console.warn('⚠️ NEWS_CHANNEL_ID not set, presale monitor disabled');
+  }
+
   if (config.ADMIN_IDS[0]) {
     bot.telegram.sendMessage(config.ADMIN_IDS[0], '✅ MAI Bot v2.2 Professional - Group & PM modes active with chat_member tracking!').catch(() => {});
   }
@@ -5648,5 +5664,16 @@ bot.launch({
   process.exit(1);
 });
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', () => {
+  if (presaleMonitor) {
+    presaleMonitor.stop();
+  }
+  bot.stop('SIGINT');
+});
+
+process.once('SIGTERM', () => {
+  if (presaleMonitor) {
+    presaleMonitor.stop();
+  }
+  bot.stop('SIGTERM');
+});
