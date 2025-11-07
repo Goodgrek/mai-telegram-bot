@@ -2,7 +2,6 @@
 // Monitors Solana presale contract and sends notifications to news channel
 
 const https = require('https');
-const { db } = require('./database');
 
 // Stage configuration from contract
 const STAGE_DATA = {
@@ -25,9 +24,10 @@ const STAGE_DATA = {
 const PRECISION = 1_000_000_000; // 10^9
 
 class PresaleMonitor {
-  constructor(bot, newsChannelId) {
+  constructor(bot, newsChannelId, pool) {
     this.bot = bot;
     this.newsChannelId = newsChannelId;
+    this.pool = pool;
     this.rpcEndpoint = 'https://api.devnet.solana.com';
     this.configAddress = '8TzcgVuHrkt6hzd5Zmf3y9KRy7hB4D6cUYYJ5oGXoeCu';
     this.checkInterval = 60000; // 1 minute
@@ -38,9 +38,6 @@ class PresaleMonitor {
   // Start monitoring
   async start() {
     console.log('🚀 Presale Monitor starting...');
-
-    // Initialize database
-    await this.initDatabase();
 
     // Load previous state from DB
     await this.loadState();
@@ -63,91 +60,18 @@ class PresaleMonitor {
     }
   }
 
-  // Initialize database table
-  async initDatabase() {
-    return new Promise((resolve, reject) => {
-      db.run(`
-        CREATE TABLE IF NOT EXISTS presale_monitoring (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          current_stage INTEGER,
-          is_paused BOOLEAN,
-          listing_triggered BOOLEAN,
-          stage_1_sold BIGINT,
-          stage_2_sold BIGINT,
-          stage_3_sold BIGINT,
-          stage_4_sold BIGINT,
-          stage_5_sold BIGINT,
-          stage_6_sold BIGINT,
-          stage_7_sold BIGINT,
-          stage_8_sold BIGINT,
-          stage_9_sold BIGINT,
-          stage_10_sold BIGINT,
-          stage_11_sold BIGINT,
-          stage_12_sold BIGINT,
-          stage_13_sold BIGINT,
-          stage_14_sold BIGINT,
-          stage_1_notified_50 BOOLEAN DEFAULT 0,
-          stage_2_notified_50 BOOLEAN DEFAULT 0,
-          stage_3_notified_50 BOOLEAN DEFAULT 0,
-          stage_4_notified_50 BOOLEAN DEFAULT 0,
-          stage_5_notified_50 BOOLEAN DEFAULT 0,
-          stage_6_notified_50 BOOLEAN DEFAULT 0,
-          stage_7_notified_50 BOOLEAN DEFAULT 0,
-          stage_8_notified_50 BOOLEAN DEFAULT 0,
-          stage_9_notified_50 BOOLEAN DEFAULT 0,
-          stage_10_notified_50 BOOLEAN DEFAULT 0,
-          stage_11_notified_50 BOOLEAN DEFAULT 0,
-          stage_12_notified_50 BOOLEAN DEFAULT 0,
-          stage_13_notified_50 BOOLEAN DEFAULT 0,
-          stage_14_notified_50 BOOLEAN DEFAULT 0,
-          stage_1_notified_100 BOOLEAN DEFAULT 0,
-          stage_2_notified_100 BOOLEAN DEFAULT 0,
-          stage_3_notified_100 BOOLEAN DEFAULT 0,
-          stage_4_notified_100 BOOLEAN DEFAULT 0,
-          stage_5_notified_100 BOOLEAN DEFAULT 0,
-          stage_6_notified_100 BOOLEAN DEFAULT 0,
-          stage_7_notified_100 BOOLEAN DEFAULT 0,
-          stage_8_notified_100 BOOLEAN DEFAULT 0,
-          stage_9_notified_100 BOOLEAN DEFAULT 0,
-          stage_10_notified_100 BOOLEAN DEFAULT 0,
-          stage_11_notified_100 BOOLEAN DEFAULT 0,
-          stage_12_notified_100 BOOLEAN DEFAULT 0,
-          stage_13_notified_100 BOOLEAN DEFAULT 0,
-          stage_14_notified_100 BOOLEAN DEFAULT 0,
-          presale_started_notified BOOLEAN DEFAULT 0,
-          presale_completed BOOLEAN DEFAULT 0,
-          presale_completed_notified BOOLEAN DEFAULT 0,
-          listing_triggered_notified BOOLEAN DEFAULT 0,
-          programs_closed BOOLEAN DEFAULT 0,
-          last_check TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `, (err) => {
-        if (err) {
-          console.error('❌ Database init error:', err);
-          reject(err);
-        } else {
-          console.log('✅ Database initialized');
-          resolve();
-        }
-      });
-    });
-  }
-
   // Load previous state from database
   async loadState() {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM presale_monitoring ORDER BY id DESC LIMIT 1', (err, row) => {
-        if (err) {
-          console.error('❌ Error loading state:', err);
-          reject(err);
-        } else {
-          this.previousState = row || null;
-          console.log('📊 Previous state loaded:', this.previousState ? 'Found' : 'Not found');
-          resolve();
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(
+        'SELECT * FROM presale_monitoring ORDER BY id DESC LIMIT 1'
+      );
+      this.previousState = result.rows[0] || null;
+      console.log('📊 Previous state loaded:', this.previousState ? 'Found' : 'Not found');
+    } catch (error) {
+      console.error('❌ Error loading state:', error.message);
+      throw error;
+    }
   }
 
   // Make RPC call to Solana
@@ -273,9 +197,9 @@ class PresaleMonitor {
   async checkPresaleStart(contractData) {
     if (!this.previousState) return;
 
-    const wasPaused = this.previousState.is_paused === 1;
+    const wasPaused = this.previousState.is_paused === true;
     const isNowActive = !contractData.isPaused;
-    const notifiedBefore = this.previousState.presale_started_notified === 1;
+    const notifiedBefore = this.previousState.presale_started_notified === true;
 
     if (wasPaused && isNowActive && !notifiedBefore) {
       console.log('🚀 PRESALE STARTED!');
@@ -329,9 +253,9 @@ class PresaleMonitor {
   async checkListingTriggered(contractData) {
     if (!this.previousState) return;
 
-    const wasNotTriggered = this.previousState.listing_triggered === 0;
+    const wasNotTriggered = this.previousState.listing_triggered === false;
     const isNowTriggered = contractData.listingTriggered;
-    const notifiedBefore = this.previousState.listing_triggered_notified === 1;
+    const notifiedBefore = this.previousState.listing_triggered_notified === true;
 
     if (wasNotTriggered && isNowTriggered && !notifiedBefore) {
       console.log('🎊 LISTING TRIGGERED!');
@@ -343,7 +267,7 @@ class PresaleMonitor {
   isNotified(stage, percentage) {
     if (!this.previousState) return false;
     const field = `stage_${stage}_notified_${percentage}`;
-    return this.previousState[field] === 1;
+    return this.previousState[field] === true;
   }
 
   // Send notification: Presale started
@@ -566,13 +490,8 @@ class PresaleMonitor {
 
   // Save current state to database
   async saveState(contractData) {
-    return new Promise((resolve, reject) => {
-      const stagesSold = {};
-      for (let i = 1; i <= 14; i++) {
-        stagesSold[`stage_${i}_sold`] = contractData.stagesSold[i].toString();
-      }
-
-      // Calculate notified flags based on current percentages
+    try {
+      // Calculate notified flags
       const notified50 = {};
       const notified100 = {};
       for (let stage = 1; stage <= 14; stage++) {
@@ -580,8 +499,8 @@ class PresaleMonitor {
         const limit = STAGE_DATA[stage].tokens_millions * 1_000_000;
         const percentage = (sold / limit) * 100;
 
-        notified50[`stage_${stage}_notified_50`] = (percentage >= 50 && this.isNotified(stage, 50)) ? 1 : (percentage >= 50 ? 1 : 0);
-        notified100[`stage_${stage}_notified_100`] = (percentage >= 100 && this.isNotified(stage, 100)) ? 1 : (percentage >= 100 ? 1 : 0);
+        notified50[`stage_${stage}_notified_50`] = (percentage >= 50 && this.isNotified(stage, 50)) || (percentage >= 50);
+        notified100[`stage_${stage}_notified_100`] = (percentage >= 100 && this.isNotified(stage, 100)) || (percentage >= 100);
       }
 
       // Check if presale is completed
@@ -595,39 +514,88 @@ class PresaleMonitor {
         }
       }
 
-      const insertData = {
-        current_stage: contractData.currentStage,
-        is_paused: contractData.isPaused ? 1 : 0,
-        listing_triggered: contractData.listingTriggered ? 1 : 0,
-        ...stagesSold,
-        ...notified50,
-        ...notified100,
-        presale_started_notified: (this.previousState && this.previousState.presale_started_notified === 1) || (!contractData.isPaused) ? 1 : 0,
-        presale_completed: presaleCompleted ? 1 : 0,
-        presale_completed_notified: (this.previousState && this.previousState.presale_completed_notified === 1) || presaleCompleted ? 1 : 0,
-        listing_triggered_notified: (this.previousState && this.previousState.listing_triggered_notified === 1) || contractData.listingTriggered ? 1 : 0,
-        programs_closed: presaleCompleted ? 1 : 0,
-        last_check: new Date().toISOString()
-      };
-
-      const columns = Object.keys(insertData).join(', ');
-      const placeholders = Object.keys(insertData).map(() => '?').join(', ');
-      const values = Object.values(insertData);
-
-      db.run(
-        `INSERT INTO presale_monitoring (${columns}) VALUES (${placeholders})`,
-        values,
-        (err) => {
-          if (err) {
-            console.error('❌ Error saving state:', err);
-            reject(err);
-          } else {
-            console.log('✅ State saved to database');
-            resolve();
-          }
-        }
+      // Insert new state
+      await this.pool.query(
+        `INSERT INTO presale_monitoring (
+          current_stage, is_paused, listing_triggered,
+          stage_1_sold, stage_2_sold, stage_3_sold, stage_4_sold, stage_5_sold, stage_6_sold, stage_7_sold,
+          stage_8_sold, stage_9_sold, stage_10_sold, stage_11_sold, stage_12_sold, stage_13_sold, stage_14_sold,
+          stage_1_notified_50, stage_2_notified_50, stage_3_notified_50, stage_4_notified_50, stage_5_notified_50,
+          stage_6_notified_50, stage_7_notified_50, stage_8_notified_50, stage_9_notified_50, stage_10_notified_50,
+          stage_11_notified_50, stage_12_notified_50, stage_13_notified_50, stage_14_notified_50,
+          stage_1_notified_100, stage_2_notified_100, stage_3_notified_100, stage_4_notified_100, stage_5_notified_100,
+          stage_6_notified_100, stage_7_notified_100, stage_8_notified_100, stage_9_notified_100, stage_10_notified_100,
+          stage_11_notified_100, stage_12_notified_100, stage_13_notified_100, stage_14_notified_100,
+          presale_started_notified, presale_completed, presale_completed_notified,
+          listing_triggered_notified, programs_closed, last_check
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+          $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
+          $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45,
+          $46, $47, $48, $49, $50, NOW()
+        )`,
+        [
+          contractData.currentStage,
+          contractData.isPaused,
+          contractData.listingTriggered,
+          contractData.stagesSold[1].toString(),
+          contractData.stagesSold[2].toString(),
+          contractData.stagesSold[3].toString(),
+          contractData.stagesSold[4].toString(),
+          contractData.stagesSold[5].toString(),
+          contractData.stagesSold[6].toString(),
+          contractData.stagesSold[7].toString(),
+          contractData.stagesSold[8].toString(),
+          contractData.stagesSold[9].toString(),
+          contractData.stagesSold[10].toString(),
+          contractData.stagesSold[11].toString(),
+          contractData.stagesSold[12].toString(),
+          contractData.stagesSold[13].toString(),
+          contractData.stagesSold[14].toString(),
+          notified50.stage_1_notified_50,
+          notified50.stage_2_notified_50,
+          notified50.stage_3_notified_50,
+          notified50.stage_4_notified_50,
+          notified50.stage_5_notified_50,
+          notified50.stage_6_notified_50,
+          notified50.stage_7_notified_50,
+          notified50.stage_8_notified_50,
+          notified50.stage_9_notified_50,
+          notified50.stage_10_notified_50,
+          notified50.stage_11_notified_50,
+          notified50.stage_12_notified_50,
+          notified50.stage_13_notified_50,
+          notified50.stage_14_notified_50,
+          notified100.stage_1_notified_100,
+          notified100.stage_2_notified_100,
+          notified100.stage_3_notified_100,
+          notified100.stage_4_notified_100,
+          notified100.stage_5_notified_100,
+          notified100.stage_6_notified_100,
+          notified100.stage_7_notified_100,
+          notified100.stage_8_notified_100,
+          notified100.stage_9_notified_100,
+          notified100.stage_10_notified_100,
+          notified100.stage_11_notified_100,
+          notified100.stage_12_notified_100,
+          notified100.stage_13_notified_100,
+          notified100.stage_14_notified_100,
+          (this.previousState && this.previousState.presale_started_notified) || (!contractData.isPaused),
+          presaleCompleted,
+          (this.previousState && this.previousState.presale_completed_notified) || presaleCompleted,
+          (this.previousState && this.previousState.listing_triggered_notified) || contractData.listingTriggered,
+          presaleCompleted
+        ]
       );
-    });
+
+      // Reload state
+      await this.loadState();
+
+      console.log('✅ State saved to database');
+    } catch (error) {
+      console.error('❌ Error saving state:', error.message);
+      throw error;
+    }
   }
 }
 

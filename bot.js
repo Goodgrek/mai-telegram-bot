@@ -5649,7 +5649,7 @@ bot.launch({
 
   // Start presale monitor
   if (config.NEWS_CHANNEL_ID) {
-    presaleMonitor = new PresaleMonitor(bot, config.NEWS_CHANNEL_ID);
+    presaleMonitor = new PresaleMonitor(bot, config.NEWS_CHANNEL_ID, pool);
     presaleMonitor.start().catch((err) => {
       console.error('❌ Failed to start presale monitor:', err);
     });
