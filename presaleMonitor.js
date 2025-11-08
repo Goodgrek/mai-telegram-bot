@@ -64,7 +64,7 @@ class PresaleMonitor {
   async loadState() {
     try {
       const result = await this.pool.query(
-        'SELECT * FROM presale_monitoring ORDER BY id DESC LIMIT 1'
+        'SELECT * FROM presale_monitoring WHERE id = 1'
       );
       this.previousState = result.rows[0] || null;
       console.log('📊 Previous state loaded:', this.previousState ? 'Found' : 'Not found');
@@ -515,9 +515,10 @@ class PresaleMonitor {
       }
 
       // Insert new state
+      // Use UPSERT to update single row (id = 1) instead of creating new records
       await this.pool.query(
         `INSERT INTO presale_monitoring (
-          current_stage, is_paused, listing_triggered,
+          id, current_stage, is_paused, listing_triggered,
           stage_1_sold, stage_2_sold, stage_3_sold, stage_4_sold, stage_5_sold, stage_6_sold, stage_7_sold,
           stage_8_sold, stage_9_sold, stage_10_sold, stage_11_sold, stage_12_sold, stage_13_sold, stage_14_sold,
           stage_1_notified_50, stage_2_notified_50, stage_3_notified_50, stage_4_notified_50, stage_5_notified_50,
@@ -529,11 +530,63 @@ class PresaleMonitor {
           presale_started_notified, presale_completed, presale_completed_notified,
           listing_triggered_notified, programs_closed, last_check
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+          1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
           $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
           $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45,
           $46, $47, $48, $49, $50, NOW()
-        )`,
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          current_stage = EXCLUDED.current_stage,
+          is_paused = EXCLUDED.is_paused,
+          listing_triggered = EXCLUDED.listing_triggered,
+          stage_1_sold = EXCLUDED.stage_1_sold,
+          stage_2_sold = EXCLUDED.stage_2_sold,
+          stage_3_sold = EXCLUDED.stage_3_sold,
+          stage_4_sold = EXCLUDED.stage_4_sold,
+          stage_5_sold = EXCLUDED.stage_5_sold,
+          stage_6_sold = EXCLUDED.stage_6_sold,
+          stage_7_sold = EXCLUDED.stage_7_sold,
+          stage_8_sold = EXCLUDED.stage_8_sold,
+          stage_9_sold = EXCLUDED.stage_9_sold,
+          stage_10_sold = EXCLUDED.stage_10_sold,
+          stage_11_sold = EXCLUDED.stage_11_sold,
+          stage_12_sold = EXCLUDED.stage_12_sold,
+          stage_13_sold = EXCLUDED.stage_13_sold,
+          stage_14_sold = EXCLUDED.stage_14_sold,
+          stage_1_notified_50 = EXCLUDED.stage_1_notified_50,
+          stage_2_notified_50 = EXCLUDED.stage_2_notified_50,
+          stage_3_notified_50 = EXCLUDED.stage_3_notified_50,
+          stage_4_notified_50 = EXCLUDED.stage_4_notified_50,
+          stage_5_notified_50 = EXCLUDED.stage_5_notified_50,
+          stage_6_notified_50 = EXCLUDED.stage_6_notified_50,
+          stage_7_notified_50 = EXCLUDED.stage_7_notified_50,
+          stage_8_notified_50 = EXCLUDED.stage_8_notified_50,
+          stage_9_notified_50 = EXCLUDED.stage_9_notified_50,
+          stage_10_notified_50 = EXCLUDED.stage_10_notified_50,
+          stage_11_notified_50 = EXCLUDED.stage_11_notified_50,
+          stage_12_notified_50 = EXCLUDED.stage_12_notified_50,
+          stage_13_notified_50 = EXCLUDED.stage_13_notified_50,
+          stage_14_notified_50 = EXCLUDED.stage_14_notified_50,
+          stage_1_notified_100 = EXCLUDED.stage_1_notified_100,
+          stage_2_notified_100 = EXCLUDED.stage_2_notified_100,
+          stage_3_notified_100 = EXCLUDED.stage_3_notified_100,
+          stage_4_notified_100 = EXCLUDED.stage_4_notified_100,
+          stage_5_notified_100 = EXCLUDED.stage_5_notified_100,
+          stage_6_notified_100 = EXCLUDED.stage_6_notified_100,
+          stage_7_notified_100 = EXCLUDED.stage_7_notified_100,
+          stage_8_notified_100 = EXCLUDED.stage_8_notified_100,
+          stage_9_notified_100 = EXCLUDED.stage_9_notified_100,
+          stage_10_notified_100 = EXCLUDED.stage_10_notified_100,
+          stage_11_notified_100 = EXCLUDED.stage_11_notified_100,
+          stage_12_notified_100 = EXCLUDED.stage_12_notified_100,
+          stage_13_notified_100 = EXCLUDED.stage_13_notified_100,
+          stage_14_notified_100 = EXCLUDED.stage_14_notified_100,
+          presale_started_notified = EXCLUDED.presale_started_notified,
+          presale_completed = EXCLUDED.presale_completed,
+          presale_completed_notified = EXCLUDED.presale_completed_notified,
+          listing_triggered_notified = EXCLUDED.listing_triggered_notified,
+          programs_closed = EXCLUDED.programs_closed,
+          last_check = NOW()`,
         [
           contractData.currentStage,
           contractData.isPaused,
