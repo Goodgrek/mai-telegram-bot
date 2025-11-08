@@ -230,7 +230,8 @@ class PresaleMonitor {
 
   // Check if presale is completed (all stages done)
   async checkPresaleCompletion(contractData) {
-    if (this.previousState && this.previousState.presale_completed) return;
+    // Don't check again if already notified
+    if (this.previousState && this.previousState.presale_completed_notified) return;
 
     let allStagesComplete = true;
     for (let stage = 1; stage <= 14; stage++) {
@@ -246,6 +247,13 @@ class PresaleMonitor {
       console.log('🏁 PRESALE COMPLETED!');
       await this.sendPresaleCompletedNotification();
       await this.closePrograms();
+
+      // Mark as notified to prevent duplicate calls
+      await this.pool.query(`
+        UPDATE presale_monitoring
+        SET presale_completed_notified = TRUE, presale_completed = TRUE
+        WHERE id = 1
+      `);
     }
   }
 
@@ -478,14 +486,52 @@ class PresaleMonitor {
 
   // Close airdrop and referral programs
   async closePrograms() {
-    console.log('⛔ Closing Community Airdrop and Referral programs...');
+    try {
+      console.log('⛔ Closing Community Airdrop and Referral programs...');
 
-    // TODO: Add logic to:
-    // 1. Set programs as closed in config
-    // 2. Create snapshot of all data
-    // 3. Block /airdrop and /referral commands
+      // Set programs_closed flag to TRUE - this freezes all data
+      await this.pool.query(`
+        UPDATE presale_monitoring
+        SET programs_closed = TRUE
+        WHERE id = 1
+      `);
 
-    console.log('✅ Programs closed');
+      // Get final statistics for logging
+      const airdropStats = await this.pool.query(`
+        SELECT
+          COUNT(*) as total_winners,
+          COUNT(*) FILTER (WHERE wallet_address IS NOT NULL) as with_wallet
+        FROM telegram_users
+        WHERE position IS NOT NULL AND position <= 20000
+      `);
+
+      const referralStats = await this.pool.query(`
+        SELECT
+          COUNT(DISTINCT telegram_id) as total_referrers,
+          SUM(referral_reward_balance) as total_mai_earned,
+          COUNT(DISTINCT telegram_id) FILTER (WHERE wallet_address IS NOT NULL) as referrers_with_wallet
+        FROM telegram_users
+        WHERE referral_reward_balance > 0
+      `);
+
+      console.log('📊 FINAL PROGRAM STATISTICS:');
+      console.log('');
+      console.log('🎁 COMMUNITY AIRDROP:');
+      console.log(`   Total Winners: ${airdropStats.rows[0].total_winners}`);
+      console.log(`   With Wallet: ${airdropStats.rows[0].with_wallet}`);
+      console.log(`   Total MAI to distribute: ${airdropStats.rows[0].total_winners * 5000}`);
+      console.log('');
+      console.log('🔗 COMMUNITY REFERRAL:');
+      console.log(`   Total Referrers: ${referralStats.rows[0].total_referrers}`);
+      console.log(`   Total MAI Earned: ${referralStats.rows[0].total_mai_earned || 0}`);
+      console.log(`   Referrers with Wallet: ${referralStats.rows[0].referrers_with_wallet}`);
+      console.log('');
+      console.log('✅ Programs closed successfully!');
+      console.log('🔒 All data frozen - no more changes allowed');
+
+    } catch (error) {
+      console.error('❌ Error closing programs:', error.message);
+    }
   }
 
   // Save current state to database
@@ -635,9 +681,9 @@ class PresaleMonitor {
           notified100.stage_14_notified_100,
           (this.previousState && this.previousState.presale_started_notified) || (!contractData.isPaused),
           presaleCompleted,
-          (this.previousState && this.previousState.presale_completed_notified) || presaleCompleted,
+          (this.previousState && this.previousState.presale_completed_notified) || false,
           (this.previousState && this.previousState.listing_triggered_notified) || contractData.listingTriggered,
-          presaleCompleted
+          (this.previousState && this.previousState.programs_closed) || false
         ]
       );
 

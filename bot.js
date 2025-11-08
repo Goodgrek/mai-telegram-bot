@@ -493,6 +493,15 @@ async function getUserStatus(userId) {
   }
 }
 
+async function areProgramsClosed() {
+  try {
+    const result = await pool.query('SELECT programs_closed FROM presale_monitoring WHERE id = 1');
+    return result.rows[0]?.programs_closed || false;
+  } catch {
+    return false;
+  }
+}
+
 async function updateSubscription(userId, newsSubscribed, chatSubscribed) {
   try {
     // Получаем старые значения + проверяем есть ли реферер
@@ -518,8 +527,11 @@ async function updateSubscription(userId, newsSubscribed, chatSubscribed) {
       [newsSubscribed, chatSubscribed, userId]
     );
 
-    // Если у юзера есть реферер И статус изменился → обновляем баланс реферера
-    if (user.referrer_id && wasActive !== isActiveNow) {
+    // Check if programs are closed - don't update referral balance if closed
+    const programsClosed = await areProgramsClosed();
+
+    // Если у юзера есть реферер И статус изменился И программы НЕ закрыты → обновляем баланс реферера
+    if (user.referrer_id && wasActive !== isActiveNow && !programsClosed) {
       if (isActiveNow) {
         // Подписался на ОБА канала → реферер получает +1000
         await pool.query(
@@ -1278,11 +1290,28 @@ bot.command('airdrop', async (ctx) => {
   const userId = ctx.from.id;
   const username = ctx.from.username || 'no_username';
   const firstName = ctx.from.first_name;
-  
+
   try {
+    // Check if programs are closed
+    const programsClosed = await areProgramsClosed();
+    if (programsClosed) {
+      return sendToPrivate(
+        ctx,
+        `⛔ <b>PROGRAM CLOSED</b>\n\n` +
+        `Community Airdrop and Referral programs have ended.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `📊 Check your final statistics: /status\n\n` +
+        `💸 Payouts will be distributed after MAI token listing\n\n` +
+        `🎊 Final results for Community Airdrop, Community Referral, and Presale Airdrop will be announced soon!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🚀 Stay tuned for updates in @mainingmai_news`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
     const userStatus = await getUserStatus(userId);
     console.log('📊 Статус пользователя:', userStatus);
-    
+
     if (userStatus?.banned) {
       return sendToPrivate(ctx, '❌ You are banned and cannot participate in the airdrop.');
     }
@@ -1836,6 +1865,23 @@ bot.command('referral', async (ctx) => {
   const userId = ctx.from.id;
 
   try {
+    // Check if programs are closed
+    const programsClosed = await areProgramsClosed();
+    if (programsClosed) {
+      return sendToPrivate(
+        ctx,
+        `⛔ <b>PROGRAM CLOSED</b>\n\n` +
+        `Community Airdrop and Referral programs have ended.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `📊 Check your final statistics: /status\n\n` +
+        `💸 Payouts will be distributed after MAI token listing\n\n` +
+        `🎊 Final results for Community Airdrop, Community Referral, and Presale Airdrop will be announced soon!\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🚀 Stay tuned for updates in @mainingmai_news`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
     // Получаем данные юзера
     const userStatus = await getUserStatus(userId);
 
