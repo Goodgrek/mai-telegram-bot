@@ -284,7 +284,7 @@ class PresaleMonitor {
       `🚀 <b>PRESALE IS LIVE!</b>\n\n` +
       `🎊 MAI Presale officially started!\n` +
       `🔥 Get up to 80% discount NOW!\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `💎 <b>7,000,000,000 MAI</b>\n` +
       `📊 14 stages • Prices: $0.0005 → $0.0020\n` +
       `🎨 NFT rewards: Bronze, Silver, Gold, Platinum\n` +
@@ -292,13 +292,13 @@ class PresaleMonitor {
       `   • Purchase $100+ → Silver NFT (+10% bonus forever)\n` +
       `   • Purchase $200+ → Gold NFT (+15% bonus forever)\n` +
       `   • Purchase $300+ → Platinum NFT (+20% bonus forever)\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `🎁 <b>EARN WHILE YOU BUY:</b>\n\n` +
       `✅ Community Airdrop: 5,000 MAI (first 20K)\n` +
       `✅ Community Referral: 1,000 MAI per friend\n` +
       `✅ Presale Airdrop: Up to 1,000,000 MAI\n` +
       `✅ NFT Airdrop: 1,400 NFTs\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>DON'T MISS THE LOWEST PRICE!</b>\n\n` +
       `🚀 Buy now: https://miningmai.com\n\n` +
       `#MAI #PresaleLive #Stage1`;
@@ -329,11 +329,11 @@ class PresaleMonitor {
       `📊 Sold: ${Math.floor(sold / 1_000_000).toLocaleString()}M / ${(limit / 1_000_000).toLocaleString()}M MAI\n\n` +
       `⏰ <b>DON'T MISS THE OPPORTUNITY!</b>\n` +
       `Next stage will be ${increase}% more expensive!\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `🎁 <b>PRESALE AIRDROP - BECOME A MAI MILLIONAIRE!</b>\n` +
       `💎 Earn up to 1,000,000 MAI tokens!\n` +
       `📋 More info: https://miningmai.com\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `🚀 Buy now: https://miningmai.com\n\n` +
       `#MAI #Presale #Stage${stage}`;
 
@@ -370,19 +370,19 @@ class PresaleMonitor {
       `✅ Stage ${stage} completely SOLD OUT!\n` +
       `💎 Sold: ${Math.floor(sold / 1_000_000).toLocaleString()}M MAI tokens\n` +
       `💰 Price was: $${price}\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       (nextStage <= 14 ?
         `📈 <b>NEW STAGE ${nextStage} IS LIVE!</b>\n` +
         `💰 New price: $${nextPrice}\n` +
         `📊 Available: ${nextTokens}M MAI\n` +
         `⚡ Price increased by ${increase}%!\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n`
+        `━━━━━━━━━━━━━━━━━\n\n`
         : ''
       ) +
       `🎁 <b>PRESALE AIRDROP - UP TO 1M MAI!</b>\n` +
       `${taskMessage}\n` +
       `📋 Dashboard: https://miningmai.com\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>GRAB IT BEFORE THE NEXT PRICE INCREASE!</b>\n\n` +
       `🚀 Buy now: https://miningmai.com\n\n` +
       `#MAI #Presale #Stage${nextStage <= 14 ? nextStage : stage}`;
@@ -405,7 +405,7 @@ class PresaleMonitor {
       `🏁 <b>PRESALE SUCCESSFULLY COMPLETED!</b>\n\n` +
       `🎊 All 14 stages SOLD OUT!\n` +
       `💎 Sold: 7,000,000,000 MAI\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `✅ <b>PROGRAMS CLOSED:</b>\n\n` +
       `1️⃣ Community Airdrop (5,000 MAI)\n` +
       `   ✅ Results recorded\n` +
@@ -418,7 +418,7 @@ class PresaleMonitor {
       `   🎲 Lottery: Within 10 days\n` +
       `   🏆 Winners announcement: After lottery\n` +
       `   💸 Payouts: Within 10 days after listing\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>WHAT'S NEXT?</b>\n\n` +
       `1️⃣ Finalizing all calculations\n` +
       `2️⃣ Conducting Presale Airdrop lottery\n` +
@@ -446,7 +446,7 @@ class PresaleMonitor {
       `🎊 <b>MAI TOKEN LISTING ACTIVATED!</b>\n\n` +
       `🔓 Claim tokens available NOW!\n` +
       `👉 Dashboard: https://miningmai.com\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `💎 <b>VESTING FOR PRESALE BUYERS:</b>\n\n` +
       `Your unlock schedule depends on purchase stage:\n\n` +
       `Stage 1: 3% TGE, 4mo cliff, 10mo vesting\n` +
@@ -455,7 +455,7 @@ class PresaleMonitor {
       `...\n` +
       `Stage 14: 8% TGE, 5mo vesting\n\n` +
       `📋 Check your schedule: https://miningmai.com\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `🎁 <b>REWARD PROGRAMS PAYOUTS:</b>\n\n` +
       `<b>1️⃣ Community Airdrop (5,000 MAI)</b>\n` +
       `💸 Single transfer\n` +
@@ -467,7 +467,7 @@ class PresaleMonitor {
       `🏆 Winners announced!\n` +
       `💎 10% immediately + 9 months vesting (10% each)\n` +
       `⏰ First payment: Within 10 days\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>Start claiming on the website!</b>\n` +
       `🚀 https://miningmai.com\n\n` +
       `#MAI #Listing #ClaimNow`;
