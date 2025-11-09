@@ -74,10 +74,10 @@ class PresaleMonitor {
     }
 
     // Post first statistics after 1 hour to avoid spam on startup
-    setTimeout(() => this.sendDailyStatistics(), 36000);
+    setTimeout(() => this.sendDailyStatistics(), 3600000);
 
     // Then post every 24 hours
-    this.dailyStatsIntervalId = setInterval(() => this.sendDailyStatistics(), 300000);
+    this.dailyStatsIntervalId = setInterval(() => this.sendDailyStatistics(), 86400000);
 
     console.log('📊 Daily statistics scheduler started (every 24 hours)');
   }
