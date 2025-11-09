@@ -4321,7 +4321,7 @@ bot.action('prob_ref_ban', async (ctx) => {
 // ============================================================
 
 // Milestone каждые 500 участников
-const MILESTONE_STEP = 1;
+const MILESTONE_STEP = 500;
 
 async function checkAndSendMilestone(chatId, botInfo) {
   try {
