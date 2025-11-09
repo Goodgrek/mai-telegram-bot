@@ -4321,7 +4321,7 @@ bot.action('prob_ref_ban', async (ctx) => {
 // ============================================================
 
 // Milestone каждые 500 участников
-const MILESTONE_STEP = 500;
+const MILESTONE_STEP = 1;
 
 async function checkAndSendMilestone(chatId, botInfo) {
   try {
@@ -4352,10 +4352,22 @@ async function checkAndSendMilestone(chatId, botInfo) {
 
       console.log(`🎉 MILESTONE ДОСТИГНУТ: ${milestone} участников!`);
 
+      // Получаем количество подписчиков в новостном канале
+      let newsChannelCount = 0;
+      try {
+        newsChannelCount = await bot.telegram.getChatMembersCount(config.NEWS_CHANNEL_ID);
+        console.log(`📊 Подписчиков в канале новостей: ${newsChannelCount}`);
+      } catch (error) {
+        console.error('❌ Ошибка получения количества подписчиков канала новостей:', error.message);
+      }
+
       // Отправляем красивое поздравление
       const milestoneMsg =
         `🎉 MILESTONE ACHIEVED!\n\n` +
-        `🚀 We've reached ${milestone.toLocaleString()} members in our community!\n\n` +
+        `🚀 Our community is growing!\n\n` +
+        `👥 Chat members: ${chatMemberCount.toLocaleString()}\n` +
+        `📢 News subscribers: ${newsChannelCount.toLocaleString()}\n\n` +
+        `━━━━━━━━━━━━━━━━\n\n` +
         `🎁 COMMUNITY AIRDROP:\n` +
         `✅ First ${config.AIRDROP_LIMIT.toLocaleString()} participants get 5,000 MAI FREE\n\n` +
         `📋 How to participate:\n` +
@@ -4374,20 +4386,20 @@ async function checkAndSendMilestone(chatId, botInfo) {
         `💪 Together we're building the future of decentralized AI!\n\n` +
         `🌐 https://miningmai.com`;
 
-      // Если есть картинка - отправляем с картинкой
+      // Отправляем сообщение только в КАНАЛ НОВОСТЕЙ (автоматически дублируется в чат)
       try {
         await bot.telegram.sendPhoto(
-          chatId,
+          config.NEWS_CHANNEL_ID,
           { source: './images/milestone.webp' },
           {
-            caption: milestoneMsg
+            caption: milestoneMsg,
+            parse_mode: 'HTML'
           }
         );
-        console.log(`✅ Milestone сообщение с картинкой отправлено`);
+        console.log(`✅ Milestone сообщение отправлено в канал новостей`);
       } catch (imgError) {
-        // Если картинки нет - отправляем просто текст
-        console.log(`⚠️ Картинка не найдена, отправляем текст`);
-        await bot.telegram.sendMessage(chatId, milestoneMsg);
+        console.log(`⚠️ Картинка не найдена, отправляем текст в канал новостей`);
+        await bot.telegram.sendMessage(config.NEWS_CHANNEL_ID, milestoneMsg, { parse_mode: 'HTML' });
       }
     }
   } catch (error) {
