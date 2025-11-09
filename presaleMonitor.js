@@ -32,6 +32,7 @@ class PresaleMonitor {
     this.configAddress = '8TzcgVuHrkt6hzd5Zmf3y9KRy7hB4D6cUYYJ5oGXoeCu';
     this.checkInterval = 60000; // 1 minute
     this.intervalId = null;
+    this.dailyStatsIntervalId = null;
     this.previousState = null;
   }
 
@@ -48,6 +49,9 @@ class PresaleMonitor {
     // Run first check immediately
     await this.checkPresale();
 
+    // Start daily statistics (every 24 hours)
+    this.startDailyStats();
+
     console.log('✅ Presale Monitor started successfully');
   }
 
@@ -57,6 +61,33 @@ class PresaleMonitor {
       clearInterval(this.intervalId);
       this.intervalId = null;
       console.log('⛔ Presale Monitor stopped');
+    }
+    this.stopDailyStats();
+  }
+
+  // Start daily statistics
+  startDailyStats() {
+    // Don't start if presale already completed
+    if (this.previousState && this.previousState.presale_completed) {
+      console.log('⏸️ Presale completed, daily stats not started');
+      return;
+    }
+
+    // Post first statistics after 1 hour to avoid spam on startup
+    setTimeout(() => this.sendDailyStatistics(), 36000);
+
+    // Then post every 24 hours
+    this.dailyStatsIntervalId = setInterval(() => this.sendDailyStatistics(), 300000);
+
+    console.log('📊 Daily statistics scheduler started (every 24 hours)');
+  }
+
+  // Stop daily statistics
+  stopDailyStats() {
+    if (this.dailyStatsIntervalId) {
+      clearInterval(this.dailyStatsIntervalId);
+      this.dailyStatsIntervalId = null;
+      console.log('⛔ Daily statistics stopped');
     }
   }
 
@@ -153,11 +184,20 @@ class PresaleMonitor {
         stagesSold[i] = data.readBigUInt64LE(offset);
       }
 
+      // Read NFT counters (bytes 238-245, u16 each)
+      const nftCounts = {
+        bronze: data.readUInt16LE(238),
+        silver: data.readUInt16LE(240),
+        gold: data.readUInt16LE(242),
+        platinum: data.readUInt16LE(244)
+      };
+
       return {
         currentStage,
         isPaused,
         listingTriggered,
-        stagesSold
+        stagesSold,
+        nftCounts
       };
     } catch (error) {
       console.error('❌ Error reading contract:', error.message);
@@ -297,6 +337,7 @@ class PresaleMonitor {
       `✅ Community Airdrop: 5,000 MAI (first 20K)\n` +
       `✅ Community Referral: 1,000 MAI per friend\n` +
       `✅ Presale Airdrop: Up to 1,000,000 MAI\n` +
+      `✅ Presale Referral: Earn USDT!\n` +
       `✅ NFT Airdrop: 1,400 NFTs\n\n` +
       `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>DON'T MISS THE LOWEST PRICE!</b>\n\n` +
@@ -529,8 +570,90 @@ class PresaleMonitor {
       console.log('✅ Programs closed successfully!');
       console.log('🔒 All data frozen - no more changes allowed');
 
+      // Stop daily statistics when presale completes
+      this.stopDailyStats();
+
     } catch (error) {
       console.error('❌ Error closing programs:', error.message);
+    }
+  }
+
+  // Send daily presale statistics
+  async sendDailyStatistics() {
+    try {
+      console.log('📊 Sending daily presale statistics...');
+
+      // Check if presale completed - stop if true
+      if (this.previousState && this.previousState.presale_completed) {
+        console.log('⏸️ Presale completed, stopping daily statistics');
+        this.stopDailyStats();
+        return;
+      }
+
+      // Read current contract data
+      const contractData = await this.readContract();
+
+      // Skip if presale is paused
+      if (contractData.isPaused) {
+        console.log('⏸️ Presale is paused, skipping daily statistics');
+        return;
+      }
+
+      // Calculate total tokens sold
+      let totalTokensSold = 0;
+      for (let stage = 1; stage <= 14; stage++) {
+        totalTokensSold += Number(contractData.stagesSold[stage]) / PRECISION;
+      }
+
+      // Get current stage data
+      const currentStage = contractData.currentStage;
+      const currentPrice = STAGE_DATA[currentStage].price;
+
+      // Calculate discount from listing price
+      const listingPrice = 0.0025;
+      const discountPercent = Math.round(((listingPrice - currentPrice) / listingPrice) * 100);
+
+      // Calculate progress percentage
+      const totalSupply = 7_000_000_000;
+      const progressPercent = ((totalTokensSold / totalSupply) * 100).toFixed(2);
+
+      // Format numbers
+      const tokensSoldFormatted = totalTokensSold.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      const totalSupplyFormatted = totalSupply.toLocaleString('en-US');
+
+      // Get NFT counts
+      const { bronze, silver, gold, platinum } = contractData.nftCounts;
+
+      const message =
+        `📊 <b>PRESALE DAILY STATISTICS</b>\n\n` +
+        `━━━━━━━━━━━━━━━━━\n\n` +
+        `💎 <b>Tokens Sold:</b> ${tokensSoldFormatted} / ${totalSupplyFormatted} MAI\n` +
+        `📈 <b>Progress:</b> ${progressPercent}%\n\n` +
+        `━━━━━━━━━━━━━━━━━\n\n` +
+        `🔥 <b>Current Stage:</b> ${currentStage}\n` +
+        `💰 <b>Current Price:</b> $${currentPrice}\n` +
+        `🎯 <b>Discount from listing:</b> ${discountPercent}% OFF\n\n` +
+        `━━━━━━━━━━━━━━━━━\n\n` +
+        `🏆 <b>NFT DISTRIBUTION:</b>\n\n` +
+        `🥉 Bronze NFT: ${bronze} issued\n` +
+        `🥈 Silver NFT: ${silver} issued\n` +
+        `🥇 Gold NFT: ${gold} issued\n` +
+        `💎 Platinum NFT: ${platinum} issued\n` +
+        `🎁 Airdrop NFT: ${silver} issued\n\n` +
+        `━━━━━━━━━━━━━━━━━\n\n` +
+        `⏰ <b>DON'T MISS THE OPPORTUNITY!</b>\n\n` +
+        `🚀 Buy now: https://miningmai.com\n\n` +
+        `#MAI #PresaleStats #DailyUpdate`;
+
+      await this.bot.telegram.sendPhoto(
+        this.newsChannelId,
+        { source: './images/presalestats.webp' },
+        { caption: message, parse_mode: 'HTML' }
+      );
+
+      console.log('✅ Daily statistics sent successfully');
+    } catch (error) {
+      console.error('❌ Error sending daily statistics:', error.message);
     }
   }
 
