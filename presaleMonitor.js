@@ -184,20 +184,11 @@ class PresaleMonitor {
         stagesSold[i] = data.readBigUInt64LE(offset);
       }
 
-      // Read NFT counters (bytes 238-245, u16 each)
-      const nftCounts = {
-        bronze: data.readUInt16LE(238),
-        silver: data.readUInt16LE(240),
-        gold: data.readUInt16LE(242),
-        platinum: data.readUInt16LE(244)
-      };
-
       return {
         currentStage,
         isPaused,
         listingTriggered,
-        stagesSold,
-        nftCounts
+        stagesSold
       };
     } catch (error) {
       console.error('❌ Error reading contract:', error.message);
@@ -333,7 +324,7 @@ class PresaleMonitor {
       `   • Purchase $200+ → Gold NFT (+15% bonus forever)\n` +
       `   • Purchase $300+ → Platinum NFT (+20% bonus forever)\n\n` +
       `━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 <b>EARN WHILE YOU BUY:</b>\n\n` +
+      `🎁 <b>STACK YOUR REWARDS:</b>\n\n` +
       `✅ Community Airdrop: 5,000 MAI (first 20K)\n` +
       `✅ Community Referral: 1,000 MAI per friend\n` +
       `✅ Presale Airdrop: Up to 1,000,000 MAI\n` +
@@ -621,9 +612,6 @@ class PresaleMonitor {
       const tokensSoldFormatted = totalTokensSold.toLocaleString('en-US', { maximumFractionDigits: 0 });
       const totalSupplyFormatted = totalSupply.toLocaleString('en-US');
 
-      // Get NFT counts
-      const { bronze, silver, gold, platinum } = contractData.nftCounts;
-
       const message =
         `📊 <b>PRESALE DAILY STATISTICS</b>\n\n` +
         `━━━━━━━━━━━━━━━━━\n\n` +
@@ -634,12 +622,18 @@ class PresaleMonitor {
         `💰 <b>Current Price:</b> $${currentPrice}\n` +
         `🎯 <b>Discount from listing:</b> ${discountPercent}% OFF\n\n` +
         `━━━━━━━━━━━━━━━━━\n\n` +
-        `🏆 <b>NFT DISTRIBUTION:</b>\n\n` +
-        `🥉 Bronze NFT: ${bronze} issued\n` +
-        `🥈 Silver NFT: ${silver} issued\n` +
-        `🥇 Gold NFT: ${gold} issued\n` +
-        `💎 Platinum NFT: ${platinum} issued\n` +
-        `🎁 Airdrop NFT: ${silver} issued\n\n` +
+        `🎨 <b>NFT REWARDS:</b>\n\n` +
+        `🥉 Purchase $50+ → Bronze NFT (+5% bonus forever)\n` +
+        `🥈 Purchase $100+ → Silver NFT (+10% bonus forever)\n` +
+        `🥇 Purchase $200+ → Gold NFT (+15% bonus forever)\n` +
+        `💎 Purchase $300+ → Platinum NFT (+20% bonus forever)\n\n` +
+        `━━━━━━━━━━━━━━━━━\n\n` +
+        `🎁 <b>STACK YOUR REWARDS:</b>\n\n` +
+        `✅ Community Airdrop: 5,000 MAI (first 20K)\n` +
+        `✅ Community Referral: 1,000 MAI per friend\n` +
+        `✅ Presale Airdrop: Up to 1,000,000 MAI\n` +
+        `✅ Presale Referral: Earn USDT!\n` +
+        `✅ NFT Airdrop: 1,400 NFTs\n\n` +
         `━━━━━━━━━━━━━━━━━\n\n` +
         `⏰ <b>DON'T MISS THE OPPORTUNITY!</b>\n\n` +
         `🚀 Buy now: https://miningmai.com\n\n` +
