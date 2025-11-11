@@ -441,15 +441,18 @@ class PresaleMonitor {
       `✅ <b>PROGRAMS CLOSED:</b>\n\n` +
       `1️⃣ Community Airdrop (5,000 MAI)\n` +
       `   ✅ Results recorded\n` +
-      `   💸 Payouts: Within 10 days after listing\n\n` +
+      `   💸 Allocation: Within 10 days after presale ends\n` +
+      `   📊 Claim: After listing via website Dashboard\n\n` +
       `2️⃣ Community Referral (1,000 MAI per friend)\n` +
       `   ✅ Balances recorded\n` +
-      `   💸 Payouts: Within 10 days after listing\n\n` +
+      `   💸 Allocation: Within 10 days after presale ends\n` +
+      `   📊 Claim: After listing via website Dashboard\n\n` +
       `3️⃣ Presale Airdrop (up to 1M MAI)\n` +
       `   📊 Task verification started\n` +
       `   🎲 Lottery: Within 10 days\n` +
       `   🏆 Winners announcement: After lottery\n` +
-      `   💸 Payouts: Within 10 days after listing\n\n` +
+      `   💸 Allocation: Within 10 days after presale ends\n` +
+      `   📊 Claim: After listing via website Dashboard (with vesting)\n\n` +
       `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>WHAT'S NEXT?</b>\n\n` +
       `1️⃣ Finalizing all calculations\n` +
@@ -488,17 +491,17 @@ class PresaleMonitor {
       `Stage 14: 8% TGE, 5mo vesting\n\n` +
       `📋 Check your schedule: https://miningmai.com\n\n` +
       `━━━━━━━━━━━━━━━━━\n\n` +
-      `🎁 <b>REWARD PROGRAMS PAYOUTS:</b>\n\n` +
+      `🎁 <b>REWARD PROGRAMS:</b>\n\n` +
       `<b>1️⃣ Community Airdrop (5,000 MAI)</b>\n` +
-      `💸 Single transfer\n` +
-      `⏰ Within 10 days from today\n\n` +
+      `💸 Allocated to accounts (within 10 days after presale ended)\n` +
+      `📊 Claim now via website Dashboard!\n\n` +
       `<b>2️⃣ Community Referral (1,000 MAI per friend)</b>\n` +
-      `💸 Single transfer\n` +
-      `⏰ Within 10 days from today\n\n` +
+      `💸 Allocated to accounts (within 10 days after presale ended)\n` +
+      `📊 Claim now via website Dashboard!\n\n` +
       `<b>3️⃣ Presale Airdrop (up to 1M MAI)</b>\n` +
       `🏆 Winners announced!\n` +
-      `💎 10% immediately + 9 months vesting (10% each)\n` +
-      `⏰ First payment: Within 10 days\n\n` +
+      `💸 Allocated to accounts (within 10 days after presale ended)\n` +
+      `📊 Claim via website Dashboard: 10% TGE + 90% vested (9 months)\n\n` +
       `━━━━━━━━━━━━━━━━━\n\n` +
       `⏰ <b>Start claiming on the website!</b>\n` +
       `🚀 https://miningmai.com\n\n` +

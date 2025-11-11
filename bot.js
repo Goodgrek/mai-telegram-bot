@@ -1151,7 +1151,8 @@ View details: /presale
    3️⃣ Register: /airdrop
 ✅ STAY subscribed until listing
 ✅ Daily check 00:00 UTC
-✅ Distribution: Within 10 days after listing
+✅ Allocation: Within 10 days after presale ends
+✅ Claim: After listing via website Dashboard
 💡 Register after 20K? You're in queue - if someone loses their spot, you move up!
 ❌ Unsubscribe = Position lost!
 
@@ -1301,7 +1302,7 @@ bot.command('airdrop', async (ctx) => {
         `Community Airdrop and Referral programs have ended.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `📊 Check your final statistics: /status\n\n` +
-        `💸 Payouts will be distributed after MAI token listing\n\n` +
+        `💸 Rewards allocated within 10 days after presale ends. Claim via website Dashboard after listing!\n\n` +
         `🎊 Final results for Community Airdrop, Community Referral, and Presale Airdrop will be announced soon!\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `🚀 Stay tuned for updates in @mainingmai_news`,
@@ -1504,7 +1505,8 @@ bot.command('airdrop', async (ctx) => {
           `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
           `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
           `💼 Wallet: <code>${currentUser.wallet_address}</code>\n` +
-          `📅 Distribution: Within 10 days after listing\n\n` +
+          `📅 Allocation: Within 10 days after presale ends\n` +
+          `📊 Claim: After listing via website Dashboard\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
           `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
           `✅ Stay subscribed to @mainingmai_news\n` +
@@ -1557,7 +1559,8 @@ bot.command('airdrop', async (ctx) => {
   `🎯 <b>Your Reward:</b> ${config.AIRDROP_REWARD.toLocaleString()} MAI\n` +
   `👥 <b>Limited Spots:</b> First ${config.AIRDROP_LIMIT.toLocaleString()} participants\n` +
   `💰 <b>Cost:</b> Absolutely FREE\n` +
-  `📅 <b>Distribution:</b> Within 10 days after listing\n\n` +
+  `📅 <b>Allocation:</b> Within 10 days after presale ends\n` +
+  `📊 <b>Claim:</b> After listing via website Dashboard\n\n` +
 
   `💡 <b>Register after 20K?</b>\n` +
   `You join the waiting queue. If someone unsubscribes from channels and loses their spot, you automatically move up!\n\n` +
@@ -1874,7 +1877,7 @@ bot.command('referral', async (ctx) => {
         `Community Airdrop and Referral programs have ended.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `📊 Check your final statistics: /status\n\n` +
-        `💸 Payouts will be distributed after MAI token listing\n\n` +
+        `💸 Rewards allocated within 10 days after presale ends. Claim via website Dashboard after listing!\n\n` +
         `🎊 Final results for Community Airdrop, Community Referral, and Presale Airdrop will be announced soon!\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `🚀 Stay tuned for updates in @mainingmai_news`,
@@ -1963,8 +1966,9 @@ bot.command('referral', async (ctx) => {
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `💼 <b>Wallet Address:</b>\n` +
       `<code>${userStatus.wallet_address}</code>\n\n` +
-      `💸 <b>Reward Distribution:</b>\n` +
-      `Within 10 days after token listing\n\n` +
+      `💸 <b>Reward Allocation:</b>\n` +
+      `Within 10 days after presale ends\n` +
+      `📊 <b>Claim:</b> After listing via website Dashboard\n\n` +
       `⚠️ <b>IMPORTANT:</b> Ban = No rewards\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🎯 Start sharing and earn MAI tokens! 🚀`,
@@ -3028,7 +3032,8 @@ Decentralized AI Platform
    3️⃣ Register: /airdrop
 ✅ STAY subscribed until listing
 ✅ Daily check 00:00 UTC
-✅ Distribution: Within 10 days after listing
+✅ Allocation: Within 10 days after presale ends
+✅ Claim: After listing via website Dashboard
 ❌ Unsubscribe = Position lost!
 
 🎁 COMMUNITY REFERRAL:
@@ -4082,7 +4087,8 @@ bot.action('prob_ref_how', async (ctx) => {
     `• If friend unsubscribes from ANY channel → you lose -1,000 MAI\n` +
     `• If friend resubscribes → you get +1,000 MAI again!\n` +
     `• Unlimited referrals - no cap!\n` +
-    `• Rewards paid within 10 days after token listing\n` +
+    `• Allocated within 10 days after presale ends\n` +
+    `• Claim after listing via website Dashboard\n` +
     `• <b>⚠️ BAN = Loss of ALL rewards!</b>\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `💡 <b>Example:</b>\n` +
@@ -4167,7 +4173,7 @@ bot.action('prob_ref_reward', async (ctx) => {
     `• "Active Now" = how many subscribed to BOTH\n` +
     `• "Balance" = your current MAI rewards\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `💡 <b>Reminder:</b> Rewards are paid within 10 days after token listing, not immediately to wallet!`;
+    `💡 <b>Reminder:</b> Rewards allocated within 10 days after presale ends. Claim after listing via website Dashboard!`;
 
   try {
     await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
@@ -4256,7 +4262,8 @@ bot.action('prob_ref_stats', async (ctx) => {
     `<b>Current Balance</b> = Your MAI rewards:\n` +
     `• Active Now × 1,000 MAI\n` +
     `• Can decrease if friends unsubscribe\n` +
-    `• Paid within 10 days after listing\n\n` +
+    `• Allocated within 10 days after presale ends\n` +
+    `• Claim after listing via website Dashboard\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `💡 Check stats anytime with /referral or /status!`;
 
@@ -4787,7 +4794,8 @@ Telegram blocks Web3. Use real browser!
 ⏰ Active until presale completion • Status: ✅ ACTIVE
 - First 20,000 participants get 5,000 MAI!
 - Absolutely FREE - just subscribe & register
-- Distribution: Within 10 days after listing
+- Allocation: Within 10 days after presale ends
+- Claim: After listing via website Dashboard
 
 How to participate:
 1️⃣ Subscribe to @mainingmai_news
@@ -4807,7 +4815,8 @@ Keep your position:
 ⏰ Active until presale completion • Status: ✅ ACTIVE
 - Earn 1,000 MAI for every friend who subscribes!
 - Unlimited referrals - no cap!
-- Distribution: Within 10 days after listing
+- Allocation: Within 10 days after presale ends
+- Claim: After listing via website Dashboard
 
 How to participate:
 1️⃣ Get your referral link: /referral
@@ -5210,7 +5219,8 @@ bot.on(message('text'), async (ctx) => {
             `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
             `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
             `💼 Wallet: <code>${userStatus.wallet_address}</code>\n` +
-            `📅 Distribution: Within 10 days after listing\n\n` +
+            `📅 Allocation: Within 10 days after presale ends\n` +
+            `📊 Claim: After listing via website Dashboard\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n\n` +
             `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
             `✅ Stay subscribed to @mainingmai_news\n` +
@@ -5321,7 +5331,7 @@ bot.on(message('text'), async (ctx) => {
               `Need to change wallet? Use /changewallet\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `<b>Thank you for joining MAI! 🚀</b>\n` +
-              `Tokens will be distributed after official listing.`;
+              `Tokens allocated within 10 days after presale ends. Claim via website Dashboard after listing!`;
           } else {
             // ЮЗЕР В АИРДРОПЕ
             successMessage =
@@ -5331,7 +5341,8 @@ bot.on(message('text'), async (ctx) => {
               `🎫 Your Position: <b>#${registration.user.position}</b> of ${config.AIRDROP_LIMIT.toLocaleString()}\n` +
               `🎁 Your Reward: <b>${config.AIRDROP_REWARD.toLocaleString()} MAI</b>\n` +
               `💼 Wallet: <code>${text}</code>\n` +
-              `📅 Distribution: Within 10 days after listing\n\n` +
+              `📅 Allocation: Within 10 days after presale ends\n` +
+              `📊 Claim: After listing via website Dashboard\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `⚠️ <b>HOW TO KEEP YOUR POSITION:</b>\n\n` +
               `✅ Stay subscribed to @mainingmai_news\n` +
@@ -5346,7 +5357,7 @@ bot.on(message('text'), async (ctx) => {
               `Need to change wallet? Use /changewallet\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n\n` +
               `<b>Thank you for joining MAI! 🚀</b>\n` +
-              `Tokens will be distributed after official listing.`;
+              `Tokens allocated within 10 days after presale ends. Claim via website Dashboard after listing!`;
           }
 
           // Отправляем с картинкой (только для аирдропа, не для очереди)
@@ -5490,8 +5501,9 @@ bot.on(message('text'), async (ctx) => {
           `✅ If friend resubscribes:\n` +
           `   • You get <b>+1,000 MAI</b> again!\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `💸 <b>Reward Distribution:</b>\n` +
-          `Within 10 days after token listing\n\n` +
+          `💸 <b>Reward Allocation:</b>\n` +
+          `Within 10 days after presale ends\n` +
+          `📊 <b>Claim:</b> After listing via website Dashboard\n\n` +
           `🎯 Start sharing and earn MAI tokens! 🚀`,
           { parse_mode: 'HTML' }
         );
