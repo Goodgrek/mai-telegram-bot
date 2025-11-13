@@ -29,7 +29,7 @@ class PresaleMonitor {
     this.newsChannelId = newsChannelId;
     this.pool = pool;
     this.rpcEndpoint = 'https://api.devnet.solana.com';
-    this.configAddress = '24WUtg2VeDJomo9jhb5PRUVMA2nEDUcmJyBnoZWGqGtJ';
+    this.configAddress = '';
     this.checkInterval = 60000; // 1 minute
     this.intervalId = null;
     this.dailyStatsIntervalId = null;
