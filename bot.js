@@ -1711,13 +1711,13 @@ Identical to Silver NFT in value and utility, earned through special tasks!
     if (ctx.chat.type === 'private') {
       await ctx.replyWithPhoto(
         { source: './images/airdrop_nft.webp' },
-        { caption: text, parse_mode: 'Markdown' }
+        { caption: text }
       );
     } else {
       await ctx.telegram.sendPhoto(
         ctx.from.id,
         { source: './images/airdrop_nft.webp' },
-        { caption: text, parse_mode: 'Markdown' }
+        { caption: text }
       );
     }
     console.log('✅ /nftairdrop отправлен');
