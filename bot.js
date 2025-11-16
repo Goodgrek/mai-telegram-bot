@@ -1673,20 +1673,20 @@ bot.command('nftairdrop', async (ctx) => {
 
 ━━━━━━━━━━━━━━━━━━━━
 
-What is Airdrop NFT?
+What is Airdrop Warrior NFT?
 
 Airdrop NFTs are identical to Silver NFTs in value and utility, but can only be earned through special task completion. This is your unique opportunity to obtain this premium collectible by simply completing straightforward community challenges!
 
 ━━━━━━━━━━━━━━━━━━━━
 
-How to Earn Airdrop NFT:
+How to Earn Airdrop Warrior NFT:
 
-- Stage Competition: Each presale stage (1-14) awards 100 Airdrop NFTs
+- Stage Competition: Each presale stage (1-14) awards 100 Airdrop Warriors NFTs
 - Qualifying Purchase: Make minimum 10,000 MAI token purchase during any active stage
 - First Come Basis: First 100 unique users per stage who meet purchase requirement win NFT
 - One Per Wallet: Each wallet can win only one Airdrop NFT during entire presale period
 - Automatic Allocation: NFTs are assigned immediately after stage's 100 winners determined
-- Total Supply: 1,400 Airdrop NFTs distributed across all 14 stages
+- Total Supply: 1,400 Airdrop Warriors NFTs distributed across all 14 stages
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1698,28 +1698,11 @@ Claiming Your NFT:
 
 ━━━━━━━━━━━━━━━━━━━━
 
-Airdrop NFT Benefits:
+Airdrop Warrior NFT Benefits:
 
 ✅ Early Mining Access: +2 months
 ✅ Governance Voting: 6 months
 ✅ Forever Mining Bonus: +10%
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ Important Disclaimer:
-
-Anti-Fraud Protection: We reserve the right to exclude any participant from the Airdrop NFT giveaway if we suspect fraudulent activity, manipulation, or violation of program terms.
-
-This includes but is not limited to:
-- Multiple wallet addresses
-- Coordinated timing manipulation
-- Bot activity or wash trading
-- Fake transactions
-- Any attempt to artificially secure a position among first 100 winners
-
-Eligibility Verification: All winning purchases will be verified for authenticity and compliance with minimum requirements. Invalid or suspicious transactions will be disqualified.
-
-All decisions regarding winner eligibility and NFT allocation are final and at our sole discretion.
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1729,10 +1712,31 @@ All decisions regarding winner eligibility and NFT allocation are final and at o
 `;
 
   try {
-    await sendToPrivate(ctx, text);
+    if (ctx.chat.type === 'private') {
+      await ctx.replyWithPhoto(
+        { source: './images/airdrop_nft.webp' },
+        { caption: text, parse_mode: 'Markdown' }
+      );
+    } else {
+      await ctx.telegram.sendPhoto(
+        ctx.from.id,
+        { source: './images/airdrop_nft.webp' },
+        { caption: text, parse_mode: 'Markdown' }
+      );
+    }
     console.log('✅ /nftairdrop отправлен');
   } catch (error) {
     console.error('❌ Ошибка /nftairdrop:', error.message);
+    // Если не удалось отправить в ЛС - юзер не запустил бота
+    if (ctx.chat.type !== 'private') {
+      const keyboard = Markup.inlineKeyboard([
+        [Markup.button.url('📱 Start Bot', `https://t.me/${ctx.botInfo.username}?start=nftairdrop`)]
+      ]);
+      await ctx.reply(
+        `⚠️ Please start the bot first:`,
+        { ...keyboard, reply_to_message_id: ctx.message.message_id }
+      );
+    }
   }
 });
 
@@ -2006,9 +2010,30 @@ bot.command('nft', async (ctx) => {
     }
   }
   try {
-    await sendToPrivate(ctx, getNftText(), { parse_mode: 'Markdown' });
+    if (ctx.chat.type === 'private') {
+      await ctx.replyWithPhoto(
+        { source: './images/all-nft.webp' },
+        { caption: getNftText(), parse_mode: 'Markdown' }
+      );
+    } else {
+      await ctx.telegram.sendPhoto(
+        ctx.from.id,
+        { source: './images/all-nft.webp' },
+        { caption: getNftText(), parse_mode: 'Markdown' }
+      );
+    }
   } catch (error) {
     console.error('❌ Ошибка /nft:', error.message);
+    // Если не удалось отправить в ЛС - юзер не запустил бота
+    if (ctx.chat.type !== 'private') {
+      const keyboard = Markup.inlineKeyboard([
+        [Markup.button.url('📱 Start Bot', `https://t.me/${ctx.botInfo.username}?start=nft`)]
+      ]);
+      await ctx.reply(
+        `⚠️ Please start the bot first:`,
+        { ...keyboard, reply_to_message_id: ctx.message.message_id }
+      );
+    }
   }
 });
 
