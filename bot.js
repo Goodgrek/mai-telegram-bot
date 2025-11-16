@@ -1669,46 +1669,42 @@ bot.command('nftairdrop', async (ctx) => {
   }
   console.log('✅ /nftairdrop получен от:', ctx.from.id);
 
-  const text = `🎨 AIRDROP NFT PROGRAM
+  const text = `🎨 AIRDROP WARRIOR NFT
+
+Identical to Silver NFT in value and utility, earned through special tasks!
 
 ━━━━━━━━━━━━━━━━━━━━
 
-What is Airdrop Warrior NFT?
+📋 How to Earn:
 
-Airdrop NFTs are identical to Silver NFTs in value and utility, but can only be earned through special task completion. This is your unique opportunity to obtain this premium collectible by simply completing straightforward community challenges!
-
-━━━━━━━━━━━━━━━━━━━━
-
-How to Earn Airdrop Warrior NFT:
-
-- Stage Competition: Each presale stage (1-14) awards 100 Airdrop Warriors NFTs
-- Qualifying Purchase: Make minimum 10,000 MAI token purchase during any active stage
-- First Come Basis: First 100 unique users per stage who meet purchase requirement win NFT
-- One Per Wallet: Each wallet can win only one Airdrop NFT during entire presale period
-- Automatic Allocation: NFTs are assigned immediately after stage's 100 winners determined
-- Total Supply: 1,400 Airdrop Warriors NFTs distributed across all 14 stages
+• Each stage (1-14) awards 100 NFTs
+• Minimum purchase: 10,000 MAI
+• First 100 qualified users per stage
+• One NFT per wallet
+• Total: 1,400 NFTs
 
 ━━━━━━━━━━━━━━━━━━━━
 
-Claiming Your NFT:
+💎 Benefits:
 
-- Claim Availability: After official MAI token listing announcement
-- Claim Cost: Approximately 0.03 SOL for network fees
-- Claim Process: Access through your dashboard after listing goes live
-
-━━━━━━━━━━━━━━━━━━━━
-
-Airdrop Warrior NFT Benefits:
-
-✅ Early Mining Access: +2 months
-✅ Governance Voting: 6 months
-✅ Forever Mining Bonus: +10%
+✅ Early Mining: +2 months
+✅ Governance: 6 months
+✅ Mining Bonus: +10% forever
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🌐 More info: https://miningmai.com
-📱 Stay connected: @mainingmai_news
-💬 @mainingmai_chat
+🔐 Claiming:
+
+• Available after listing
+• Cost: ~0.03 SOL (network fees)
+• Via your dashboard
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Anti-Fraud: We reserve the right to exclude suspicious activity (multiple wallets, bots, wash trading, fake transactions).
+
+🌐 https://miningmai.com
+📱 @mainingmai_news
 `;
 
   try {
