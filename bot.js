@@ -1696,7 +1696,7 @@ Identical to Silver NFT in value and utility, earned through special tasks!
 🔐 Claiming:
 
 • Available after listing
-• Cost: ~0.03 SOL (network fees)
+• Cost: ≈0.03 SOL (network fees)
 • Via your dashboard
 
 ━━━━━━━━━━━━━━━━━━━━
