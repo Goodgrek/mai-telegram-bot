@@ -34,7 +34,7 @@ const config = {
   CURRENT_PRESALE_STAGE: 1,
 };
 
-const AIRDROP_REMINDER_TIME = '0 12 * * *'; // каждый день в 09:00 UTC
+const AIRDROP_REMINDER_TIME = '*/1 * * * *'; // каждый день в 09:00 UTC
 const AIRDROP_REMINDER_MESSAGE =
   `🎁 COMMUNITY AIRDROP:\n` +
   `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
@@ -5746,10 +5746,26 @@ cron.schedule('0 0 * * *', async () => {
 
 cron.schedule(AIRDROP_REMINDER_TIME, async () => {
   try {
+    const { rows } = await pool.query(`
+      SELECT
+        COALESCE(MAX(position), 0) AS max_position,
+        COALESCE(SUM(referral_reward_balance), 0) AS total_referral_balance
+      FROM telegram_users
+    `);
+    const stats = rows[0] || {};
+    const totalParticipants = Number(stats.max_position) || 0;
+    const referralBalance = Number(stats.total_referral_balance) || 0;
+    const totalInvites = Math.floor(referralBalance / 1000);
+    const statsMessage =
+      `${AIRDROP_REMINDER_MESSAGE}\n\n` +
+      `📊 <b>COMMUNITY STATUS</b>\n` +
+      `👥 Registered: ${totalParticipants.toLocaleString('en-US')} / ${config.AIRDROP_LIMIT.toLocaleString('en-US')} slots\n` +
+      `🤝 Referral rewards accrued: ${referralBalance.toLocaleString('en-US')} MAI (${totalInvites.toLocaleString('en-US')} invites)\n`;
+
     await bot.telegram.sendPhoto(
       config.NEWS_CHANNEL_ID,
       { source: './images/airdropprogram.webp' },
-      { caption: AIRDROP_REMINDER_MESSAGE, parse_mode: 'HTML' }
+      { caption: statsMessage, parse_mode: 'HTML' }
     );
     console.log('✅ CRON: отправлен дневной airdrop/referral reminder');
   } catch (error) {
