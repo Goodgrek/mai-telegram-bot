@@ -39,13 +39,14 @@ const AIRDROP_REMINDER_MESSAGE =
   `🎁 COMMUNITY AIRDROP:\n` +
   `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
   `💰 5,000 MAI FREE for first 20,000 participants\n` +
-  `👉 Command: @mai_verify_bot /referral`;
+  `👉 Command: @mai_verify_bot /airdrop\n` +
   `💡 Register after 20K? You're in queue - if someone loses their spot, you move up!\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   `🤝 COMMUNITY REFERRAL PROGRAM:\n` +
   `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
   `💰 Earn 1,000 MAI per friend!\n` +
   `👉 Command: @mai_verify_bot /referral`;
+
 
 
 const ADMIN_MESSAGE_CONFIG = {
