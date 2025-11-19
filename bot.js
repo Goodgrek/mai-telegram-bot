@@ -34,7 +34,7 @@ const config = {
   CURRENT_PRESALE_STAGE: 1,
 };
 
-const AIRDROP_REMINDER_TIME = '*/1 * * * *'; // каждый день в 09:00 UTC
+const AIRDROP_REMINDER_TIME = '0 12 * * *'; // каждый день в 09:00 UTC
 const AIRDROP_REMINDER_MESSAGE =
   `🎁 COMMUNITY AIRDROP:\n` +
   `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
