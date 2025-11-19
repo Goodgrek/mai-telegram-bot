@@ -34,29 +34,18 @@ const config = {
   CURRENT_PRESALE_STAGE: 1,
 };
 
-const AIRDROP_REMINDER_TIME = '0 12 * * *'; // каждый день в 09:00 UTC
+const AIRDROP_REMINDER_TIME = '*/1 * * * *'; // каждый день в 09:00 UTC
 const AIRDROP_REMINDER_MESSAGE =
   `🎁 COMMUNITY AIRDROP:\n` +
   `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
-  `✅ 5,000 MAI FREE for first 20,000 participants\n` +
-  `✅ How to participate:\n` +
-  `   1️⃣ Subscribe @mainingmai_news\n` +
-  `   2️⃣ Subscribe @mainingmai_chat\n` +
-  `   3️⃣ Register: /airdrop\n` +
-  `✅ STAY subscribed until listing\n` +
-  `✅ Daily check 00:00 UTC\n` +
-  `✅ Allocation: Within 10 days after presale ends\n` +
-  `✅ Claim: After listing via website Dashboard\n` +
+  `💰 5,000 MAI FREE for first 20,000 participants\n` +
+  `👉 Command: @mai_verify_bot /referral`;
   `💡 Register after 20K? You're in queue - if someone loses their spot, you move up!\n` +
-  `❌ Unsubscribe = Position lost!\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━\n\n` +
   `🤝 COMMUNITY REFERRAL PROGRAM:\n` +
   `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
   `💰 Earn 1,000 MAI per friend!\n` +
-  `✅ Friend subscribes to BOTH channels = You earn!\n` +
-  `✅ Unlimited invites - no cap!\n` +
-  `✅ Instant rewards when friend subscribes\n` +
-  `⚠️ Friend unsubscribes = Reward removed\n` +
-  `👉 Command: /referral`;
+  `👉 Command: @mai_verify_bot /referral`;
 
 
 const ADMIN_MESSAGE_CONFIG = {
