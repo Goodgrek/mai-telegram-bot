@@ -34,6 +34,31 @@ const config = {
   CURRENT_PRESALE_STAGE: 1,
 };
 
+const AIRDROP_REMINDER_TIME = '0 13 * * *'; // каждый день в 09:00 UTC
+const AIRDROP_REMINDER_MESSAGE =
+  `🎁 COMMUNITY AIRDROP:\n` +
+  `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
+  `✅ 5,000 MAI FREE for first 20,000 participants\n` +
+  `✅ How to participate:\n` +
+  `   1️⃣ Subscribe @mainingmai_news\n` +
+  `   2️⃣ Subscribe @mainingmai_chat\n` +
+  `   3️⃣ Register: /airdrop\n` +
+  `✅ STAY subscribed until listing\n` +
+  `✅ Daily check 00:00 UTC\n` +
+  `✅ Allocation: Within 10 days after presale ends\n` +
+  `✅ Claim: After listing via website Dashboard\n` +
+  `💡 Register after 20K? You're in queue - if someone loses their spot, you move up!\n` +
+  `❌ Unsubscribe = Position lost!\n\n` +
+  `🤝 COMMUNITY REFERRAL PROGRAM:\n` +
+  `⏰ Active until presale completion • Status: ✅ ACTIVE\n` +
+  `💰 Earn 1,000 MAI per friend!\n` +
+  `✅ Friend subscribes to BOTH channels = You earn!\n` +
+  `✅ Unlimited invites - no cap!\n` +
+  `✅ Instant rewards when friend subscribes\n` +
+  `⚠️ Friend unsubscribes = Reward removed\n` +
+  `👉 Command: /referral`;
+
+
 const ADMIN_MESSAGE_CONFIG = {
   COOLDOWN_MINUTES: 30,
   MAX_MESSAGES_PER_DAY: 3,
@@ -1156,7 +1181,7 @@ View details: /presale
 💡 Register after 20K? You're in queue - if someone loses their spot, you move up!
 ❌ Unsubscribe = Position lost!
 
-🎁 COMMUNITY REFERRAL PROGRAM:
+🤝 COMMUNITY REFERRAL PROGRAM:
 ⏰ Active until presale completion • Status: ✅ ACTIVE
 💰 Earn 1,000 MAI per friend!
 ✅ Friend subscribes to BOTH channels = You earn!
@@ -1907,7 +1932,7 @@ bot.command('referral', async (ctx) => {
 
       return sendToPrivate(
         ctx,
-        `🎁 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
+        `🤝 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
         `📝 To participate in the referral program, please provide your Solana wallet address.\n\n` +
         `💰 You'll earn <b>1,000 MAI</b> for every friend who:\n` +
         `✅ Subscribes to @mainingmai_news\n` +
@@ -2175,7 +2200,7 @@ bot.command('problems', async (ctx) => {
     [Markup.button.callback('📋 Registration Issues', 'prob_registration')],
     [Markup.button.callback('💼 Wallet Problems', 'prob_wallet')],
     [Markup.button.callback('📺 Subscription Issues', 'prob_subscriptions')],
-    [Markup.button.callback('🎁 Community Referral', 'prob_referral')],
+    [Markup.button.callback('🤝 Community Referral', 'prob_referral')],
     [Markup.button.callback('🚫 Ban & Mute', 'prob_ban')],
     [Markup.button.callback('🔔 Notifications & Alerts', 'prob_notifications')],
     [Markup.button.callback('❓ Other Questions', 'prob_other')]
@@ -2188,7 +2213,7 @@ bot.command('problems', async (ctx) => {
     `📋 Registration Issues\n` +
     `💼 Wallet Problems\n` +
     `📺 Subscription Issues\n` +
-    `🎁 Community Referral\n` +
+    `🤝 Community Referral\n` +
     `🚫 Ban & Mute\n` +
     `🔔 Notifications & Alerts\n` +
     `❓ Other Questions\n\n` +
@@ -3057,7 +3082,7 @@ Decentralized AI Platform
 ✅ Claim: After listing via website Dashboard
 ❌ Unsubscribe = Position lost!
 
-🎁 COMMUNITY REFERRAL:
+🤝 COMMUNITY REFERRAL:
 💰 Earn 1,000 MAI per friend!
 👉 Friend subscribes = You earn
 👉 Unlimited invites!
@@ -3225,7 +3250,7 @@ bot.action('prob_referral', async (ctx) => {
   ]);
 
   const message =
-    `🎁 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
+    `🤝 <b>COMMUNITY REFERRAL PROGRAM</b>\n\n` +
     `⏰ Active until presale completion • Status: ✅ ACTIVE\n\n` +
     `Select your question:\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -4044,7 +4069,7 @@ bot.action('prob_back', async (ctx) => {
     [Markup.button.callback('📋 Registration Issues', 'prob_registration')],
     [Markup.button.callback('💼 Wallet Problems', 'prob_wallet')],
     [Markup.button.callback('📺 Subscription Issues', 'prob_subscriptions')],
-    [Markup.button.callback('🎁 Community Referral', 'prob_referral')],
+    [Markup.button.callback('🤝 Community Referral', 'prob_referral')],
     [Markup.button.callback('🚫 Ban & Mute', 'prob_ban')],
     [Markup.button.callback('🔔 Notifications & Alerts', 'prob_notifications')],
     [Markup.button.callback('❓ Other Questions', 'prob_other')]
@@ -4057,7 +4082,7 @@ bot.action('prob_back', async (ctx) => {
     `📋 Registration Issues\n` +
     `💼 Wallet Problems\n` +
     `📺 Subscription Issues\n` +
-    `🎁 Community Referral\n` +
+    `🤝 Community Referral\n` +
     `🚫 Ban & Mute\n` +
     `🔔 Notifications & Alerts\n` +
     `❓ Other Questions\n\n` +
@@ -4404,7 +4429,7 @@ async function checkAndSendMilestone(chatId, botInfo) {
         `3️⃣ Register via command: /airdrop\n\n` +
         `💡 Register after 20K? You're in queue and can move up!\n\n` +
         `━━━━━━━━━━━━━━━━\n\n` +
-        `🎁 COMMUNITY REFERRAL:\n` +
+        `🤝 COMMUNITY REFERRAL:\n` +
         `⏰ Active until presale completion • ✅ ACTIVE\n` +
         `💰 Earn 1,000 MAI per friend!\n` +
         `👉 Friend subscribes = You earn\n` +
@@ -4832,7 +4857,7 @@ Keep your position:
 ❌ Unsubscribe = Position lost immediately!
 ✅ Register wallet: /airdrop
 
-🎁 COMMUNITY REFERRAL (1,000 MAI per friend)
+🤝 COMMUNITY REFERRAL (1,000 MAI per friend)
 ⏰ Active until presale completion • Status: ✅ ACTIVE
 - Earn 1,000 MAI for every friend who subscribes!
 - Unlimited referrals - no cap!
@@ -5503,7 +5528,7 @@ bot.on(message('text'), async (ctx) => {
           `✅ <b>Wallet Saved Successfully!</b>\n\n` +
           `💼 Wallet: <code>${shortWallet}</code>\n\n` +
           `━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `🎁 <b>YOUR COMMUNITY REFERRAL</b>\n\n` +
+          `🤝 <b>YOUR COMMUNITY REFERRAL</b>\n\n` +
           `🔗 <b>Your Referral Link:</b>\n` +
           `<code>${referralLink}</code>\n\n` +
           `📊 <b>STATISTICS</b>\n` +
@@ -5728,6 +5753,20 @@ cron.schedule('0 0 * * *', async () => {
     console.error('Stack:', error.stack);
   }
 });
+
+cron.schedule(AIRDROP_REMINDER_TIME, async () => {
+  try {
+    await bot.telegram.sendPhoto(
+      config.NEWS_CHANNEL_ID,
+      { source: './images/airdropprogram.webp' },
+      { caption: AIRDROP_REMINDER_MESSAGE, parse_mode: 'HTML' }
+    );
+    console.log('✅ CRON: отправлен дневной airdrop/referral reminder');
+  } catch (error) {
+    console.error('❌ CRON: не удалось отправить airdrop reminder:', error.message);
+  }
+});
+
 
 // ==================== START PRESALE MONITOR ====================
 let presaleMonitor = null;
